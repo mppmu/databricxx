@@ -5,7 +5,7 @@ includedir=@includedir@
 
 Name: @PACKAGE_TARNAME@
 Version: @VERSION@
-Description: 
+Description: Modular data analysis framework based on C++11 and CERN ROOT
 Requires: @PKGCONFIG_DEPS@
 Libs: -L${libdir} -l@PACKAGE_TARNAME@ @DEP_LIBS@
 Cflags: -I${includedir} @DEP_CFLAGS@

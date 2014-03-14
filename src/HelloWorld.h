@@ -1,4 +1,4 @@
-// Copyright (C) YEAR AUTHOR <EMAIL>
+// Copyright (C) 2014 Oliver Schulz <oschulz@mpp.mpg.de>
 
 // This is free software; you can redistribute it and/or modify it under
 // the terms of the GNU Lesser General Public License as published by
@@ -21,7 +21,7 @@
 #include <Rtypes.h>
 
 
-namespace tmplns {
+namespace dbrx {
 
 
 class HelloWorld {
@@ -33,6 +33,6 @@ public:
 };
 
 
-} // namespace tmplns
+} // namespace dbrx
 
 #endif // HELLOWORLD_H
