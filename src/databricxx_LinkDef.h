@@ -3,8 +3,6 @@
 
 #ifdef __CINT__
 
-// HelloWorld.h
-#pragma link C++ class dbrx::HelloWorld-;
 
 #endif // __CINT__
 

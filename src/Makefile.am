@@ -5,20 +5,18 @@ MAINTAINERCLEANFILES = Makefile.in
 
 lib_LTLIBRARIES = libdatabricxx.la
 
-libdatabricxx_la_SOURCES = \
-	HelloWorld.cxx
+libdatabricxx_la_SOURCES =
 
-libdatabricxx_la_headers = \
-	HelloWorld.h
+libdatabricxx_la_headers =
 
 pkginclude_HEADERS = $(libdatabricxx_la_headers)
 
-bin_PROGRAMS = databricxx
+bin_PROGRAMS =
 
 noinst_PROGRAMS =
 
-databricxx_SOURCES = databricxx.cxx
-databricxx_LDADD = libdatabricxx.la
+# databricxx_SOURCES = databricxx.cxx
+# databricxx_LDADD = libdatabricxx.la
 # databricxx_LDFLAGS = -static
 
 
