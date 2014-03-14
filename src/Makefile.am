@@ -27,8 +27,6 @@ rootmap_DATA =
 libdatabricxx_la_SOURCES += libdatabricxx_rdict.cxx
 rootmap_DATA += .libs/libdatabricxx.rootmap
 
-if WITH_CLING
-
 rootmap_DATA += .libs/libdatabricxx_rdict.pcm
 
 libdatabricxx_rdict.cxx: $(libdatabricxx_la_headers) databricxx_LinkDef.h
@@ -38,13 +36,3 @@ libdatabricxx_rdict.cxx: $(libdatabricxx_la_headers) databricxx_LinkDef.h
 	cp libdatabricxx.rootmap libdatabricxx_rdict.pcm .libs/
 
 .libs/libdatabricxx_rdict.pcm: .libs/libdatabricxx.rootmap
-
-else # not WITH_CLING
-
-libdatabricxx_rdict.cxx: $(libdatabricxx_la_headers) databricxx_LinkDef.h
-	$(ROOTCINT) -f $@ -c -p $(CPPFLAGS) $(CXXFLAGS) $+
-
-.libs/libdatabricxx.rootmap: libdatabricxx.la | $(libdatabricxx_la_headers) databricxx_LinkDef.h
-	$(RLIBMAP) -o $@ -l .libs/libdatabricxx@SHLIBEXT@ -c $|
-
-endif # WITH_CLING
