@@ -37,8 +37,10 @@ m4/ltversion.m4
 /src/*.lo
 /src/*.la
 /src/.deps
-/src/*-rdict.cxx
-/src/*-rdict.h
+/src/*_rdict.cxx
+/src/*_rdict.h
+/src/*_rdict.pcm
+/src/*.rootmap
 
 #auto generated backups
 *.*~

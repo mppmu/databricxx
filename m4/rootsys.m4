@@ -13,8 +13,12 @@ AC_DEFUN([ROOTSYS_DEPS],
 	ROOTSYS_EXTRA_LIBS="$2"
 	
 	AC_REQUIRE([ROOT_PATH])
+	AC_PATH_PROG(ROOTCLING, rootcling, false, $rootbin)
 	AC_PATH_PROG(RLIBMAP, rlibmap, false, $rootbin)
-	if test "${RLIBMAP}" = false; then AC_MSG_ERROR([Need rlibmap.]); fi
+	if test "${ROOTCLING}" = false -a "${RLIBMAP}" = false; then
+		AC_MSG_ERROR([Need rootcling or rlibmap.]);
+	fi
+	AM_CONDITIONAL([WITH_CLING], [test "${ROOTCLING}" != false])
 	
 	ROOTSYS_CFLAGS="$ROOTCFLAGS $ROOTAUXCFLAGS"
 	ROOTSYS_LIBS="-L$ROOTLIBDIR"
