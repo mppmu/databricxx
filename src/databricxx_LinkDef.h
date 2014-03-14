@@ -3,6 +3,8 @@
 
 #ifdef __CINT__
 
+// DbrxTools.h
+#pragma link C++ class dbrx::DbrxTools+;
 
 #endif // __CINT__
 
