@@ -7,11 +7,21 @@ lib_LTLIBRARIES = libdatabricxx.la
 
 libdatabricxx_la_SOURCES = \
 	logging.cxx \
-	DbrxTools.cxx
+	Bric.cxx \
+	DbrxTools.cxx \
+	Name.cxx \
+	Prop.cxx \
+	Value.cxx \
+	brics.cxx
 
 libdatabricxx_la_headers = \
 	logging.h \
-	DbrxTools.h
+	Bric.h \
+	DbrxTools.h \
+	Name.h \
+	Prop.h \
+	Value.h \
+	brics.h
 
 pkginclude_HEADERS = $(libdatabricxx_la_headers)
 
