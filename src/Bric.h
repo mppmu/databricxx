@@ -30,13 +30,31 @@
 namespace dbrx {
 
 
-class Bric: public Named {
+class Bric: public virtual Named {
+public:
+	virtual std::ostream & printInfo(std::ostream &os) const;
+
+	virtual void process() = 0;
+
+	virtual ~Bric() {}
+};
+
+
+
+class BricImpl: public virtual Bric, public NamedImpl {
+public:
+	using NamedImpl::NamedImpl;
+};
+
+
+
+class BricWithOutputs: public virtual Bric  {
 protected:
 	std::map<Name, UniqueValue*> m_outputs;
-	std::map<Name, ConstValueRef*> m_inputs;
+
+	virtual std::ostream & printOutputInfo(std::ostream &os) const;
 
 public:
-
 	template <typename T> class OutputValue: public TypedUniqueValue<T> {
 	public:
 		OutputValue<T>& operator=(const OutputValue<T>& v) = delete;
@@ -51,37 +69,71 @@ public:
 			{ TypedUniqueValue<T>::operator=(std::move(v)); return *this; }
 
 
-		OutputValue(Bric *bric, const Name &n) { bric->m_outputs[n] = this; }
+		OutputValue(BricWithOutputs *bric, const Name &n) { bric->m_outputs[n] = this; }
 		OutputValue(const OutputValue &other) = delete;
 	};
 
+	virtual std::ostream & printInfo(std::ostream &os) const;
+};
 
+
+
+class BricWithInputs: public virtual Bric  {
+protected:
+	std::map<Name, ConstValueRef*> m_inputs;
+
+	virtual std::ostream & printInputInfo(std::ostream &os) const;
+
+public:
 	template <typename T> class InputValue: public TypedConstValueRef<T> {
 	public:
-		InputValue(Bric *bric, const Name &n) { bric->m_inputs[n] = this; }
+		InputValue(BricWithInputs *bric, const Name &n) { bric->m_inputs[n] = this; }
 		InputValue(const InputValue &other) = delete;
 	};
 
-	std::ostream & printInfo(std::ostream &os) const;
-
-	virtual void process();
-
-	Bric(const Name &n);
-	virtual ~Bric();
+	virtual std::ostream & printInfo(std::ostream &os) const;
 };
 
 
 
-class InputBric: public Bric {
+class BricWithInOut: public virtual BricWithInputs, public virtual BricWithOutputs  {
 public:
-	InputBric(const Name &n): Bric(n) {}
+	virtual std::ostream & printInfo(std::ostream &os) const;
 };
 
 
 
-class MapperBric: public Bric {
+class InputBric: public BricWithOutputs, public BricImpl  {
 public:
-	MapperBric(const Name &n): Bric(n) {}
+	using BricImpl::BricImpl;
+};
+
+
+
+class OutputBric: public BricWithInputs, public BricImpl {
+public:
+	using BricImpl::BricImpl;
+};
+
+
+
+class FilterBric: public BricWithInOut, public BricImpl {
+public:
+	using BricImpl::BricImpl;
+};
+
+
+
+class MapperBric: public BricWithInOut, public BricImpl {
+public:
+	using BricImpl::BricImpl;
+};
+
+
+
+class ReducerBric: public BricWithInOut, public BricImpl {
+public:
+	using BricImpl::BricImpl;
 };
 
 

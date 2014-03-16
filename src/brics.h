@@ -28,21 +28,42 @@ template<typename T> class SimpleInput: public InputBric {
 public:
 	OutputValue<T> value{this, "value"};
 
+	void process() {}
+
 	SimpleInput(const Name &n): InputBric(n) { value = T(); }
 	SimpleInput(const Name &n, T v): InputBric(n) { value = std::move(v); }
 };
 
 
-class Add: public MapperBric {
+
+template<typename A, typename B, typename C> class Add: public MapperBric {
 public:
-	Add(const Name &n): MapperBric(n) {}
+	InputValue<A> a{this, "a"};
+	InputValue<B> b{this, "b"};
+
+	OutputValue<C> result{this, "result"};
+
+	void process() {
+		result = a + b;
+	}
+
+	using MapperBric::MapperBric;
 };
 
 
 
-class Mult: public MapperBric {
+template<typename A, typename B, typename C> class Mult: public MapperBric {
 public:
-	Mult(const Name &n): MapperBric(n) {}
+	InputValue<A> a{this, "a"};
+	InputValue<B> b{this, "b"};
+
+	OutputValue<C> result{this, "result"};
+
+	void process() {
+		result = a * b;
+	}
+
+	using MapperBric::MapperBric;
 };
 
 

@@ -5,14 +5,22 @@
 
 // Bric.h
 #pragma link C++ class dbrx::Bric-;
+#pragma link C++ class dbrx::BricWithOutputs-;
+#pragma link C++ class dbrx::BricWithInputs-;
+#pragma link C++ class dbrx::BricWithInOut-;
 #pragma link C++ class dbrx::InputBric-;
+#pragma link C++ class dbrx::OutputBric-;
+#pragma link C++ class dbrx::FilterBric-;
 #pragma link C++ class dbrx::MapperBric-;
+#pragma link C++ class dbrx::ReducerBric-;
 
 // DbrxTools.h
 #pragma link C++ class dbrx::DbrxTools-;
 
 // Name.h
 #pragma link C++ class dbrx::Name-;
+#pragma link C++ class dbrx::Named-;
+#pragma link C++ class dbrx::NamedImpl-;
 
 // Prop.h
 #pragma link C++ class dbrx::Prop-;
@@ -21,8 +29,6 @@
 #pragma link C++ class dbrx::Value-;
 
 // brics.h
-#pragma link C++ class dbrx::Add-;
-#pragma link C++ class dbrx::Mult-;
 
 #endif // __CINT__
 

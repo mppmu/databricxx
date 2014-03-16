@@ -19,8 +19,6 @@
 
 #include <iostream>
 
-#include "logging.h"
-
 
 using namespace std;
 
@@ -28,16 +26,35 @@ using namespace std;
 namespace dbrx {
 
 
-void Bric::process() {
-	log_debug("Bric(\"%s\")::process()", name().c_str());
+std::ostream & Bric::printInfo(std::ostream &os) const {
+	os << "Bric " << name() << ":" << endl;
+	return os;
 }
 
 
-std::ostream & Bric::printInfo(std::ostream &os) const {
-	os << "Bric " << name() << ":" << endl;
+std::ostream & BricWithInputs::printInfo(std::ostream &os) const {
+	Bric::printInfo(os);
+	printInputInfo(os);
+	return os;
+}
+
+
+std::ostream & BricWithInputs::printInputInfo(std::ostream &os) const {
 	os << "  Inputs: ";
 	for (auto x: m_inputs) os << " " << x.first << "(" << x.second->typeInfo().name() << ")";
 	os << endl;
+	return os;
+}
+
+
+std::ostream & BricWithOutputs::printInfo(std::ostream &os) const {
+	Bric::printInfo(os);
+	printOutputInfo(os);
+	return os;
+}
+
+
+std::ostream & BricWithOutputs::printOutputInfo(std::ostream &os) const {
 	os << "  Outputs: ";
 	for (auto x: m_outputs) os << " " << x.first << "(" << x.second->typeInfo().name() << ")";
 	os << endl;
@@ -45,11 +62,12 @@ std::ostream & Bric::printInfo(std::ostream &os) const {
 }
 
 
-Bric::Bric(const Name &n) : Named(n) {
-}
+std::ostream & BricWithInOut::printInfo(std::ostream &os) const {
+	Bric::printInfo(os);
+	printInputInfo(os);
+	printOutputInfo(os);
 
-
-Bric::~Bric() {
+	return os;
 }
 
 

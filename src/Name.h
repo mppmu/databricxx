@@ -62,13 +62,25 @@ template<typename T> std::ostream & operator<<(std::ostream &os, const Name &n) 
 
 
 class Named {
+public:
+	virtual const Name& name() const = 0;
+	virtual void name(Name n) = 0;
+
+	virtual ~Named() {}
+};
+
+
+
+class NamedImpl: public virtual Named {
 protected:
 	Name m_name;
 
 public:
 	const Name& name() const { return m_name; }
+	void name(Name n) { m_name = std::move(n); }
 
-	Named(const Name &n): m_name(n) {}
+	NamedImpl() = default;
+	NamedImpl(const Name &n): m_name(n) {}
 };
 
 
