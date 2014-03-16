@@ -19,6 +19,9 @@
 
 #include <iostream>
 
+#include "logging.h"
+
+
 using namespace std;
 
 
@@ -26,7 +29,7 @@ namespace dbrx {
 
 
 void Bric::process() {
-	cout << "Bric::process()" << endl;
+	log_debug("Bric(\"%s\")::process()", name().c_str());
 }
 
 

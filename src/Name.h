@@ -35,6 +35,7 @@ protected:
 public:
 	operator const std::string& () const { return m_value; }
 	const std::string& str() const { return m_value; }
+	const char* c_str() const { return m_value.c_str(); }
 
 	operator TString () const { return m_value; }
 	operator const char* () const { return m_value.c_str(); }
