@@ -19,9 +19,7 @@
 #define DBRX_BRIC_H
 
 #include <stdexcept>
-#include <memory>
-#include <typeindex>
-#include <list>
+#include <map>
 #include <iosfwd>
 
 #include "Name.h"
@@ -33,108 +31,35 @@ namespace dbrx {
 
 
 class Bric: public Named {
-public:
-	class GenericNamedProxy: public Named {
-	public:
-		virtual std::type_index typeInfo() const = 0;
-
-		virtual const void* const * untypedPPtr() const = 0;
-
-		template<typename T> const T* const * typedPPtr() const {
-			if (std::type_index(typeid(T)) != typeInfo()) throw std::runtime_error("Type mismatch");
-			return (const T* const *) untypedPPtr();
-		}
-
-		GenericNamedProxy(const Name &n): Named(n) {}
-	};
-
-	class GenericOutput: public GenericNamedProxy {
-	public:
-		virtual void* const * untypedPPtr() = 0;
-
-		template<typename T> T* const * typedPPtr() {
-			if (std::type_index(typeid(T)) != typeInfo()) throw std::runtime_error("Type mismatch");
-			return (T* const *) untypedPPtr();
-		}
-
-		using GenericNamedProxy::GenericNamedProxy;
-	};
-
-	class GenericInput: public GenericNamedProxy {
-	public:
-		virtual void connectTo(const GenericNamedProxy &source) = 0;
-
-		using GenericNamedProxy::GenericNamedProxy;
-	};
-
 protected:
-	std::list<GenericOutput*> m_outputs;
-	std::list<GenericInput*> m_inputs;
+	std::map<Name, UniqueValue*> m_outputs;
+	std::map<Name, ConstValueRef*> m_inputs;
 
 public:
 
-	template <typename T> class Output: public GenericOutput {
-	protected:
-		T* m_value = nullptr;
-
+	template <typename T> class OutputValue: public TypedUniqueValue<T> {
 	public:
-		operator const T& () const { return *m_value; }
-		operator T& () { return *m_value; }
-		const T* operator->() const { return m_value; }
-		T* operator->() { return m_value; }
-		const T& value() const { return *m_value; }
-		T& value() { return *m_value; }
+		OutputValue<T>& operator=(const OutputValue<T>& v) = delete;
 
-		std::type_index typeInfo() const { return typeid(T); }
-		const void* const * untypedPPtr() const { return (const void* const *) &m_value; }
-		void* const * untypedPPtr() { return (void* const *) &m_value; }
+		OutputValue<T>& operator=(const T &v)
+			{ TypedUniqueValue<T>::operator=(v); return *this; }
 
-		Output<T>& operator=(const T &v) {
-			if (m_value != nullptr) *m_value = v;
-			else m_value = new T(v);
-			return *this;
-		}
+		OutputValue<T>& operator=(T &&v) noexcept
+			{ TypedUniqueValue<T>::operator=(std::move(v)); return *this; }
 
-		Output<T>& operator=(T &&v) noexcept {
-			if (m_value != nullptr) *m_value = std::move(v);
-			else operator=(std::unique_ptr<T>( new T(std::move(v)) ));
-			return *this;
-		}
+		OutputValue<T>& operator=(std::unique_ptr<T> &&v) noexcept
+			{ TypedUniqueValue<T>::operator=(std::move(v)); return *this; }
 
-		Output<T>& operator=(std::unique_ptr<T> &&v) noexcept {
-			std::unique_ptr<T> thisV(m_value); m_value = nullptr;
-			swap(thisV, v);
-			m_value = thisV.release();
-			return *this;
-		}
 
-		Output(Bric *bric, const Name &n): GenericOutput(n)
-			{ bric->m_outputs.push_back(this); }
-		Output(const Output &other) = delete;
-
-		~Output() { if (m_value != nullptr) delete m_value; }
+		OutputValue(Bric *bric, const Name &n) { bric->m_outputs[n] = this; }
+		OutputValue(const OutputValue &other) = delete;
 	};
 
 
-	template <typename T> class Input: public GenericInput {
-	protected:
-		Name m_name;
-		const T* const * m_value;
-
+	template <typename T> class InputValue: public TypedConstValueRef<T> {
 	public:
-		operator const T& () const { return **m_value; }
-		const T* operator->() const { return *m_value; }
-		const T& value() const { return **m_value; }
-
-		void connectTo(const GenericNamedProxy &source)
-			{ m_value = source.typedPPtr<T>(); }
-
-		std::type_index typeInfo() const { return typeid(T); }
-		const void* const * untypedPPtr() const { return (const void* const *) m_value; }
-
-		Input(Bric *bric, const Name &n): GenericInput(n)
-			{ bric->m_inputs.push_back(this); }
-		Input(const Input &other) = delete;
+		InputValue(Bric *bric, const Name &n) { bric->m_inputs[n] = this; }
+		InputValue(const InputValue &other) = delete;
 	};
 
 	std::ostream & printInfo(std::ostream &os) const;

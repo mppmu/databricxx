@@ -33,10 +33,10 @@ void Bric::process() {
 std::ostream & Bric::printInfo(std::ostream &os) const {
 	os << "Bric " << name() << ":" << endl;
 	os << "  Inputs: ";
-	for (auto x: m_inputs) os << " " << x->name() << "(" << x->typeInfo().name() << ")";
+	for (auto x: m_inputs) os << " " << x.first << "(" << x.second->typeInfo().name() << ")";
 	os << endl;
 	os << "  Outputs: ";
-	for (auto x: m_outputs) os << " " << x->name() << "(" << x->typeInfo().name() << ")";
+	for (auto x: m_outputs) os << " " << x.first << "(" << x.second->typeInfo().name() << ")";
 	os << endl;
 	return os;
 }

@@ -18,7 +18,8 @@
 #ifndef DBRX_VALUE_H
 #define DBRX_VALUE_H
 
-// #include <...>
+#include <memory>
+#include <typeindex>
 
 
 namespace dbrx {
@@ -26,10 +27,202 @@ namespace dbrx {
 
 class Value {
 public:
+	virtual bool valid() = 0;
+
+	virtual std::type_index typeInfo() const = 0;
+
+	virtual const void* const * untypedPPtr() const = 0;
+
+	template<typename T> const T* const * typedPPtr() const {
+		if (std::type_index(typeid(T)) != typeInfo()) throw std::runtime_error("Type mismatch");
+		return (const T* const *) untypedPPtr();
+	}
+
 	virtual ~Value() {}
 };
 
-// Classes GenericValue, Value, ValueRef, ConstValueRef, TypedValue, TypedValueRef, ConstTypedValueRef ?
+
+
+class WritableValue: public Value {
+public:
+	virtual void* * untypedPPtr() = 0;
+
+	template<typename T> T* * typedPPtr() {
+		if (std::type_index(typeid(T)) != typeInfo()) throw std::runtime_error("Type mismatch");
+		return (T* *) untypedPPtr();
+	}
+};
+
+
+
+class UniqueValue: public WritableValue {
+public:
+	bool valid() { return true; }
+};
+
+
+
+class ValueRef: public WritableValue {
+public:
+	virtual void referTo(WritableValue &source) = 0;
+};
+
+
+
+class ConstValueRef: public Value {
+public:
+	virtual void referTo(const Value &source) = 0;
+};
+
+
+
+template <typename T> class TypedValueRef;
+
+
+
+template <typename T> class TypedUniqueValue: public UniqueValue {
+protected:
+	T* m_value = nullptr;
+
+public:
+	operator const T& () const { return *m_value; }
+	operator T& () { return *m_value; }
+	const T* operator->() const { return m_value; }
+	T* operator->() { return m_value; }
+	const T& get() const { return *m_value; }
+	T& get() { return *m_value; }
+
+	std::type_index typeInfo() const { return typeid(T); }
+
+	const void* const * untypedPPtr() const { return (const void* const *) &m_value; }
+	void* * untypedPPtr() { return (void* *)(&m_value); }
+	const T* const * typedPPtr() const { return (const T* const *) &m_value; }
+	T* * typedPPtr() { return (T* *) &m_value; }
+
+	const T* const * pptr() const { return &m_value; }
+	T* * pptr() { return &m_value; }
+
+	TypedUniqueValue<T>& operator=(const T &v) {
+		if (m_value != nullptr) *m_value = v;
+		else m_value = new T(v);
+		return *this;
+	}
+
+	TypedUniqueValue<T>& operator=(T &&v) noexcept {
+		if (m_value != nullptr) *m_value = std::move(v);
+		else operator=(std::unique_ptr<T>( new T(std::move(v)) ));
+		return *this;
+	}
+
+	TypedUniqueValue<T>& operator=(std::unique_ptr<T> &&v) noexcept {
+		std::unique_ptr<T> thisV(m_value); m_value = nullptr;
+		swap(thisV, v);
+		m_value = thisV.release();
+		return *this;
+	}
+
+	TypedUniqueValue<T>& operator=(const TypedUniqueValue<T>& v) = delete;
+
+	TypedUniqueValue() = default;
+
+	TypedUniqueValue(const TypedUniqueValue &other) = delete;
+
+	~TypedUniqueValue() { if (m_value != nullptr) delete m_value; }
+
+	friend class TypedValueRef<T>;
+};
+
+
+
+template <typename T> class TypedValueRef: public ValueRef {
+protected:
+	T* * m_value = nullptr;
+
+public:
+	bool valid() { return (m_value != nullptr); }
+
+	operator const T& () const { return **m_value; }
+	operator T& () { return **m_value; }
+	const T* operator->() const { return *m_value; }
+	T* operator->() { return *m_value; }
+	const T& get() const { return **m_value; }
+	T& get() { return **m_value; }
+
+	void referTo(WritableValue &source)
+		{ m_value = source.typedPPtr<T>(); }
+
+	std::type_index typeInfo() const { return typeid(T); }
+
+	const void* const * untypedPPtr() const { return (const void* const *) m_value; }
+	void* * untypedPPtr() { return (void* *)(m_value); }
+	const T* const * typedPPtr() const { return m_value; }
+	T* * typedPPtr() { return (T* *) m_value; }
+
+	const T* const * pptr() const { return m_value; }
+	T* * pptr() { return m_value; }
+
+	TypedValueRef<T>& operator=(const T &v) {
+		if (*m_value != nullptr) **m_value = v;
+		else *m_value = new T(v);
+		return *this;
+	}
+
+	TypedValueRef<T>& operator=(T &&v) noexcept {
+		if (*m_value != nullptr) **m_value = std::move(v);
+		else operator=(std::unique_ptr<T>( new T(std::move(v)) ));
+		return *this;
+	}
+
+	TypedValueRef<T>& operator=(std::unique_ptr<T> &&v) noexcept {
+		std::unique_ptr<T> thisV(*m_value); *m_value = nullptr;
+		swap(thisV, v);
+		*m_value = thisV.release();
+		return *this;
+	}
+
+	TypedValueRef() = default;
+
+	TypedValueRef(const TypedValueRef<T> &other) = default;
+
+	TypedValueRef(TypedUniqueValue<T> &v) : m_value(v.pptr()) {}
+
+	TypedValueRef(WritableValue &source) { referTo(source); }
+};
+
+
+
+template <typename T> class TypedConstValueRef: public ConstValueRef {
+protected:
+	const T* const * m_value = nullptr;
+
+public:
+	bool valid() { return (m_value != nullptr); }
+
+	operator const T& () const { return **m_value; }
+	const T* operator->() const { return *m_value; }
+	const T& get() const { return **m_value; }
+
+	void referTo(const Value &source)
+		{ m_value = source.typedPPtr<T>(); }
+
+	std::type_index typeInfo() const { return typeid(T); }
+
+	const void* const * untypedPPtr() const { return (const void* const *) m_value; }
+	const T* const * typedPPtr() const { return m_value; }
+
+	const T* const * pptr() const { return m_value; }
+
+	TypedConstValueRef() = default;
+
+	TypedConstValueRef(const TypedConstValueRef<T> &other) = default;
+
+	TypedConstValueRef(const TypedUniqueValue<T> &v) : m_value(v.pptr()) {}
+
+	TypedConstValueRef(const TypedValueRef<T> &other) : m_value(other.pptr()) {}
+
+	TypedConstValueRef(const Value &source) { referTo(source); }	
+};
+
 
 } // namespace dbrx
 

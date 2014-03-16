@@ -26,7 +26,7 @@ namespace dbrx {
 
 template<typename T> class FixedInput: public InputBric {
 public:
-	Output<T> value{this, "value"};
+	OutputValue<T> value{this, "value"};
 
 	FixedInput(const Name &n): InputBric(n) { value = T(); }
 	FixedInput(const Name &n, T v): InputBric(n) { value = std::move(v); }
