@@ -65,9 +65,21 @@ const TString& DbrxTools::version() {
 
 
 TClass* DbrxTools::getClass(const TString& className) {
-	TClass *cl = gROOT->GetClass(className);
+	TClass *cl = TClass::GetClass(className, true, true);
 	if (cl == nullptr) throw runtime_error(TString::Format("Could not resolve class \"%s\"", className.Data()).Data());
 	return cl;
+}
+
+
+TClass* DbrxTools::getClass(const std::type_info& typeInfo) {
+	TClass *cl = TClass::GetClass(typeInfo, true, true);
+	if (cl == nullptr) throw runtime_error(TString::Format("Could not resolve class for type_info \"%s\"", typeInfo.name()).Data());
+	return cl;
+}
+
+
+EDataType DbrxTools::getDataType(const std::type_info& typeInfo) {
+	return TDataType::GetType(typeInfo);
 }
 
 

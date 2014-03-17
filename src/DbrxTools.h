@@ -19,8 +19,10 @@
 #define DBRX_DBRXTOOLS_H
 
 #include <memory>
+#include <typeinfo>
 
 #include <TClass.h>
+#include <TDataType.h>
 #include <TString.h>
 
 
@@ -45,6 +47,10 @@ public:
 	static const TString& version();
 
 	static TClass* getClass(const TString& className);
+
+	static TClass* getClass(const std::type_info& typeInfo);
+
+	static EDataType getDataType(const std::type_info& typeInfo);
 
 	static bool isAssignableFrom(TClass *base, TClass *cl);
 
