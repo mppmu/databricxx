@@ -29,14 +29,18 @@ class Value {
 public:
 	virtual bool valid() = 0;
 
-	virtual std::type_index typeInfo() const = 0;
+	virtual const std::type_info& typeInfo() const = 0;
 
 	virtual const void* const * untypedPPtr() const = 0;
 
+	const void* untypedPtr() const { return *untypedPPtr(); }
+
 	template<typename T> const T* const * typedPPtr() const {
-		if (std::type_index(typeid(T)) != typeInfo()) throw std::runtime_error("Type mismatch");
+		if (typeid(T) != typeInfo()) throw std::runtime_error("Type mismatch");
 		return (const T* const *) untypedPPtr();
 	}
+
+	template<typename T> const T* typedPtr() const { return *typedPPtr<T>(); }
 
 	virtual ~Value() {}
 };
@@ -47,10 +51,14 @@ class WritableValue: public Value {
 public:
 	virtual void* * untypedPPtr() = 0;
 
+	void* untypedPtr() { return *untypedPPtr(); }
+
 	template<typename T> T* * typedPPtr() {
-		if (std::type_index(typeid(T)) != typeInfo()) throw std::runtime_error("Type mismatch");
+		if (typeid(T) != typeInfo()) throw std::runtime_error("Type mismatch");
 		return (T* *) untypedPPtr();
 	}
+
+	template<typename T> T* typedPtr() { return *typedPPtr<T>(); }
 };
 
 
@@ -92,7 +100,7 @@ public:
 	const T& get() const { return *m_value; }
 	T& get() { return *m_value; }
 
-	std::type_index typeInfo() const { return typeid(T); }
+	const std::type_info& typeInfo() const { return typeid(T); }
 
 	const void* const * untypedPPtr() const { return (const void* const *) &m_value; }
 	void* * untypedPPtr() { return (void* *)(&m_value); }
@@ -101,6 +109,9 @@ public:
 
 	const T* const * pptr() const { return &m_value; }
 	T* * pptr() { return &m_value; }
+
+	const T* ptr() const { return m_value; }
+	T* ptr() { return m_value; }
 
 	TypedUniqueValue<T>& operator=(const T &v) {
 		if (m_value != nullptr) *m_value = v;
@@ -151,7 +162,7 @@ public:
 	void referTo(WritableValue &source)
 		{ m_value = source.typedPPtr<T>(); }
 
-	std::type_index typeInfo() const { return typeid(T); }
+	const std::type_info& typeInfo() const { return typeid(T); }
 
 	const void* const * untypedPPtr() const { return (const void* const *) m_value; }
 	void* * untypedPPtr() { return (void* *)(m_value); }
@@ -160,6 +171,9 @@ public:
 
 	const T* const * pptr() const { return m_value; }
 	T* * pptr() { return m_value; }
+
+	const T* ptr() const { return *m_value; }
+	T* ptr() { return *m_value; }
 
 	TypedValueRef<T>& operator=(const T &v) {
 		if (*m_value != nullptr) **m_value = v;
@@ -205,12 +219,14 @@ public:
 	void referTo(const Value &source)
 		{ m_value = source.typedPPtr<T>(); }
 
-	std::type_index typeInfo() const { return typeid(T); }
+	const std::type_info& typeInfo() const { return typeid(T); }
 
 	const void* const * untypedPPtr() const { return (const void* const *) m_value; }
 	const T* const * typedPPtr() const { return m_value; }
 
 	const T* const * pptr() const { return m_value; }
+
+	const T* ptr() const { return *m_value; }
 
 	TypedConstValueRef() = default;
 
