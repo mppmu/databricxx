@@ -11,6 +11,7 @@ libdatabricxx_la_SOURCES = \
 	DbrxTools.cxx \
 	Name.cxx \
 	Prop.cxx \
+	Reflection.cxx \
 	Value.cxx \
 	brics.cxx
 
@@ -20,6 +21,7 @@ libdatabricxx_la_headers = \
 	DbrxTools.h \
 	Name.h \
 	Prop.h \
+	Reflection.h \
 	Value.h \
 	brics.h
 

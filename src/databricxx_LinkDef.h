@@ -25,6 +25,9 @@
 // Prop.h
 #pragma link C++ class dbrx::Prop-;
 
+// Reflection.h
+#pragma link C++ class dbrx::Reflection-;
+
 // Value.h
 #pragma link C++ class dbrx::Value-;
 

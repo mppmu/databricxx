@@ -18,11 +18,6 @@
 #ifndef DBRX_DBRXTOOLS_H
 #define DBRX_DBRXTOOLS_H
 
-#include <memory>
-#include <typeinfo>
-
-#include <TClass.h>
-#include <TDataType.h>
 #include <TString.h>
 
 
@@ -38,36 +33,10 @@ class DbrxTools {
 protected:
 	static TString s_version;
 
-	static void* newObjectImpl(TClass* objType, TClass* ptrType);
-
-	static void* newObjectImpl(const TString& objType, const TString& ptrType);
-
 public:
 	/// Get DatABriCxx version
 	static const TString& version();
-
-	static TClass* getClass(const TString& className);
-
-	static TClass* getClass(const std::type_info& typeInfo);
-
-	static EDataType getDataType(const std::type_info& typeInfo);
-
-	static bool isAssignableFrom(TClass *base, TClass *cl);
-
-	static bool isAssignableFrom(const TString& base, const TString& cl);
-
-	template<typename T> static std::unique_ptr<T> newObject(TClass *objType, TClass *ptrType);
-
-	template<typename T> static std::unique_ptr<T> newObject(const TString& objType, const TString& ptrType);
 };
-
-
-template<typename T> std::unique_ptr<T> DbrxTools::newObject(TClass *objectType, TClass *ptrType)
-	{ return std::move(std::unique_ptr<T>( static_cast<T*>(newObjectImpl(objectType, ptrType)) )); }
-
-
-template<typename T> std::unique_ptr<T> DbrxTools::newObject(const TString& objectType, const TString& ptrType)
-	{ return std::move(std::unique_ptr<T>( static_cast<T*>(newObjectImpl(objectType, ptrType)) )); }
 
 
 } // namespace dbrx
