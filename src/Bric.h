@@ -52,6 +52,8 @@ class BricWithOutputs: public virtual Bric  {
 protected:
 	std::map<Name, UniqueValue*> m_outputs;
 
+	void addOutput(const Name &outputName, UniqueValue* value);
+
 	virtual std::ostream & printOutputInfo(std::ostream &os) const;
 
 public:
@@ -69,9 +71,12 @@ public:
 			{ TypedUniqueValue<T>::operator=(std::move(v)); return *this; }
 
 
-		OutputValue(BricWithOutputs *bric, const Name &n) { bric->m_outputs[n] = this; }
+		OutputValue(BricWithOutputs *bric, const Name &n) { bric->addOutput(n, this); }
 		OutputValue(const OutputValue &other) = delete;
 	};
+
+	const UniqueValue& getOutput(const Name &outputName) const;
+	UniqueValue& getOutput(const Name &outputName);
 
 	virtual std::ostream & printInfo(std::ostream &os) const;
 };
@@ -82,14 +87,19 @@ class BricWithInputs: public virtual Bric  {
 protected:
 	std::map<Name, ConstValueRef*> m_inputs;
 
+	void addInput(const Name &inputName, ConstValueRef* value);
+
 	virtual std::ostream & printInputInfo(std::ostream &os) const;
 
 public:
 	template <typename T> class InputValue: public TypedConstValueRef<T> {
 	public:
-		InputValue(BricWithInputs *bric, const Name &n) { bric->m_inputs[n] = this; }
+		InputValue(BricWithInputs *bric, const Name &n) { bric->addInput(n, this); }
 		InputValue(const InputValue &other) = delete;
 	};
+
+	const ConstValueRef& getInput(const Name &inputName) const;
+	ConstValueRef& getInput(const Name &inputName);
 
 	virtual std::ostream & printInfo(std::ostream &os) const;
 };
