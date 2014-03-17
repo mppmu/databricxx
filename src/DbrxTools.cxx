@@ -17,8 +17,13 @@
 
 #include "DbrxTools.h"
 
-#include <../config.h>
+#include <stdexcept>
 
+#include <TROOT.h>
+
+#include "logging.h"
+
+#include "../config.h"
 
 using namespace std;
 
@@ -28,8 +33,60 @@ namespace dbrx {
 
 TString DbrxTools::s_version(VERSION);
 
+
+void* DbrxTools::newObjectImpl(TClass* objType, TClass* ptrType) {
+	if (! isAssignableFrom(ptrType, objType))
+		throw invalid_argument(TString::Format("Target pointer type \"%s\" cannot be assigned from object type \"%s\"", ptrType->GetName(), objType->GetName()).Data());
+
+	void *obj = objType->New(TClass::ENewType::kClassNew, true);
+	if (obj == nullptr) {
+		// May be necessary the first time the class is loaded, for some reason,
+		// to make an inherited default constructor visible:
+		log_debug("Failed to create object of class\"%s\", first-time load? Trying work-around.", objType->GetName());
+		gROOT->ProcessLine(TString::Format("delete new %s", objType->GetName()));
+		obj = objType->New();
+	}
+	if (obj == nullptr) throw runtime_error(TString::Format("Dynamic object creation of class \"%s\" failed", objType->GetName()).Data());
+	log_debug("Dynamically created object of class\"%s\"", objType->GetName());
+	return obj;
+}
+
+
+void* DbrxTools::newObjectImpl(const TString& objType, const TString& ptrType) {
+	TClass *objTypeCl = getClass(objType);
+	TClass *ptrTypeCl = getClass(ptrType);
+	return newObjectImpl(objTypeCl, ptrTypeCl);
+}
+
+
 const TString& DbrxTools::version() {
 	return s_version;
+}
+
+
+TClass* DbrxTools::getClass(const TString& className) {
+	TClass *cl = gROOT->GetClass(className);
+	if (cl == nullptr) throw runtime_error(TString::Format("Could not resolve class \"%s\"", className.Data()).Data());
+	return cl;
+}
+
+
+bool DbrxTools::isAssignableFrom(TClass* a, TClass* b) {
+	if (b->InheritsFrom(a)) return true;
+	TList* bases = b->GetListOfBases();
+	TIter next(bases, kIterForward);
+	TClass *base;
+	while ( (base = dynamic_cast<TClass*>(next())) ) {
+		if (isAssignableFrom(a, base)) return true;
+	}
+	return false;
+}
+
+
+bool DbrxTools::isAssignableFrom(const TString& base, const TString& cl) {
+	TClass *baseCl = getClass(base);
+	TClass *classCl = getClass(cl);
+	return isAssignableFrom(baseCl, classCl);
 }
 
 
