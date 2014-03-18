@@ -44,6 +44,8 @@ public:
 
 	static EDataType getDataType(const std::type_info& typeInfo);
 
+	static char getRootTypeSymbol(const std::type_info& typeInfo);
+
 	static bool isAssignableFrom(TClass *base, TClass *cl);
 
 	static bool isAssignableFrom(const TString& base, const TString& cl);
