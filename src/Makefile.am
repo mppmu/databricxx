@@ -13,7 +13,7 @@ libdatabricxx_la_SOURCES = \
 	Prop.cxx \
 	Reflection.cxx \
 	RootIO.cxx \
-	Value.cxx \
+	Value.cxx HasValue.cxx\
 	brics.cxx
 
 libdatabricxx_la_headers = \
@@ -24,7 +24,7 @@ libdatabricxx_la_headers = \
 	Prop.h \
 	Reflection.h \
 	RootIO.h \
-	Value.h \
+	Value.h HasValue.h \
 	brics.h
 
 pkginclude_HEADERS = $(libdatabricxx_la_headers)

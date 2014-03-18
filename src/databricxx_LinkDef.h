@@ -31,12 +31,18 @@
 // RootIO.h
 #pragma link C++ class dbrx::RootIO-;
 
-// Value.h
+// Value.h, HasValue.h
 #pragma link C++ class dbrx::Value-;
 #pragma link C++ class dbrx::WritableValue-;
 #pragma link C++ class dbrx::UniqueValue-;
 #pragma link C++ class dbrx::ValueRef-;
 #pragma link C++ class dbrx::ConstValueRef-;
+
+#pragma link C++ class dbrx::HasValue-;
+#pragma link C++ class dbrx::HasWritableValue-;
+#pragma link C++ class dbrx::HasUniqueValue-;
+#pragma link C++ class dbrx::HasValueRef-;
+#pragma link C++ class dbrx::HasConstValueRef-;
 
 // brics.h
 
