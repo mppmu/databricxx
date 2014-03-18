@@ -12,6 +12,7 @@ libdatabricxx_la_SOURCES = \
 	Name.cxx \
 	Prop.cxx \
 	Reflection.cxx \
+	RootIO.cxx \
 	Value.cxx \
 	brics.cxx
 
@@ -22,6 +23,7 @@ libdatabricxx_la_headers = \
 	Name.h \
 	Prop.h \
 	Reflection.h \
+	RootIO.h \
 	Value.h \
 	brics.h
 

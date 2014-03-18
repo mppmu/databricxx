@@ -28,6 +28,9 @@
 // Reflection.h
 #pragma link C++ class dbrx::Reflection-;
 
+// RootIO.h
+#pragma link C++ class dbrx::RootIO-;
+
 // Value.h
 #pragma link C++ class dbrx::Value-;
 
