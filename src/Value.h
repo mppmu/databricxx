@@ -154,8 +154,6 @@ public:
 	TypedUniqueValue(std::unique_ptr<T> &&v) { *this = std::move(v); }
 
 	~TypedUniqueValue() { if (m_value != nullptr) delete m_value; }
-
-	friend class TypedValueRef<T>;
 };
 
 
