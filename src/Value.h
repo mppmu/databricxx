@@ -28,6 +28,7 @@ namespace dbrx {
 class Value {
 public:
 	virtual bool valid() = 0;
+	virtual bool empty() = 0;
 
 	virtual const std::type_info& typeInfo() const = 0;
 
@@ -59,6 +60,9 @@ public:
 	}
 
 	template<typename T> T* typedPtr() { return *typedPPtr<T>(); }
+
+	virtual void setToDefault() = 0;
+	virtual void clear() = 0;
 };
 
 
@@ -93,6 +97,8 @@ protected:
 	T* m_value = nullptr;
 
 public:
+	bool empty() { return m_value == nullptr; }
+
 	operator const T& () const { return *m_value; }
 	operator T& () { return *m_value; }
 	const T* operator->() const { return m_value; }
@@ -106,6 +112,9 @@ public:
 	void* * untypedPPtr() { return (void* *)(&m_value); }
 	const T* const * typedPPtr() const { return (const T* const *) &m_value; }
 	T* * typedPPtr() { return (T* *) &m_value; }
+
+	void setToDefault() { operator=(std::unique_ptr<T>( new T() )); }
+	void clear() { operator=(std::unique_ptr<T>((T*)nullptr)); }
 
 	const T* const * pptr() const { return &m_value; }
 	T* * pptr() { return &m_value; }
@@ -138,6 +147,12 @@ public:
 
 	TypedUniqueValue(const TypedUniqueValue &other) = delete;
 
+	TypedUniqueValue(const T &v) { *this = v; }
+
+	TypedUniqueValue(T &&v) { *this = std::move(v); }
+
+	TypedUniqueValue(std::unique_ptr<T> &&v) { *this = std::move(v); }
+
 	~TypedUniqueValue() { if (m_value != nullptr) delete m_value; }
 
 	friend class TypedValueRef<T>;
@@ -151,6 +166,7 @@ protected:
 
 public:
 	bool valid() { return (m_value != nullptr); }
+	bool empty() { return *m_value == nullptr; }
 
 	operator const T& () const { return **m_value; }
 	operator T& () { return **m_value; }
@@ -168,6 +184,9 @@ public:
 	void* * untypedPPtr() { return (void* *)(m_value); }
 	const T* const * typedPPtr() const { return m_value; }
 	T* * typedPPtr() { return (T* *) m_value; }
+
+	void setToDefault() { operator=(std::unique_ptr<T>( new T() )); }
+	void clear() { operator=(std::unique_ptr<T>((T*)nullptr)); }
 
 	const T* const * pptr() const { return m_value; }
 	T* * pptr() { return m_value; }
@@ -211,6 +230,7 @@ protected:
 
 public:
 	bool valid() { return (m_value != nullptr); }
+	bool empty() { return *m_value == nullptr; }
 
 	operator const T& () const { return **m_value; }
 	const T* operator->() const { return *m_value; }
