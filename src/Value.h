@@ -43,12 +43,16 @@ public:
 
 	template<typename T> const T* typedPtr() const { return *typedPPtr<T>(); }
 
+	Value() {}
+	Value(const Value &v) {}
+	Value(Value &&v) {}
+
 	virtual ~Value() {}
 };
 
 
 
-class WritableValue: public Value {
+class WritableValue: public virtual Value {
 public:
 	virtual void* * untypedPPtr() = 0;
 
@@ -67,23 +71,75 @@ public:
 
 
 
-class UniqueValue: public WritableValue {
+class UniqueValue: public virtual WritableValue {
 public:
 	bool valid() { return true; }
 };
 
 
 
-class ValueRef: public WritableValue {
+class ValueRef: public virtual WritableValue {
 public:
 	virtual void referTo(WritableValue &source) = 0;
 };
 
 
 
-class ConstValueRef: public Value {
+class ConstValueRef: public virtual Value {
 public:
 	virtual void referTo(const Value &source) = 0;
+};
+
+
+
+template <typename T> class TypedValue: public virtual Value {
+public:
+	virtual operator const T& () const = 0;
+	virtual const T* operator->() const = 0;
+	virtual const T& get() const = 0;
+
+	virtual const T* const * typedPPtr() const = 0;
+
+	virtual const T* const * pptr() const = 0;
+
+	virtual const T* ptr() const = 0;
+};
+
+
+
+template <typename T> class TypedWritableValue: public virtual WritableValue, public virtual TypedValue<T> {
+public:
+	virtual operator T& () = 0;
+	virtual T* operator->() = 0;
+	virtual T& get() = 0;
+
+	virtual T* * typedPPtr() = 0;
+
+	virtual T* * pptr() = 0;
+
+	virtual T* ptr() = 0;
+
+	void setToDefault() { operator=(std::unique_ptr<T>( new T() )); }
+	void clear() { operator=(std::unique_ptr<T>((T*)nullptr)); }
+
+	TypedWritableValue<T>& operator=(const T &v) {
+		if (ptr() != nullptr) *ptr() = v;
+		else *pptr() = new T(v);
+		return *this;
+	}
+
+	TypedWritableValue<T>& operator=(T &&v) noexcept {
+		if (ptr() != nullptr) *ptr() = std::move(v);
+		else operator=(std::unique_ptr<T>( new T(std::move(v)) ));
+		return *this;
+	}
+
+	TypedWritableValue<T>& operator=(std::unique_ptr<T> &&v) noexcept {
+		std::unique_ptr<T> thisV(ptr()); *pptr() = nullptr;
+		swap(thisV, v);
+		*pptr() = thisV.release();
+		return *this;
+	}
 };
 
 
@@ -92,7 +148,7 @@ template <typename T> class TypedValueRef;
 
 
 
-template <typename T> class TypedUniqueValue: public UniqueValue {
+template <typename T> class TypedUniqueValue: public virtual UniqueValue, public virtual TypedWritableValue<T> {
 protected:
 	T* m_value = nullptr;
 
@@ -113,35 +169,23 @@ public:
 	const T* const * typedPPtr() const { return (const T* const *) &m_value; }
 	T* * typedPPtr() { return (T* *) &m_value; }
 
-	void setToDefault() { operator=(std::unique_ptr<T>( new T() )); }
-	void clear() { operator=(std::unique_ptr<T>((T*)nullptr)); }
-
 	const T* const * pptr() const { return &m_value; }
 	T* * pptr() { return &m_value; }
 
 	const T* ptr() const { return m_value; }
 	T* ptr() { return m_value; }
 
-	TypedUniqueValue<T>& operator=(const T &v) {
-		if (m_value != nullptr) *m_value = v;
-		else m_value = new T(v);
-		return *this;
-	}
+	TypedUniqueValue<T>& operator=(const T &v)
+		{ TypedWritableValue<T>::operator=(v); return *this; }
 
-	TypedUniqueValue<T>& operator=(T &&v) noexcept {
-		if (m_value != nullptr) *m_value = std::move(v);
-		else operator=(std::unique_ptr<T>( new T(std::move(v)) ));
-		return *this;
-	}
+	TypedUniqueValue<T>& operator=(T &&v) noexcept
+		{ TypedWritableValue<T>::operator=(std::move(v)); return *this; }
 
-	TypedUniqueValue<T>& operator=(std::unique_ptr<T> &&v) noexcept {
-		std::unique_ptr<T> thisV(m_value); m_value = nullptr;
-		swap(thisV, v);
-		m_value = thisV.release();
-		return *this;
-	}
+	TypedUniqueValue<T>& operator=(std::unique_ptr<T> &&v) noexcept
+		{ TypedWritableValue<T>::operator=(std::move(v)); return *this; }
 
 	TypedUniqueValue<T>& operator=(const TypedUniqueValue<T>& v) = delete;
+	TypedUniqueValue<T>& operator=(TypedUniqueValue<T> &&v) = delete;
 
 	TypedUniqueValue() = default;
 
@@ -158,7 +202,7 @@ public:
 
 
 
-template <typename T> class TypedValueRef: public ValueRef {
+template <typename T> class TypedValueRef: public virtual ValueRef, public virtual TypedWritableValue<T> {
 protected:
 	T* * m_value = nullptr;
 
@@ -183,33 +227,23 @@ public:
 	const T* const * typedPPtr() const { return m_value; }
 	T* * typedPPtr() { return (T* *) m_value; }
 
-	void setToDefault() { operator=(std::unique_ptr<T>( new T() )); }
-	void clear() { operator=(std::unique_ptr<T>((T*)nullptr)); }
-
 	const T* const * pptr() const { return m_value; }
 	T* * pptr() { return m_value; }
 
 	const T* ptr() const { return *m_value; }
 	T* ptr() { return *m_value; }
 
-	TypedValueRef<T>& operator=(const T &v) {
-		if (*m_value != nullptr) **m_value = v;
-		else *m_value = new T(v);
-		return *this;
-	}
+	TypedValueRef<T>& operator=(const T &v)
+		{ TypedWritableValue<T>::operator=(v); return *this; }
 
-	TypedValueRef<T>& operator=(T &&v) noexcept {
-		if (*m_value != nullptr) **m_value = std::move(v);
-		else operator=(std::unique_ptr<T>( new T(std::move(v)) ));
-		return *this;
-	}
+	TypedValueRef<T>& operator=(T &&v) noexcept
+		{ TypedWritableValue<T>::operator=(std::move(v)); return *this; }
 
-	TypedValueRef<T>& operator=(std::unique_ptr<T> &&v) noexcept {
-		std::unique_ptr<T> thisV(*m_value); *m_value = nullptr;
-		swap(thisV, v);
-		*m_value = thisV.release();
-		return *this;
-	}
+	TypedValueRef<T>& operator=(std::unique_ptr<T> &&v) noexcept
+		{ TypedWritableValue<T>::operator=(std::move(v)); return *this; }
+
+	TypedValueRef<T>& operator=(const TypedValueRef<T>& v) = delete;
+	TypedValueRef<T>& operator=(TypedValueRef<T> &&v) = delete;
 
 	TypedValueRef() = default;
 
@@ -222,7 +256,7 @@ public:
 
 
 
-template <typename T> class TypedConstValueRef: public ConstValueRef {
+template <typename T> class TypedConstValueRef: public virtual ConstValueRef, public virtual TypedValue<T> {
 protected:
 	const T* const * m_value = nullptr;
 
@@ -245,6 +279,9 @@ public:
 	const T* const * pptr() const { return m_value; }
 
 	const T* ptr() const { return *m_value; }
+
+	TypedConstValueRef<T>& operator=(const TypedConstValueRef<T>& v) = delete;
+	TypedConstValueRef<T>& operator=(TypedConstValueRef<T> &&v) = delete;
 
 	TypedConstValueRef() = default;
 
