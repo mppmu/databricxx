@@ -49,7 +49,7 @@ public:
 
 	Name(const Name &other) = default;
 	Name(Name &&other) noexcept = default;
-	Name() = default; // Why is this necessary for classes derived from Named like Input?
+	Name() = default; // Why is this necessary for classes derived from Name like Input?
 
 	// virtual ~Name() {}
 };
@@ -61,17 +61,17 @@ template<typename T> std::ostream & operator<<(std::ostream &os, const Name &n) 
 
 
 
-class Named {
+class HasName {
 public:
 	virtual const Name& name() const = 0;
 	virtual void name(Name n) = 0;
 
-	virtual ~Named() {}
+	virtual ~HasName() {}
 };
 
 
 
-class NamedImpl: public virtual Named {
+class HasNameImpl: public virtual HasName {
 protected:
 	Name m_name;
 
@@ -79,8 +79,8 @@ public:
 	const Name& name() const { return m_name; }
 	void name(Name n) { m_name = std::move(n); }
 
-	NamedImpl() = default;
-	NamedImpl(const Name &n): m_name(n) {}
+	HasNameImpl() = default;
+	HasNameImpl(const Name &n): m_name(n) {}
 };
 
 

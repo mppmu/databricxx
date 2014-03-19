@@ -24,59 +24,103 @@
 
 #include "Name.h"
 #include "Prop.h"
-#include "Value.h"
+#include "HasValue.h"
 
 
 namespace dbrx {
 
 
-class Bric: public virtual Named {
+class Bric: public virtual HasName {
 public:
+	class Terminal
+		: public virtual HasName, public virtual HasValue
+	{
+		Terminal& operator=(const Terminal& v) = delete;
+		Terminal& operator=(Terminal &&v) = delete;
+	};
+
+	class OutputTerminal : public virtual Terminal, public virtual HasWritableValue {};
+
+	class InputTerminal	: public virtual Terminal, public virtual HasConstValueRef {};
+
+
+	template <typename T> class TypedTerminal
+		: public virtual Terminal, public virtual HasTypedValue<T> {};
+
+
+	template <typename T> class TypedOutputTerminal
+		: public virtual TypedTerminal<T>, public virtual OutputTerminal, public virtual HasTypedWritableValue<T> {
+
+		TypedOutputTerminal<T>& operator=(const T &v)
+			{ HasTypedWritableValue<T>::operator=(v); return *this; }
+
+		TypedOutputTerminal<T>& operator=(T &&v) noexcept
+			{ HasTypedWritableValue<T>::operator=(std::move(v)); return *this; }
+
+		TypedOutputTerminal<T>& operator=(std::unique_ptr<T> &&v) noexcept
+			{ HasTypedWritableValue<T>::operator=(std::move(v)); return *this; }
+	};
+
+
+	template <typename T> class TypedInputTerminal
+		: public virtual TypedTerminal<T>, public virtual InputTerminal, public virtual HasTypedConstValueRef<T> {};
+
+
+	virtual const OutputTerminal& getOutput(const Name &outputName) const;
+	virtual OutputTerminal& getOutput(const Name &outputName);
+
+	virtual const InputTerminal& getInput(const Name &outputName) const;
+	virtual InputTerminal& getInput(const Name &outputName);
+
 	virtual std::ostream & printInfo(std::ostream &os) const;
 
-	virtual void process() = 0;
+	virtual void init() {};
+
+	virtual void process() {};
 
 	virtual ~Bric() {}
 };
 
 
 
-class BricImpl: public virtual Bric, public NamedImpl {
+class BricImpl: public virtual Bric, public HasNameImpl {
 public:
-	using NamedImpl::NamedImpl;
+	using HasNameImpl::HasNameImpl;
 };
 
 
 
 class BricWithOutputs: public virtual Bric  {
 protected:
-	std::map<Name, UniqueValue*> m_outputs;
+	std::map<Name, OutputTerminal*> m_outputs;
 
-	void addOutput(const Name &outputName, UniqueValue* value);
+	void addOutput(OutputTerminal *output);
 
 	virtual std::ostream & printOutputInfo(std::ostream &os) const;
 
 public:
-	template <typename T> class OutputValue: public TypedUniqueValue<T> {
+	template <typename T> class Output
+		: public virtual TypedOutputTerminal<T>, public virtual HasNameImpl, public virtual HasTypedUniqueValueImpl<T>
+	{
 	public:
-		OutputValue<T>& operator=(const OutputValue<T>& v) = delete;
+		Output<T>& operator=(const Output<T>& v) = delete;
 
-		OutputValue<T>& operator=(const T &v)
-			{ TypedUniqueValue<T>::operator=(v); return *this; }
+		Output<T>& operator=(const T &v)
+			{ HasTypedUniqueValue<T>::operator=(v); return *this; }
 
-		OutputValue<T>& operator=(T &&v) noexcept
-			{ TypedUniqueValue<T>::operator=(std::move(v)); return *this; }
+		Output<T>& operator=(T &&v) noexcept
+			{ HasTypedUniqueValue<T>::operator=(std::move(v)); return *this; }
 
-		OutputValue<T>& operator=(std::unique_ptr<T> &&v) noexcept
-			{ TypedUniqueValue<T>::operator=(std::move(v)); return *this; }
+		Output<T>& operator=(std::unique_ptr<T> &&v) noexcept
+			{ HasTypedUniqueValue<T>::operator=(std::move(v)); return *this; }
 
 
-		OutputValue(BricWithOutputs *bric, const Name &n) { bric->addOutput(n, this); }
-		OutputValue(const OutputValue &other) = delete;
+		Output(BricWithOutputs *bric, const Name &n): HasNameImpl(n) { bric->addOutput(this); }
+		Output(const Output &other) = delete;
 	};
 
-	const UniqueValue& getOutput(const Name &outputName) const;
-	UniqueValue& getOutput(const Name &outputName);
+	const OutputTerminal& getOutput(const Name &outputName) const;
+	OutputTerminal& getOutput(const Name &outputName);
 
 	virtual std::ostream & printInfo(std::ostream &os) const;
 };
@@ -85,21 +129,25 @@ public:
 
 class BricWithInputs: public virtual Bric  {
 protected:
-	std::map<Name, ConstValueRef*> m_inputs;
+	std::map<Name, InputTerminal*> m_inputs;
 
-	void addInput(const Name &inputName, ConstValueRef* value);
+	void addInput(InputTerminal *input);
 
 	virtual std::ostream & printInputInfo(std::ostream &os) const;
 
 public:
-	template <typename T> class InputValue: public TypedConstValueRef<T> {
+	template <typename T> class Input
+		: public virtual TypedInputTerminal<T>, public virtual HasNameImpl, public virtual HasTypedConstValueRefImpl<T>
+	{
 	public:
-		InputValue(BricWithInputs *bric, const Name &n) { bric->addInput(n, this); }
-		InputValue(const InputValue &other) = delete;
+		void connectTo(const OutputTerminal &output) { this->value().referTo(output.value()); }
+
+		Input(BricWithInputs *bric, const Name &n): HasNameImpl(n) { bric->addInput(this); }
+		Input(const Input &other) = delete;
 	};
 
-	const ConstValueRef& getInput(const Name &inputName) const;
-	ConstValueRef& getInput(const Name &inputName);
+	const InputTerminal& getInput(const Name &inputName) const;
+	InputTerminal& getInput(const Name &inputName);
 
 	virtual std::ostream & printInfo(std::ostream &os) const;
 };

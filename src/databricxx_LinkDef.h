@@ -5,6 +5,10 @@
 
 // Bric.h
 #pragma link C++ class dbrx::Bric-;
+#pragma link C++ class dbrx::Bric::Terminal-;
+#pragma link C++ class dbrx::Bric::OutputTerminal-;
+#pragma link C++ class dbrx::Bric::InputTerminal-;
+#pragma link C++ class dbrx::BricImpl-;
 #pragma link C++ class dbrx::BricWithOutputs-;
 #pragma link C++ class dbrx::BricWithInputs-;
 #pragma link C++ class dbrx::BricWithInOut-;
@@ -19,8 +23,8 @@
 
 // Name.h
 #pragma link C++ class dbrx::Name-;
-#pragma link C++ class dbrx::Named-;
-#pragma link C++ class dbrx::NamedImpl-;
+#pragma link C++ class dbrx::HasName-;
+#pragma link C++ class dbrx::HasNameImpl-;
 
 // Prop.h
 #pragma link C++ class dbrx::Prop-;

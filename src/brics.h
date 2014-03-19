@@ -26,7 +26,7 @@ namespace dbrx {
 
 template<typename T> class SimpleInput: public InputBric {
 public:
-	OutputValue<T> value{this, "value"};
+	Output<T> value{this, "value"};
 
 	void process() {}
 
@@ -38,10 +38,10 @@ public:
 
 template<typename A, typename B, typename C> class Add: public MapperBric {
 public:
-	InputValue<A> a{this, "a"};
-	InputValue<B> b{this, "b"};
+	Input<A> a{this, "a"};
+	Input<B> b{this, "b"};
 
-	OutputValue<C> result{this, "result"};
+	Output<C> result{this, "result"};
 
 	void process() {
 		result = a + b;
@@ -54,10 +54,10 @@ public:
 
 template<typename A, typename B, typename C> class Mult: public MapperBric {
 public:
-	InputValue<A> a{this, "a"};
-	InputValue<B> b{this, "b"};
+	Input<A> a{this, "a"};
+	Input<B> b{this, "b"};
 
-	OutputValue<C> result{this, "result"};
+	Output<C> result{this, "result"};
 
 	void process() {
 		result = a * b;

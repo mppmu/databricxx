@@ -26,6 +26,26 @@ using namespace std;
 namespace dbrx {
 
 
+const Bric::OutputTerminal& Bric::getOutput(const Name &outputName) const {
+	throw invalid_argument("Bric has no outputs");
+}
+
+
+Bric::OutputTerminal& Bric::getOutput(const Name &outputName) {
+	throw invalid_argument("Bric has no outputs");
+}
+
+
+const Bric::InputTerminal& Bric::getInput(const Name &inputName) const {
+	throw invalid_argument("Bric has no outputs");
+}
+
+
+Bric::InputTerminal& Bric::getInput(const Name &inputName) {
+	throw invalid_argument("Bric has no outputs");
+}
+
+
 std::ostream & Bric::printInfo(std::ostream &os) const {
 	os << "Bric " << name() << ":" << endl;
 	return os;
@@ -33,27 +53,27 @@ std::ostream & Bric::printInfo(std::ostream &os) const {
 
 
 
-void BricWithOutputs::addOutput(const Name &outputName, UniqueValue* value) {
-	m_outputs[outputName] = value;
+void BricWithOutputs::addOutput(OutputTerminal* output) {
+	m_outputs[output->name()] = output;
 }
 
 
 std::ostream & BricWithOutputs::printOutputInfo(std::ostream &os) const {
 	os << "  Outputs: ";
-	for (auto x: m_outputs) os << " " << x.first << "(" << x.second->typeInfo().name() << ")";
+	for (auto x: m_outputs) os << " " << x.second->name() << "(" << x.second->value().typeInfo().name() << ")";
 	os << endl;
 	return os;
 }
 
 
-const UniqueValue& BricWithOutputs::getOutput(const Name &outputName) const {
+const Bric::OutputTerminal& BricWithOutputs::getOutput(const Name &outputName) const {
 	auto r = m_outputs.find(outputName);
 	if (r == m_outputs.end()) throw invalid_argument(TString::Format("No output \"%s\" found in bric \"%s\"", outputName.c_str(), name().c_str()).Data());
 	else return *r->second;
 }
 
 
-UniqueValue& BricWithOutputs::getOutput(const Name &outputName) {
+Bric::OutputTerminal& BricWithOutputs::getOutput(const Name &outputName) {
 	auto r = m_outputs.find(outputName);
 	if (r == m_outputs.end()) throw invalid_argument(TString::Format("No output \"%s\" found in bric \"%s\"", outputName.c_str(), name().c_str()).Data());
 	else return *r->second;
@@ -68,27 +88,27 @@ std::ostream & BricWithOutputs::printInfo(std::ostream &os) const {
 
 
 
-void BricWithInputs::addInput(const Name &inputName, ConstValueRef* value) {
-	m_inputs[inputName] = value;
+void BricWithInputs::addInput(InputTerminal *input) {
+	m_inputs[input->name()] = input;
 }
 
 
 std::ostream & BricWithInputs::printInputInfo(std::ostream &os) const {
 	os << "  Inputs: ";
-	for (auto x: m_inputs) os << " " << x.first << "(" << x.second->typeInfo().name() << ")";
+	for (auto x: m_inputs) os << " " << x.second->name() << "(" << x.second->value().typeInfo().name() << ")";
 	os << endl;
 	return os;
 }
 
 
-const ConstValueRef& BricWithInputs::getInput(const Name &inputName) const {
+const Bric::InputTerminal& BricWithInputs::getInput(const Name &inputName) const {
 	auto r = m_inputs.find(inputName);
 	if (r == m_inputs.end()) throw invalid_argument(TString::Format("No input \"%s\" found in bric \"%s\"", inputName.c_str(), name().c_str()).Data());
 	else return *r->second;
 }
 
 
-ConstValueRef& BricWithInputs::getInput(const Name &inputName) {
+Bric::InputTerminal& BricWithInputs::getInput(const Name &inputName) {
 	auto r = m_inputs.find(inputName);
 	if (r == m_inputs.end()) throw invalid_argument(TString::Format("No input \"%s\" found in bric \"%s\"", inputName.c_str(), name().c_str()).Data());
 	else return *r->second;
