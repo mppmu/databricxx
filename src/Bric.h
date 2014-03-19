@@ -39,6 +39,12 @@ public:
 		Terminal& operator=(Terminal &&v) = delete;
 	};
 
+protected:
+	std::map<Name, Terminal*> m_terminals;
+
+	void addTerminal(Terminal* terminal);
+
+public:
 	class OutputTerminal : public virtual Terminal, public virtual HasWritableValue {};
 
 	class InputTerminal	: public virtual Terminal, public virtual HasConstValueRef {};
@@ -66,11 +72,24 @@ public:
 		: public virtual TypedTerminal<T>, public virtual InputTerminal, public virtual HasTypedConstValueRef<T> {};
 
 
+	virtual const Terminal& getTerminal(const Name &terminalName) const;
+	virtual Terminal& getTerminal(const Name &terminalName);
+
+	virtual const Terminal& getTerminal(const Name &terminalName, const std::type_info& typeInfo) const;
+	virtual Terminal& getTerminal(const Name &terminalName, const std::type_info& typeInfo);
+
 	virtual const OutputTerminal& getOutput(const Name &outputName) const;
 	virtual OutputTerminal& getOutput(const Name &outputName);
 
+	virtual const OutputTerminal& getOutput(const Name &outputName, const std::type_info& typeInfo) const;
+	virtual OutputTerminal& getOutput(const Name &outputName, const std::type_info& typeInfo);
+
 	virtual const InputTerminal& getInput(const Name &outputName) const;
 	virtual InputTerminal& getInput(const Name &outputName);
+
+	virtual const InputTerminal& getInput(const Name &outputName, const std::type_info& typeInfo) const;
+	virtual InputTerminal& getInput(const Name &outputName, const std::type_info& typeInfo);
+
 
 	virtual std::ostream & printInfo(std::ostream &os) const;
 
@@ -94,7 +113,7 @@ class BricWithOutputs: public virtual Bric  {
 protected:
 	std::map<Name, OutputTerminal*> m_outputs;
 
-	void addOutput(OutputTerminal *output);
+	void addOutput(OutputTerminal* output);
 
 	virtual std::ostream & printOutputInfo(std::ostream &os) const;
 
@@ -131,7 +150,7 @@ class BricWithInputs: public virtual Bric  {
 protected:
 	std::map<Name, InputTerminal*> m_inputs;
 
-	void addInput(InputTerminal *input);
+	void addInput(InputTerminal* input);
 
 	virtual std::ostream & printInputInfo(std::ostream &os) const;
 
@@ -140,7 +159,12 @@ public:
 		: public virtual TypedInputTerminal<T>, public virtual HasNameImpl, public virtual HasTypedConstValueRefImpl<T>
 	{
 	public:
-		void connectTo(const OutputTerminal &output) { this->value().referTo(output.value()); }
+		void connectTo(const TypedTerminal<T> &other) { this->value().referTo(other.value()); }
+
+		void connectTo(const Terminal &other) { this->value().referTo(other.value()); }
+
+		void connectTo(const Bric &bric, const Name &terminalName)
+			{ connectTo(bric.getOutput(terminalName, this->typeInfo())); }
 
 		Input(BricWithInputs *bric, const Name &n): HasNameImpl(n) { bric->addInput(this); }
 		Input(const Input &other) = delete;

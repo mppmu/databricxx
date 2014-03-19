@@ -29,6 +29,8 @@ public:
 	virtual const Value& value() const = 0;
 	virtual Value& value() = 0;
 
+	virtual const std::type_info& typeInfo() const { return value().typeInfo(); }
+
 	HasValue& operator=(const HasValue& v) = delete;
 	HasValue& operator=(HasValue &&v) = delete;
 

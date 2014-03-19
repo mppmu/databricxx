@@ -19,6 +19,8 @@
 
 #include <iostream>
 
+#include <TString.h>
+
 
 using namespace std;
 
@@ -26,23 +28,86 @@ using namespace std;
 namespace dbrx {
 
 
-const Bric::OutputTerminal& Bric::getOutput(const Name &outputName) const {
-	throw invalid_argument("Bric has no outputs");
+void Bric::addTerminal(Terminal* terminal) {
+	auto r = m_terminals.find(terminal->name());
+	if (r != m_terminals.end()) throw invalid_argument(TString::Format("Can't add duplicate terminal with name \"%s\" to bric \"%s\"", terminal->name().c_str(), name().c_str()).Data());
+	m_terminals[terminal->name()] = terminal;
 }
 
 
+const Bric::Terminal& Bric::getTerminal(const Name &terminalName) const {
+	auto r = m_terminals.find(terminalName);
+	if (r == m_terminals.end()) throw invalid_argument(TString::Format("No terminal \"%s\" found in bric \"%s\"", terminalName.c_str(), name().c_str()).Data());
+	else return *r->second;
+}
+
+Bric::Terminal& Bric::getTerminal(const Name &terminalName) {
+	auto r = m_terminals.find(terminalName);
+	if (r == m_terminals.end()) throw invalid_argument(TString::Format("No terminal \"%s\" found in bric \"%s\"", terminalName.c_str(), name().c_str()).Data());
+	else return *r->second;
+}
+
+
+const Bric::Terminal& Bric::getTerminal(const Name &terminalName, const std::type_info& typeInfo) const {
+	const Bric::Terminal& terminal = getTerminal(terminalName);
+	if (terminal.value().typeInfo() != typeInfo)
+		throw runtime_error(TString::Format("Type of terminal \"%s\" doesn't match requested type \"%s\"", terminal.name().c_str(), terminal.typeInfo().name()).Data());
+	return terminal;
+}
+
+Bric::Terminal& Bric::getTerminal(const Name &terminalName, const std::type_info& typeInfo) {
+	Bric::Terminal& terminal = getTerminal(terminalName);
+	if (terminal.value().typeInfo() != typeInfo)
+		throw runtime_error(TString::Format("Type of terminal \"%s\" doesn't match requested type \"%s\"", terminal.name().c_str(), terminal.typeInfo().name()).Data());
+	return terminal;
+}
+
+
+const Bric::OutputTerminal& Bric::getOutput(const Name &outputName) const {
+	throw runtime_error("Bric has no outputs");
+}
+
 Bric::OutputTerminal& Bric::getOutput(const Name &outputName) {
-	throw invalid_argument("Bric has no outputs");
+	throw runtime_error("Bric has no outputs");
+}
+
+
+const Bric::OutputTerminal& Bric::getOutput(const Name &outputName, const std::type_info& typeInfo) const {
+	const Bric::OutputTerminal& output = getOutput(outputName);
+	if (output.value().typeInfo() != typeInfo)
+		throw runtime_error(TString::Format("Type of output \"%s\" doesn't match requested type \"%s\"", output.name().c_str(), output.typeInfo().name()).Data());
+	return output;
+}
+
+Bric::OutputTerminal& Bric::getOutput(const Name &outputName, const std::type_info& typeInfo) {
+	Bric::OutputTerminal& output = getOutput(outputName);
+	if (output.value().typeInfo() != typeInfo)
+		throw runtime_error(TString::Format("Type of output \"%s\" doesn't match requested type \"%s\"", output.name().c_str(), output.typeInfo().name()).Data());
+	return output;
 }
 
 
 const Bric::InputTerminal& Bric::getInput(const Name &inputName) const {
-	throw invalid_argument("Bric has no outputs");
+	throw runtime_error("Bric has no outputs");
+}
+
+Bric::InputTerminal& Bric::getInput(const Name &inputName) {
+	throw runtime_error("Bric has no outputs");
 }
 
 
-Bric::InputTerminal& Bric::getInput(const Name &inputName) {
-	throw invalid_argument("Bric has no outputs");
+const Bric::InputTerminal& Bric::getInput(const Name &inputName, const std::type_info& typeInfo) const {
+	const Bric::InputTerminal& input = getInput(inputName);
+	if (input.value().typeInfo() != typeInfo)
+		throw runtime_error(TString::Format("Type of input \"%s\" doesn't match requested type \"%s\"", input.name().c_str(), input.typeInfo().name()).Data());
+	return input;
+}
+
+Bric::InputTerminal& Bric::getInput(const Name &inputName, const std::type_info& typeInfo) {
+	Bric::InputTerminal& input = getInput(inputName);
+	if (input.value().typeInfo() != typeInfo)
+		throw runtime_error(TString::Format("Type of input \"%s\" doesn't match requested type \"%s\"", input.name().c_str(), input.typeInfo().name()).Data());
+	return input;
 }
 
 
@@ -54,6 +119,7 @@ std::ostream & Bric::printInfo(std::ostream &os) const {
 
 
 void BricWithOutputs::addOutput(OutputTerminal* output) {
+	addTerminal(output);
 	m_outputs[output->name()] = output;
 }
 
@@ -88,7 +154,8 @@ std::ostream & BricWithOutputs::printInfo(std::ostream &os) const {
 
 
 
-void BricWithInputs::addInput(InputTerminal *input) {
+void BricWithInputs::addInput(InputTerminal* input) {
+	addTerminal(input);
 	m_inputs[input->name()] = input;
 }
 
