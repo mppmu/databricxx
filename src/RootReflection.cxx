@@ -15,7 +15,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
-#include "Reflection.h"
+#include "RootReflection.h"
 
 #include <stdexcept>
 
@@ -31,7 +31,7 @@ using namespace std;
 namespace dbrx {
 
 
-void* Reflection::newObjectImpl(TClass* objType, TClass* ptrType) {
+void* RootReflection::newObjectImpl(TClass* objType, TClass* ptrType) {
 	if (! isAssignableFrom(ptrType, objType))
 		throw invalid_argument(TString::Format("Target pointer type \"%s\" cannot be assigned from object type \"%s\"", ptrType->GetName(), objType->GetName()).Data());
 
@@ -49,33 +49,33 @@ void* Reflection::newObjectImpl(TClass* objType, TClass* ptrType) {
 }
 
 
-void* Reflection::newObjectImpl(const TString& objType, const TString& ptrType) {
+void* RootReflection::newObjectImpl(const TString& objType, const TString& ptrType) {
 	TClass *objTypeCl = getClass(objType);
 	TClass *ptrTypeCl = getClass(ptrType);
 	return newObjectImpl(objTypeCl, ptrTypeCl);
 }
 
 
-TClass* Reflection::getClass(const TString& className) {
+TClass* RootReflection::getClass(const TString& className) {
 	TClass *cl = TClass::GetClass(className, true, true);
 	if (cl == nullptr) throw runtime_error(TString::Format("Could not resolve class \"%s\"", className.Data()).Data());
 	return cl;
 }
 
 
-TClass* Reflection::getClass(const std::type_info& typeInfo) {
+TClass* RootReflection::getClass(const std::type_info& typeInfo) {
 	TClass *cl = TClass::GetClass(typeInfo, true, true);
 	if (cl == nullptr) throw runtime_error(TString::Format("Could not resolve class for type_info \"%s\"", typeInfo.name()).Data());
 	return cl;
 }
 
 
-EDataType Reflection::getDataType(const std::type_info& typeInfo) {
+EDataType RootReflection::getDataType(const std::type_info& typeInfo) {
 	return TDataType::GetType(typeInfo);
 }
 
 
-char Reflection::getRootTypeSymbol(const std::type_info& typeInfo) {
+char RootReflection::getRootTypeSymbol(const std::type_info& typeInfo) {
 	if      (typeInfo == typeid(Bool_t))    return 'O';
 	else if (typeInfo == typeid(Char_t))    return 'B';
 	else if (typeInfo == typeid(UChar_t))   return 'b';
@@ -92,7 +92,7 @@ char Reflection::getRootTypeSymbol(const std::type_info& typeInfo) {
 }
 
 
-bool Reflection::isAssignableFrom(TClass* a, TClass* b) {
+bool RootReflection::isAssignableFrom(TClass* a, TClass* b) {
 	if (b->InheritsFrom(a)) return true;
 	TList* bases = b->GetListOfBases();
 	TIter next(bases, kIterForward);
@@ -104,7 +104,7 @@ bool Reflection::isAssignableFrom(TClass* a, TClass* b) {
 }
 
 
-bool Reflection::isAssignableFrom(const TString& base, const TString& cl) {
+bool RootReflection::isAssignableFrom(const TString& base, const TString& cl) {
 	TClass *baseCl = getClass(base);
 	TClass *classCl = getClass(cl);
 	return isAssignableFrom(baseCl, classCl);

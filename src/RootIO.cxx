@@ -19,7 +19,7 @@
 
 #include <stdexcept>
 
-#include "Reflection.h"
+#include "RootReflection.h"
 
 
 using namespace std;
@@ -36,12 +36,12 @@ void RootIO::inputValueFrom(PrimaryValue& value, TTree *tree, const TString& bra
 	if (tree->GetBranch(bName)) {
 		tree->SetBranchStatus(bName, true);
 
-		EDataType dataType = Reflection::getDataType(value.typeInfo());
+		EDataType dataType = RootReflection::getDataType(value.typeInfo());
 		Int_t result = -1;
 		if (dataType == kNoType_t) { // Unknown type
 			throw invalid_argument("Cannot set branch address for kNoType_t");
 		} else if (dataType == EDataType::kOther_t) { // Object type
-			TClass *cl = Reflection::getClass(value.typeInfo());
+			TClass *cl = RootReflection::getClass(value.typeInfo());
 			result = tree->SetBranchAddress(branchName, value.untypedPPtr(), nullptr, cl, dataType, true);
 		} else { // Primitive type
 			if (value.empty()) value.setToDefault();
@@ -58,16 +58,16 @@ void RootIO::inputValueFrom(PrimaryValue& value, TTree *tree, const TString& bra
 void RootIO::outputValueTo(Value& value, TTree *tree, const TString& branchName, Int_t bufsize, Int_t splitlevel) {
 	if (! value.valid()) throw invalid_argument("Cannot output invalid value object to branch");
 	const char* bName = branchName.Data();
-	EDataType dataType = Reflection::getDataType(value.typeInfo());
+	EDataType dataType = RootReflection::getDataType(value.typeInfo());
 
 	TBranch* branch = nullptr;
 	if (dataType == kNoType_t) { // Unknown type
 		throw invalid_argument("Cannot create branch for kNoType_t");
 	} else if (dataType == EDataType::kOther_t) { // Object type
-		TClass *cl = Reflection::getClass(value.typeInfo());
+		TClass *cl = RootReflection::getClass(value.typeInfo());
 		branch = tree->Branch(bName, cl->GetName(), const_cast<void**>(value.untypedPPtr()), bufsize, splitlevel);
 	} else { // Primitive type
-		char typeSymbol = Reflection::getRootTypeSymbol(value.typeInfo());
+		char typeSymbol = RootReflection::getRootTypeSymbol(value.typeInfo());
 		if (value.empty()) throw invalid_argument("Cannot output empty value object of primitive type to branch");
 		TString formatString = TString::Format("%s/%c", bName, typeSymbol);
 		branch = tree->Branch(bName, const_cast<void*>(value.untypedPtr()), formatString.Data(), bufsize);

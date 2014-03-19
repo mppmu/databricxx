@@ -29,11 +29,11 @@
 // Prop.h
 #pragma link C++ class dbrx::Prop-;
 
-// Reflection.h
-#pragma link C++ class dbrx::Reflection-;
-
 // RootIO.h
 #pragma link C++ class dbrx::RootIO-;
+
+// RootReflection.h
+#pragma link C++ class dbrx::RootReflection-;
 
 // Value.h, HasValue.h
 #pragma link C++ class dbrx::Value-;

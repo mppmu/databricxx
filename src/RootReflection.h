@@ -15,8 +15,8 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
-#ifndef DBRX_REFLECTION_H
-#define DBRX_REFLECTION_H
+#ifndef DBRX_ROOTREFLECTION_H
+#define DBRX_ROOTREFLECTION_H
 
 #include <memory>
 #include <typeindex>
@@ -31,7 +31,7 @@ namespace dbrx {
 
 /// @brief Class for static reflection methods.
 
-class Reflection {
+class RootReflection {
 protected:
 	static void* newObjectImpl(TClass* objType, TClass* ptrType);
 
@@ -56,14 +56,14 @@ public:
 };
 
 
-template<typename T> std::unique_ptr<T> Reflection::newObject(TClass *objectType, TClass *ptrType)
+template<typename T> std::unique_ptr<T> RootReflection::newObject(TClass *objectType, TClass *ptrType)
 	{ return std::move(std::unique_ptr<T>( static_cast<T*>(newObjectImpl(objectType, ptrType)) )); }
 
 
-template<typename T> std::unique_ptr<T> Reflection::newObject(const TString& objectType, const TString& ptrType)
+template<typename T> std::unique_ptr<T> RootReflection::newObject(const TString& objectType, const TString& ptrType)
 	{ return std::move(std::unique_ptr<T>( static_cast<T*>(newObjectImpl(objectType, ptrType)) )); }
 
 
 } // namespace dbrx
 
-#endif // DBRX_REFLECTION_H
+#endif // DBRX_ROOTREFLECTION_H
