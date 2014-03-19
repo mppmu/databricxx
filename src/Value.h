@@ -43,6 +43,9 @@ public:
 
 	template<typename T> const T* typedPtr() const { return *typedPPtr<T>(); }
 
+	Value& operator=(const Value& v) = delete;
+	Value& operator=(Value &&v) = delete;
+
 	Value() {}
 	Value(const Value &v) {}
 	Value(Value &&v) {}
