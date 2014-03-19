@@ -100,19 +100,19 @@ protected:
 
 public:
 	template <typename T> class Output
-		: public virtual TypedOutputTerminal<T>, public virtual HasNameImpl, public virtual HasTypedUniqueValueImpl<T>
+		: public virtual TypedOutputTerminal<T>, public virtual HasNameImpl, public virtual HasTypedPrimaryValueImpl<T>
 	{
 	public:
 		Output<T>& operator=(const Output<T>& v) = delete;
 
 		Output<T>& operator=(const T &v)
-			{ HasTypedUniqueValue<T>::operator=(v); return *this; }
+			{ HasTypedPrimaryValue<T>::operator=(v); return *this; }
 
 		Output<T>& operator=(T &&v) noexcept
-			{ HasTypedUniqueValue<T>::operator=(std::move(v)); return *this; }
+			{ HasTypedPrimaryValue<T>::operator=(std::move(v)); return *this; }
 
 		Output<T>& operator=(std::unique_ptr<T> &&v) noexcept
-			{ HasTypedUniqueValue<T>::operator=(std::move(v)); return *this; }
+			{ HasTypedPrimaryValue<T>::operator=(std::move(v)); return *this; }
 
 
 		Output(BricWithOutputs *bric, const Name &n): HasNameImpl(n) { bric->addOutput(this); }

@@ -49,10 +49,10 @@ public:
 
 
 
-class HasUniqueValue: public virtual HasWritableValue {
+class HasPrimaryValue: public virtual HasWritableValue {
 public:
-	virtual const UniqueValue& value() const = 0;
-	virtual UniqueValue& value() = 0;
+	virtual const PrimaryValue& value() const = 0;
+	virtual PrimaryValue& value() = 0;
 };
 
 
@@ -107,30 +107,30 @@ public:
 
 
 
-template <typename T> class HasTypedUniqueValue
-	: public virtual HasUniqueValue, public virtual HasTypedWritableValue<T>
+template <typename T> class HasTypedPrimaryValue
+	: public virtual HasPrimaryValue, public virtual HasTypedWritableValue<T>
 {
 public:
-	virtual const TypedUniqueValue<T>& value() const = 0;
-	virtual TypedUniqueValue<T>& value() = 0;
+	virtual const TypedPrimaryValue<T>& value() const = 0;
+	virtual TypedPrimaryValue<T>& value() = 0;
 
-	HasTypedUniqueValue<T>& operator=(const T &v)
+	HasTypedPrimaryValue<T>& operator=(const T &v)
 		{ HasTypedWritableValue<T>::operator=(v); return *this; }
 
-	HasTypedUniqueValue<T>& operator=(T &&v) noexcept
+	HasTypedPrimaryValue<T>& operator=(T &&v) noexcept
 		{ HasTypedWritableValue<T>::operator=(std::move(v)); return *this; }
 
-	HasTypedUniqueValue<T>& operator=(std::unique_ptr<T> &&v) noexcept
+	HasTypedPrimaryValue<T>& operator=(std::unique_ptr<T> &&v) noexcept
 		{ HasTypedWritableValue<T>::operator=(std::move(v)); return *this; }
 };
 
 
-template <typename T> class HasTypedUniqueValueImpl: public virtual HasTypedUniqueValue<T> {
+template <typename T> class HasTypedPrimaryValueImpl: public virtual HasTypedPrimaryValue<T> {
 protected:
-	TypedUniqueValue<T> m_value;
+	TypedPrimaryValue<T> m_value;
 public:
-	const TypedUniqueValue<T>& value() const { return m_value; }
-	TypedUniqueValue<T>& value() { return m_value; }
+	const TypedPrimaryValue<T>& value() const { return m_value; }
+	TypedPrimaryValue<T>& value() { return m_value; }
 };
 
 

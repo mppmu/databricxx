@@ -74,7 +74,7 @@ public:
 
 
 
-class UniqueValue: public virtual WritableValue {
+class PrimaryValue: public virtual WritableValue {
 public:
 	bool valid() { return true; }
 };
@@ -151,7 +151,7 @@ template <typename T> class TypedValueRef;
 
 
 
-template <typename T> class TypedUniqueValue: public virtual UniqueValue, public virtual TypedWritableValue<T> {
+template <typename T> class TypedPrimaryValue: public virtual PrimaryValue, public virtual TypedWritableValue<T> {
 protected:
 	T* m_value = nullptr;
 
@@ -178,31 +178,31 @@ public:
 	const T* ptr() const { return m_value; }
 	T* ptr() { return m_value; }
 
-	TypedUniqueValue<T>& operator=(const T &v)
+	TypedPrimaryValue<T>& operator=(const T &v)
 		{ TypedWritableValue<T>::operator=(v); return *this; }
 
-	TypedUniqueValue<T>& operator=(T &&v) noexcept
+	TypedPrimaryValue<T>& operator=(T &&v) noexcept
 		{ TypedWritableValue<T>::operator=(std::move(v)); return *this; }
 
-	TypedUniqueValue<T>& operator=(std::unique_ptr<T> &&v) noexcept
+	TypedPrimaryValue<T>& operator=(std::unique_ptr<T> &&v) noexcept
 		{ TypedWritableValue<T>::operator=(std::move(v)); return *this; }
 
-	TypedUniqueValue<T>& operator=(const TypedUniqueValue<T>& v) = delete;
-	TypedUniqueValue<T>& operator=(TypedUniqueValue<T> &&v) = delete;
+	TypedPrimaryValue<T>& operator=(const TypedPrimaryValue<T>& v) = delete;
+	TypedPrimaryValue<T>& operator=(TypedPrimaryValue<T> &&v) = delete;
 
-	TypedUniqueValue() = default;
+	TypedPrimaryValue() = default;
 
-	TypedUniqueValue(const TypedUniqueValue<T> &other) { *this = other.get(); }
+	TypedPrimaryValue(const TypedPrimaryValue<T> &other) { *this = other.get(); }
 
-	TypedUniqueValue(TypedUniqueValue<T> &&other) { std::swap(m_value, other.m_value); }
+	TypedPrimaryValue(TypedPrimaryValue<T> &&other) { std::swap(m_value, other.m_value); }
 
-	TypedUniqueValue(const T &v) { *this = v; }
+	TypedPrimaryValue(const T &v) { *this = v; }
 
-	TypedUniqueValue(T &&v) { *this = std::move(v); }
+	TypedPrimaryValue(T &&v) { *this = std::move(v); }
 
-	TypedUniqueValue(std::unique_ptr<T> &&v) = delete;
+	TypedPrimaryValue(std::unique_ptr<T> &&v) = delete;
 
-	~TypedUniqueValue() { if (m_value != nullptr) delete m_value; }
+	~TypedPrimaryValue() { if (m_value != nullptr) delete m_value; }
 };
 
 

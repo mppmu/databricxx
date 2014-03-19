@@ -28,7 +28,7 @@ using namespace std;
 namespace dbrx {
 
 
-void RootIO::inputValueFrom(UniqueValue& value, TTree *tree, const TString& branchName) {
+void RootIO::inputValueFrom(PrimaryValue& value, TTree *tree, const TString& branchName) {
 	const char* bName = branchName.Data();
 
 	// Result of SetBranchAddress is not a reliable check for existence of the
