@@ -33,6 +33,10 @@
 
 // Value.h
 #pragma link C++ class dbrx::Value-;
+#pragma link C++ class dbrx::WritableValue-;
+#pragma link C++ class dbrx::UniqueValue-;
+#pragma link C++ class dbrx::ValueRef-;
+#pragma link C++ class dbrx::ConstValueRef-;
 
 // brics.h
 
