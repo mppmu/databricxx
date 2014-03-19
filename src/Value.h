@@ -47,8 +47,8 @@ public:
 	Value& operator=(Value &&v) = delete;
 
 	Value() {}
-	Value(const Value &v) {}
-	Value(Value &&v) {}
+	Value(const Value &v) = delete;
+	Value(Value &&v) = delete;
 
 	virtual ~Value() {}
 };
@@ -192,13 +192,15 @@ public:
 
 	TypedUniqueValue() = default;
 
-	TypedUniqueValue(const TypedUniqueValue &other) = delete;
+	TypedUniqueValue(const TypedUniqueValue<T> &other) { *this = other.get(); }
+
+	TypedUniqueValue(TypedUniqueValue<T> &&other) { std::swap(m_value, other.m_value); }
 
 	TypedUniqueValue(const T &v) { *this = v; }
 
 	TypedUniqueValue(T &&v) { *this = std::move(v); }
 
-	TypedUniqueValue(std::unique_ptr<T> &&v) { *this = std::move(v); }
+	TypedUniqueValue(std::unique_ptr<T> &&v) = delete;
 
 	~TypedUniqueValue() { if (m_value != nullptr) delete m_value; }
 };
@@ -250,9 +252,11 @@ public:
 
 	TypedValueRef() = default;
 
-	TypedValueRef(const TypedValueRef<T> &other) = default;
+	TypedValueRef(TypedValueRef<T> &other) : m_value(other.pptr()) {}
 
-	TypedValueRef(TypedUniqueValue<T> &v) : m_value(v.pptr()) {}
+	TypedValueRef(TypedPrimaryValue<T> &&other) { std::swap(m_value, other.m_value); }
+
+	TypedValueRef(TypedWritableValue<T> &v) : m_value(v.pptr()) {}
 
 	TypedValueRef(WritableValue &source) { referTo(source); }
 };
@@ -288,11 +292,11 @@ public:
 
 	TypedConstValueRef() = default;
 
-	TypedConstValueRef(const TypedConstValueRef<T> &other) = default;
+	TypedConstValueRef(const TypedConstValueRef<T> &other) : m_value(other.pptr()) {}
 
-	TypedConstValueRef(const TypedUniqueValue<T> &v) : m_value(v.pptr()) {}
+	TypedConstValueRef(TypedPrimaryValue<T> &&other) { std::swap(m_value, other.m_value); }
 
-	TypedConstValueRef(const TypedValueRef<T> &other) : m_value(other.pptr()) {}
+	TypedConstValueRef(const TypedValue<T> &other) : m_value(other.pptr()) {}
 
 	TypedConstValueRef(const Value &source) { referTo(source); }	
 };
