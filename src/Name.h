@@ -33,10 +33,10 @@ protected:
 	std::string m_value;
 
 public:
-	operator const std::string& () const { return m_value; }
 	const std::string& str() const { return m_value; }
 	const char* c_str() const { return m_value.c_str(); }
 
+	operator const std::string& () const { return m_value; }
 	operator TString () const { return m_value; }
 	operator const char* () const { return m_value.c_str(); }
 
@@ -44,18 +44,21 @@ public:
 	Name(const TString &s) : m_value(s) { }
 	Name(const char *s) : m_value(s) { }
 
+	bool operator==(const Name &other) const { return m_value == other.m_value; }
+	bool operator<(const Name &other) const { return m_value < other.m_value; }
+
 	Name& operator=(const Name &other) = default;
 	Name& operator=(Name &&other) noexcept { m_value = std::move(other.m_value); return *this; }
 
 	Name(const Name &other) = default;
 	Name(Name &&other) noexcept = default;
-	Name() = default; // Why is this necessary for classes derived from Name like Input?
+	Name() = default;
 
 	// virtual ~Name() {}
 };
 
 
-template<typename T> std::ostream & operator<<(std::ostream &os, const Name &n) {
+inline std::ostream & operator<<(std::ostream &os, const Name &n) {
 	return os << n.str();
 }
 
