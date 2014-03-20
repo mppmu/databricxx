@@ -28,6 +28,11 @@ using namespace std;
 namespace dbrx {
 
 
+const Name Bric::s_defaultInputName("input");
+
+const Name Bric::s_defaultOutputName("output");
+
+
 void Bric::addTerminal(Terminal* terminal) {
 	auto r = m_terminals.find(terminal->name());
 	if (r != m_terminals.end()) throw invalid_argument(TString::Format("Can't add duplicate terminal with name \"%s\" to bric \"%s\"", terminal->name().c_str(), name().c_str()).Data());

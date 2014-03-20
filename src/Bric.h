@@ -40,6 +40,9 @@ public:
 	};
 
 protected:
+	static const Name s_defaultInputName;
+	static const Name s_defaultOutputName;
+
 	std::map<Name, Terminal*> m_terminals;
 
 	void addTerminal(Terminal* terminal);
@@ -47,7 +50,14 @@ protected:
 public:
 	class OutputTerminal : public virtual Terminal, public virtual HasWritableValue {};
 
-	class InputTerminal	: public virtual Terminal, public virtual HasConstValueRef {};
+	class InputTerminal	: public virtual Terminal, public virtual HasConstValueRef {
+	public:
+		virtual void connectTo(const Terminal &other) = 0;
+
+		virtual void connectTo(const Bric &bric, const Name &terminalName) = 0;
+
+		virtual void connectTo(const Bric &bric) = 0;
+	};
 
 
 	template <typename T> class TypedTerminal
@@ -135,6 +145,7 @@ public:
 
 
 		Output(BricWithOutputs *bric, const Name &n): HasNameImpl(n) { bric->addOutput(this); }
+		Output(BricWithOutputs *bric): HasNameImpl(s_defaultOutputName) { bric->addOutput(this); }
 		Output(const Output &other) = delete;
 	};
 
@@ -159,14 +170,18 @@ public:
 		: public virtual TypedInputTerminal<T>, public virtual HasNameImpl, public virtual HasTypedConstValueRefImpl<T>
 	{
 	public:
-		void connectTo(const TypedTerminal<T> &other) { this->value().referTo(other.value()); }
+		//void connectTo(const TypedTerminal<T> &other) { this->value().referTo(other.value()); }
 
 		void connectTo(const Terminal &other) { this->value().referTo(other.value()); }
 
 		void connectTo(const Bric &bric, const Name &terminalName)
 			{ connectTo(bric.getOutput(terminalName, this->typeInfo())); }
 
+		void connectTo(const Bric &bric)
+			{ connectTo(bric.getOutput(s_defaultOutputName, this->typeInfo())); }
+
 		Input(BricWithInputs *bric, const Name &n): HasNameImpl(n) { bric->addInput(this); }
+		Input(BricWithInputs *bric): HasNameImpl(s_defaultInputName) { bric->addInput(this); }
 		Input(const Input &other) = delete;
 	};
 

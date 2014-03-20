@@ -26,12 +26,12 @@ namespace dbrx {
 
 template<typename T> class SimpleInput: public InputBric {
 public:
-	Output<T> value{this, "value"};
+	Output<T> output{this};
 
 	void process() {}
 
-	SimpleInput(const Name &n): InputBric(n) { value = T(); }
-	SimpleInput(const Name &n, T v): InputBric(n) { value = std::move(v); }
+	SimpleInput(const Name &n): InputBric(n) { output = T(); }
+	SimpleInput(const Name &n, T v): InputBric(n) { output = std::move(v); }
 };
 
 
