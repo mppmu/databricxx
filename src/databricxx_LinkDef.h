@@ -12,10 +12,10 @@
 #pragma link C++ class dbrx::BricWithOutputs-;
 #pragma link C++ class dbrx::BricWithInputs-;
 #pragma link C++ class dbrx::BricWithInOut-;
-#pragma link C++ class dbrx::InputBric-;
-#pragma link C++ class dbrx::OutputBric-;
-#pragma link C++ class dbrx::FilterBric-;
+#pragma link C++ class dbrx::ImportBric-;
+#pragma link C++ class dbrx::ExportBric-;
 #pragma link C++ class dbrx::MapperBric-;
+#pragma link C++ class dbrx::TransformBric-;
 #pragma link C++ class dbrx::ReducerBric-;
 
 // DbrxTools.h

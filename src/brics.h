@@ -24,19 +24,23 @@
 namespace dbrx {
 
 
-template<typename T> class SimpleInput: public InputBric {
+template<typename T> class SimpleInput: public ImportBric {
 public:
 	Output<T> output{this};
 
 	void process() {}
 
-	SimpleInput(const Name &n): InputBric(n) { output = T(); }
-	SimpleInput(const Name &n, T v): InputBric(n) { output = std::move(v); }
+	SimpleInput(const Name &n): ImportBric(n) { output = T(); }
+
+	SimpleInput(const Name &n, T v): ImportBric(n) { output = std::move(v); }
+
+	SimpleInput(Bric *parentBric, const Name &n, T v)
+		: ImportBric(parentBric, n) { output = std::move(v); }
 };
 
 
 
-template<typename A, typename B, typename C> class Add: public MapperBric {
+template<typename A, typename B, typename C> class Add: public TransformBric {
 public:
 	Input<A> a{this, "a"};
 	Input<B> b{this, "b"};
@@ -47,12 +51,12 @@ public:
 		result = a + b;
 	}
 
-	using MapperBric::MapperBric;
+	using TransformBric::TransformBric;
 };
 
 
 
-template<typename A, typename B, typename C> class Mult: public MapperBric {
+template<typename A, typename B, typename C> class Mult: public TransformBric {
 public:
 	Input<A> a{this, "a"};
 	Input<B> b{this, "b"};
@@ -63,7 +67,7 @@ public:
 		result = a * b;
 	}
 
-	using MapperBric::MapperBric;
+	using TransformBric::TransformBric;
 };
 
 

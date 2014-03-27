@@ -35,6 +35,7 @@ public:
 	class Terminal
 		: public virtual HasName, public virtual HasValue
 	{
+	public:
 		Terminal& operator=(const Terminal& v) = delete;
 		Terminal& operator=(Terminal &&v) = delete;
 	};
@@ -42,6 +43,8 @@ public:
 protected:
 	static const Name s_defaultInputName;
 	static const Name s_defaultOutputName;
+
+	Bric *m_parent = nullptr;
 
 	std::map<Name, Terminal*> m_terminals;
 
@@ -81,6 +84,12 @@ public:
 	template <typename T> class TypedInputTerminal
 		: public virtual TypedTerminal<T>, public virtual InputTerminal, public virtual HasTypedConstValueRef<T> {};
 
+	bool hasParent() const { return m_parent != nullptr; }
+
+	const Bric& parent() const { return *m_parent; }
+	Bric& parent() { return *m_parent; }
+
+	void parent(Bric *parentBric) { m_parent = parentBric; }
 
 	virtual const Terminal& getTerminal(const Name &terminalName) const;
 	virtual Terminal& getTerminal(const Name &terminalName);
@@ -105,8 +114,6 @@ public:
 
 	virtual void init() {};
 
-	virtual void process() {};
-
 	virtual ~Bric() {}
 };
 
@@ -114,7 +121,12 @@ public:
 
 class BricImpl: public virtual Bric, public HasNameImpl {
 public:
-	using HasNameImpl::HasNameImpl;
+	BricImpl() {}
+
+	BricImpl(const Name &n) : HasNameImpl(n) {}
+
+	BricImpl(Bric *parentBric, const Name &n)
+		: BricImpl(n) { m_parent = parentBric; }
 };
 
 
@@ -200,36 +212,58 @@ public:
 
 
 
-class InputBric: public BricWithOutputs, public BricImpl  {
+class ImportBric: public virtual BricWithOutputs, public virtual BricImpl  {
 public:
 	using BricImpl::BricImpl;
 };
 
 
 
-class OutputBric: public BricWithInputs, public BricImpl {
+class ExportBric: public virtual BricWithInputs, public virtual BricImpl {
 public:
 	using BricImpl::BricImpl;
 };
 
 
 
-class FilterBric: public BricWithInOut, public BricImpl {
+class MapperBric: public virtual BricWithInOut, public virtual BricImpl {
 public:
+	virtual void nextInput() = 0;
+	virtual bool nextOutput() = 0;
+
 	using BricImpl::BricImpl;
 };
 
 
 
-class MapperBric: public BricWithInOut, public BricImpl {
+class TransformBric: public MapperBric {
+private:
+	bool m_processed = false;
+
 public:
-	using BricImpl::BricImpl;
+	void nextInput()
+		{ m_processed = false; }
+
+	bool nextOutput() {
+		if (! m_processed) {
+			process();
+			m_processed = true;
+			return true;
+		} else return false;
+	}
+
+	virtual void process() = 0;
+
+	using MapperBric::MapperBric;
 };
 
 
 
-class ReducerBric: public BricWithInOut, public BricImpl {
+class ReducerBric: public virtual BricWithInOut, public virtual BricImpl {
 public:
+	virtual void resetOutput() = 0;
+	virtual void nextInput() = 0;
+
 	using BricImpl::BricImpl;
 };
 
