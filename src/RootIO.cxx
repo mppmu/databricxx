@@ -28,6 +28,23 @@ using namespace std;
 namespace dbrx {
 
 
+char RootIO::getTypeSymbol(const std::type_info& typeInfo) {
+	if      (typeInfo == typeid(Bool_t))    return 'O';
+	else if (typeInfo == typeid(Char_t))    return 'B';
+	else if (typeInfo == typeid(UChar_t))   return 'b';
+	else if (typeInfo == typeid(Short_t))   return 'S';
+	else if (typeInfo == typeid(UShort_t))  return 's';
+	else if (typeInfo == typeid(Int_t))     return 'I';
+	else if (typeInfo == typeid(UInt_t))    return 'i';
+	else if (typeInfo == typeid(Long64_t))  return 'L';
+	else if (typeInfo == typeid(ULong64_t)) return 'l';
+	else if (typeInfo == typeid(Double_t))  return 'D';
+	else if (typeInfo == typeid(Float_t))   return 'F';
+	else if (typeInfo == typeid(char*))     return 'C';
+	else throw invalid_argument(TString::Format("No ROOT type symbol equivalent for type_info \"%s\"", typeInfo.name()).Data());
+}
+
+
 void RootIO::inputValueFrom(PrimaryValue& value, TTree *tree, const TString& branchName) {
 	const char* bName = branchName.Data();
 
@@ -67,7 +84,7 @@ void RootIO::outputValueTo(Value& value, TTree *tree, const TString& branchName,
 		TClass *cl = RootReflection::getClass(value.typeInfo());
 		branch = tree->Branch(bName, cl->GetName(), const_cast<void**>(value.untypedPPtr()), bufsize, splitlevel);
 	} else { // Primitive type
-		char typeSymbol = RootReflection::getRootTypeSymbol(value.typeInfo());
+		char typeSymbol = getTypeSymbol(value.typeInfo());
 		if (value.empty()) throw invalid_argument("Cannot output empty value object of primitive type to branch");
 		TString formatString = TString::Format("%s/%c", bName, typeSymbol);
 		branch = tree->Branch(bName, const_cast<void*>(value.untypedPtr()), formatString.Data(), bufsize);

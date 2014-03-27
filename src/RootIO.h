@@ -30,6 +30,7 @@ namespace dbrx {
 
 class RootIO {
 public:
+	static char getTypeSymbol(const std::type_info& typeInfo);
 
 	// Note: Do *not* change content address for a value of primitive type
 	// while connected to an input branch!
