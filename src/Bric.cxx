@@ -74,81 +74,43 @@ Bric::Terminal& Bric::getTerminal(const Name &terminalName, const std::type_info
 }
 
 
-const Bric::OutputTerminal& Bric::getOutput(const Name &outputName) const {
-	throw runtime_error("Bric has no outputs");
-}
+const Bric::OutputTerminal& Bric::getOutput(const Name &outputName) const
+	{ return dynamic_cast<const Bric::OutputTerminal&>(getTerminal(outputName)); }
 
-Bric::OutputTerminal& Bric::getOutput(const Name &outputName) {
-	throw runtime_error("Bric has no outputs");
-}
+Bric::OutputTerminal& Bric::getOutput(const Name &outputName)
+	{ return dynamic_cast<Bric::OutputTerminal&>(getTerminal(outputName)); }
 
+const Bric::OutputTerminal& Bric::getOutput(const Name &outputName, const std::type_info& typeInfo) const
+	{ return dynamic_cast<const Bric::OutputTerminal&>(getTerminal(outputName, typeInfo)); }
 
-const Bric::OutputTerminal& Bric::getOutput(const Name &outputName, const std::type_info& typeInfo) const {
-	const Bric::OutputTerminal& output = getOutput(outputName);
-	if (output.value().typeInfo() != typeInfo)
-		throw runtime_error(TString::Format("Type of output \"%s\" doesn't match requested type \"%s\"", output.name().c_str(), output.typeInfo().name()).Data());
-	return output;
-}
-
-Bric::OutputTerminal& Bric::getOutput(const Name &outputName, const std::type_info& typeInfo) {
-	Bric::OutputTerminal& output = getOutput(outputName);
-	if (output.value().typeInfo() != typeInfo)
-		throw runtime_error(TString::Format("Type of output \"%s\" doesn't match requested type \"%s\"", output.name().c_str(), output.typeInfo().name()).Data());
-	return output;
-}
+Bric::OutputTerminal& Bric::getOutput(const Name &outputName, const std::type_info& typeInfo)
+	{ return dynamic_cast<Bric::OutputTerminal&>(getTerminal(outputName, typeInfo)); }
 
 
-const Bric::InputTerminal& Bric::getInput(const Name &inputName) const {
-	throw runtime_error("Bric has no outputs");
-}
+const Bric::InputTerminal& Bric::getInput(const Name &inputName) const
+	{ return dynamic_cast<const Bric::InputTerminal&>(getTerminal(inputName)); }
 
-Bric::InputTerminal& Bric::getInput(const Name &inputName) {
-	throw runtime_error("Bric has no outputs");
-}
+Bric::InputTerminal& Bric::getInput(const Name &inputName)
+	{ return dynamic_cast<Bric::InputTerminal&>(getTerminal(inputName)); }
 
+const Bric::InputTerminal& Bric::getInput(const Name &inputName, const std::type_info& typeInfo) const
+	{ return dynamic_cast<const Bric::InputTerminal&>(getTerminal(inputName, typeInfo)); }
 
-const Bric::InputTerminal& Bric::getInput(const Name &inputName, const std::type_info& typeInfo) const {
-	const Bric::InputTerminal& input = getInput(inputName);
-	if (input.value().typeInfo() != typeInfo)
-		throw runtime_error(TString::Format("Type of input \"%s\" doesn't match requested type \"%s\"", input.name().c_str(), input.typeInfo().name()).Data());
-	return input;
-}
-
-Bric::InputTerminal& Bric::getInput(const Name &inputName, const std::type_info& typeInfo) {
-	Bric::InputTerminal& input = getInput(inputName);
-	if (input.value().typeInfo() != typeInfo)
-		throw runtime_error(TString::Format("Type of input \"%s\" doesn't match requested type \"%s\"", input.name().c_str(), input.typeInfo().name()).Data());
-	return input;
-}
+Bric::InputTerminal& Bric::getInput(const Name &inputName, const std::type_info& typeInfo)
+	{ return dynamic_cast<Bric::InputTerminal&>(getTerminal(inputName, typeInfo)); }
 
 
-const Bric::ParamTerminal& Bric::getParam(const Name &paramName) const {
-	auto r = m_params.find(paramName);
-	if (r == m_params.end()) throw invalid_argument(TString::Format("No param \"%s\" found in bric \"%s\"", paramName.c_str(), name().c_str()).Data());
-	else return *r->second;
-}
+const Bric::ParamTerminal& Bric::getParam(const Name &paramName) const
+	{ return dynamic_cast<const Bric::ParamTerminal&>(getTerminal(paramName)); }
 
+Bric::ParamTerminal& Bric::getParam(const Name &paramName)
+	{ return dynamic_cast<Bric::ParamTerminal&>(getTerminal(paramName)); }
 
-Bric::ParamTerminal& Bric::getParam(const Name &paramName) {
-	auto r = m_params.find(paramName);
-	if (r == m_params.end()) throw invalid_argument(TString::Format("No param \"%s\" found in bric \"%s\"", paramName.c_str(), name().c_str()).Data());
-	else return *r->second;
-}
+const Bric::ParamTerminal& Bric::getParam(const Name &paramName, const std::type_info& typeInfo) const
+	{ return dynamic_cast<const Bric::ParamTerminal&>(getTerminal(paramName, typeInfo)); }
 
-
-const Bric::ParamTerminal& Bric::getParam(const Name &paramName, const std::type_info& typeInfo) const {
-	const Bric::ParamTerminal& param = getParam(paramName);
-	if (param.value().typeInfo() != typeInfo)
-		throw runtime_error(TString::Format("Type of param \"%s\" doesn't match requested type \"%s\"", param.name().c_str(), param.typeInfo().name()).Data());
-	return param;
-}
-
-Bric::ParamTerminal& Bric::getParam(const Name &paramName, const std::type_info& typeInfo) {
-	Bric::ParamTerminal& param = getParam(paramName);
-	if (param.value().typeInfo() != typeInfo)
-		throw runtime_error(TString::Format("Type of param \"%s\" doesn't match requested type \"%s\"", param.name().c_str(), param.typeInfo().name()).Data());
-	return param;
-}
+Bric::ParamTerminal& Bric::getParam(const Name &paramName, const std::type_info& typeInfo)
+	{ return dynamic_cast<Bric::ParamTerminal&>(getTerminal(paramName, typeInfo)); }
 
 
 std::ostream & Bric::printInfo(std::ostream &os) const {
@@ -183,38 +145,10 @@ void BricWithOutputs::addOutput(OutputTerminal* output) {
 }
 
 
-const Bric::OutputTerminal& BricWithOutputs::getOutput(const Name &outputName) const {
-	auto r = m_outputs.find(outputName);
-	if (r == m_outputs.end()) throw invalid_argument(TString::Format("No output \"%s\" found in bric \"%s\"", outputName.c_str(), name().c_str()).Data());
-	else return *r->second;
-}
-
-
-Bric::OutputTerminal& BricWithOutputs::getOutput(const Name &outputName) {
-	auto r = m_outputs.find(outputName);
-	if (r == m_outputs.end()) throw invalid_argument(TString::Format("No output \"%s\" found in bric \"%s\"", outputName.c_str(), name().c_str()).Data());
-	else return *r->second;
-}
-
-
 
 void BricWithInputs::addInput(InputTerminal* input) {
 	addTerminal(input);
 	m_inputs[input->name()] = input;
-}
-
-
-const Bric::InputTerminal& BricWithInputs::getInput(const Name &inputName) const {
-	auto r = m_inputs.find(inputName);
-	if (r == m_inputs.end()) throw invalid_argument(TString::Format("No input \"%s\" found in bric \"%s\"", inputName.c_str(), name().c_str()).Data());
-	else return *r->second;
-}
-
-
-Bric::InputTerminal& BricWithInputs::getInput(const Name &inputName) {
-	auto r = m_inputs.find(inputName);
-	if (r == m_inputs.end()) throw invalid_argument(TString::Format("No input \"%s\" found in bric \"%s\"", inputName.c_str(), name().c_str()).Data());
-	else return *r->second;
 }
 
 

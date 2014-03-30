@@ -214,9 +214,6 @@ public:
 		Output(BricWithOutputs *bric): HasNameImpl(s_defaultOutputName) { bric->addOutput(this); }
 		Output(const Output &other) = delete;
 	};
-
-	const OutputTerminal& getOutput(const Name &outputName) const;
-	OutputTerminal& getOutput(const Name &outputName);
 };
 
 
@@ -244,9 +241,6 @@ public:
 		Input(BricWithInputs *bric): HasNameImpl(s_defaultInputName) { bric->addInput(this); }
 		Input(const Input &other) = delete;
 	};
-
-	const InputTerminal& getInput(const Name &inputName) const;
-	InputTerminal& getInput(const Name &inputName);
 };
 
 
