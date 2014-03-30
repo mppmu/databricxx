@@ -40,18 +40,9 @@ public:
 		Terminal& operator=(Terminal &&v) = delete;
 	};
 
-protected:
-	static const Name s_defaultInputName;
-	static const Name s_defaultOutputName;
 
-	Bric *m_parent = nullptr;
-
-	std::map<Name, Terminal*> m_terminals;
-
-	void addTerminal(Terminal* terminal);
-
-public:
 	class OutputTerminal : public virtual Terminal, public virtual HasWritableValue {};
+
 
 	class InputTerminal	: public virtual Terminal, public virtual HasConstValueRef {
 	public:
@@ -63,13 +54,31 @@ public:
 	};
 
 
+	class ParamTerminal : public virtual Terminal, public virtual HasWritableValue {};
+
+protected:
+	static const Name s_defaultInputName;
+	static const Name s_defaultOutputName;
+
+	Bric *m_parent = nullptr;
+
+	std::map<Name, Terminal*> m_terminals;
+
+	std::map<Name, ParamTerminal*> m_params;
+
+	void addTerminal(Terminal* terminal);
+
+	void addParam(ParamTerminal* param);
+
+public:
 	template <typename T> class TypedTerminal
 		: public virtual Terminal, public virtual HasTypedValue<T> {};
 
 
 	template <typename T> class TypedOutputTerminal
-		: public virtual TypedTerminal<T>, public virtual OutputTerminal, public virtual HasTypedWritableValue<T> {
-
+		: public virtual TypedTerminal<T>, public virtual OutputTerminal, public virtual HasTypedWritableValue<T>
+	{
+	public:
 		TypedOutputTerminal<T>& operator=(const T &v)
 			{ HasTypedWritableValue<T>::operator=(v); return *this; }
 
@@ -84,6 +93,43 @@ public:
 	template <typename T> class TypedInputTerminal
 		: public virtual TypedTerminal<T>, public virtual InputTerminal, public virtual HasTypedConstValueRef<T> {};
 
+
+	template <typename T> class TypedParamTerminal
+		: public virtual TypedTerminal<T>, public virtual ParamTerminal, public virtual HasTypedWritableValue<T>
+	{
+	public:
+		TypedParamTerminal<T>& operator=(const T &v)
+			{ HasTypedWritableValue<T>::operator=(v); return *this; }
+
+		TypedParamTerminal<T>& operator=(T &&v) noexcept
+			{ HasTypedWritableValue<T>::operator=(std::move(v)); return *this; }
+
+		TypedParamTerminal<T>& operator=(std::unique_ptr<T> &&v) noexcept
+			{ HasTypedWritableValue<T>::operator=(std::move(v)); return *this; }
+	};
+
+
+	template <typename T> class Param
+		: public virtual TypedParamTerminal<T>, public virtual HasNameImpl, public virtual HasTypedPrimaryValueImpl<T>
+	{
+	public:
+		Param<T>& operator=(const Param<T>& v) = delete;
+
+		Param<T>& operator=(const T &v)
+			{ TypedParamTerminal<T>::operator=(v); return *this; }
+
+		Param<T>& operator=(T &&v) noexcept
+			{ TypedParamTerminal<T>::operator=(std::move(v)); return *this; }
+
+		Param<T>& operator=(std::unique_ptr<T> &&v) noexcept
+			{ TypedParamTerminal<T>::operator=(std::move(v)); return *this; }
+
+
+		Param(Bric *bric, const Name &n): HasNameImpl(n) { bric->addParam(this); }
+		Param(const Param &other) = delete;
+	};
+
+
 	bool hasParent() const { return m_parent != nullptr; }
 
 	const Bric& parent() const { return *m_parent; }
@@ -91,11 +137,13 @@ public:
 
 	void parent(Bric *parentBric) { m_parent = parentBric; }
 
+
 	virtual const Terminal& getTerminal(const Name &terminalName) const;
 	virtual Terminal& getTerminal(const Name &terminalName);
 
 	virtual const Terminal& getTerminal(const Name &terminalName, const std::type_info& typeInfo) const;
 	virtual Terminal& getTerminal(const Name &terminalName, const std::type_info& typeInfo);
+
 
 	virtual const OutputTerminal& getOutput(const Name &outputName) const;
 	virtual OutputTerminal& getOutput(const Name &outputName);
@@ -103,11 +151,19 @@ public:
 	virtual const OutputTerminal& getOutput(const Name &outputName, const std::type_info& typeInfo) const;
 	virtual OutputTerminal& getOutput(const Name &outputName, const std::type_info& typeInfo);
 
+
 	virtual const InputTerminal& getInput(const Name &outputName) const;
 	virtual InputTerminal& getInput(const Name &outputName);
 
 	virtual const InputTerminal& getInput(const Name &outputName, const std::type_info& typeInfo) const;
 	virtual InputTerminal& getInput(const Name &outputName, const std::type_info& typeInfo);
+
+
+	virtual const ParamTerminal& getParam(const Name &outputName) const;
+	virtual ParamTerminal& getParam(const Name &outputName);
+
+	virtual const ParamTerminal& getParam(const Name &outputName, const std::type_info& typeInfo) const;
+	virtual ParamTerminal& getParam(const Name &outputName, const std::type_info& typeInfo);
 
 
 	virtual std::ostream & printInfo(std::ostream &os) const;
@@ -147,13 +203,13 @@ public:
 		Output<T>& operator=(const Output<T>& v) = delete;
 
 		Output<T>& operator=(const T &v)
-			{ HasTypedPrimaryValue<T>::operator=(v); return *this; }
+			{ TypedOutputTerminal<T>::operator=(v); return *this; }
 
 		Output<T>& operator=(T &&v) noexcept
-			{ HasTypedPrimaryValue<T>::operator=(std::move(v)); return *this; }
+			{ TypedOutputTerminal<T>::operator=(std::move(v)); return *this; }
 
 		Output<T>& operator=(std::unique_ptr<T> &&v) noexcept
-			{ HasTypedPrimaryValue<T>::operator=(std::move(v)); return *this; }
+			{ TypedOutputTerminal<T>::operator=(std::move(v)); return *this; }
 
 
 		Output(BricWithOutputs *bric, const Name &n): HasNameImpl(n) { bric->addOutput(this); }

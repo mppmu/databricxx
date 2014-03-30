@@ -40,6 +40,12 @@ void Bric::addTerminal(Terminal* terminal) {
 }
 
 
+void Bric::addParam(ParamTerminal* param) {
+	addTerminal(param);
+	m_params[param->name()] = param;
+}
+
+
 const Bric::Terminal& Bric::getTerminal(const Name &terminalName) const {
 	auto r = m_terminals.find(terminalName);
 	if (r == m_terminals.end()) throw invalid_argument(TString::Format("No terminal \"%s\" found in bric \"%s\"", terminalName.c_str(), name().c_str()).Data());
@@ -113,6 +119,35 @@ Bric::InputTerminal& Bric::getInput(const Name &inputName, const std::type_info&
 	if (input.value().typeInfo() != typeInfo)
 		throw runtime_error(TString::Format("Type of input \"%s\" doesn't match requested type \"%s\"", input.name().c_str(), input.typeInfo().name()).Data());
 	return input;
+}
+
+
+const Bric::ParamTerminal& Bric::getParam(const Name &paramName) const {
+	auto r = m_params.find(paramName);
+	if (r == m_params.end()) throw invalid_argument(TString::Format("No param \"%s\" found in bric \"%s\"", paramName.c_str(), name().c_str()).Data());
+	else return *r->second;
+}
+
+
+Bric::ParamTerminal& Bric::getParam(const Name &paramName) {
+	auto r = m_params.find(paramName);
+	if (r == m_params.end()) throw invalid_argument(TString::Format("No param \"%s\" found in bric \"%s\"", paramName.c_str(), name().c_str()).Data());
+	else return *r->second;
+}
+
+
+const Bric::ParamTerminal& Bric::getParam(const Name &paramName, const std::type_info& typeInfo) const {
+	const Bric::ParamTerminal& param = getParam(paramName);
+	if (param.value().typeInfo() != typeInfo)
+		throw runtime_error(TString::Format("Type of param \"%s\" doesn't match requested type \"%s\"", param.name().c_str(), param.typeInfo().name()).Data());
+	return param;
+}
+
+Bric::ParamTerminal& Bric::getParam(const Name &paramName, const std::type_info& typeInfo) {
+	Bric::ParamTerminal& param = getParam(paramName);
+	if (param.value().typeInfo() != typeInfo)
+		throw runtime_error(TString::Format("Type of param \"%s\" doesn't match requested type \"%s\"", param.name().c_str(), param.typeInfo().name()).Data());
+	return param;
 }
 
 
