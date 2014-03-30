@@ -153,6 +153,25 @@ Bric::ParamTerminal& Bric::getParam(const Name &paramName, const std::type_info&
 
 std::ostream & Bric::printInfo(std::ostream &os) const {
 	os << "Bric " << name() << ":" << endl;
+
+	if (! m_inputs.empty()) {
+		os << "  Inputs: ";
+		for (auto x: m_inputs) os << " " << x.second->name() << "(" << x.second->value().typeInfo().name() << ")";
+		os << endl;
+	}
+
+	if (! m_outputs.empty()) {
+		os << "  Outputs: ";
+		for (auto x: m_outputs) os << " " << x.second->name() << "(" << x.second->value().typeInfo().name() << ")";
+		os << endl;
+	}
+
+	if (! m_params.empty()) {
+		os << "  Params: ";
+		for (auto x: m_params) os << " " << x.second->name() << "(" << x.second->value().typeInfo().name() << ")";
+		os << endl;
+	}
+
 	return os;
 }
 
@@ -161,14 +180,6 @@ std::ostream & Bric::printInfo(std::ostream &os) const {
 void BricWithOutputs::addOutput(OutputTerminal* output) {
 	addTerminal(output);
 	m_outputs[output->name()] = output;
-}
-
-
-std::ostream & BricWithOutputs::printOutputInfo(std::ostream &os) const {
-	os << "  Outputs: ";
-	for (auto x: m_outputs) os << " " << x.second->name() << "(" << x.second->value().typeInfo().name() << ")";
-	os << endl;
-	return os;
 }
 
 
@@ -186,25 +197,10 @@ Bric::OutputTerminal& BricWithOutputs::getOutput(const Name &outputName) {
 }
 
 
-std::ostream & BricWithOutputs::printInfo(std::ostream &os) const {
-	Bric::printInfo(os);
-	printOutputInfo(os);
-	return os;
-}
-
-
 
 void BricWithInputs::addInput(InputTerminal* input) {
 	addTerminal(input);
 	m_inputs[input->name()] = input;
-}
-
-
-std::ostream & BricWithInputs::printInputInfo(std::ostream &os) const {
-	os << "  Inputs: ";
-	for (auto x: m_inputs) os << " " << x.second->name() << "(" << x.second->value().typeInfo().name() << ")";
-	os << endl;
-	return os;
 }
 
 
@@ -219,23 +215,6 @@ Bric::InputTerminal& BricWithInputs::getInput(const Name &inputName) {
 	auto r = m_inputs.find(inputName);
 	if (r == m_inputs.end()) throw invalid_argument(TString::Format("No input \"%s\" found in bric \"%s\"", inputName.c_str(), name().c_str()).Data());
 	else return *r->second;
-}
-
-
-std::ostream & BricWithInputs::printInfo(std::ostream &os) const {
-	Bric::printInfo(os);
-	printInputInfo(os);
-	return os;
-}
-
-
-
-std::ostream & BricWithInOut::printInfo(std::ostream &os) const {
-	Bric::printInfo(os);
-	printInputInfo(os);
-	printOutputInfo(os);
-
-	return os;
 }
 
 

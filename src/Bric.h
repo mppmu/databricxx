@@ -64,6 +64,8 @@ protected:
 
 	std::map<Name, Terminal*> m_terminals;
 
+	std::map<Name, OutputTerminal*> m_outputs;
+	std::map<Name, InputTerminal*> m_inputs;
 	std::map<Name, ParamTerminal*> m_params;
 
 	void addTerminal(Terminal* terminal);
@@ -189,11 +191,7 @@ public:
 
 class BricWithOutputs: public virtual Bric  {
 protected:
-	std::map<Name, OutputTerminal*> m_outputs;
-
 	void addOutput(OutputTerminal* output);
-
-	virtual std::ostream & printOutputInfo(std::ostream &os) const;
 
 public:
 	template <typename T> class Output
@@ -219,19 +217,13 @@ public:
 
 	const OutputTerminal& getOutput(const Name &outputName) const;
 	OutputTerminal& getOutput(const Name &outputName);
-
-	virtual std::ostream & printInfo(std::ostream &os) const;
 };
 
 
 
 class BricWithInputs: public virtual Bric  {
 protected:
-	std::map<Name, InputTerminal*> m_inputs;
-
 	void addInput(InputTerminal* input);
-
-	virtual std::ostream & printInputInfo(std::ostream &os) const;
 
 public:
 	template <typename T> class Input
@@ -255,16 +247,11 @@ public:
 
 	const InputTerminal& getInput(const Name &inputName) const;
 	InputTerminal& getInput(const Name &inputName);
-
-	virtual std::ostream & printInfo(std::ostream &os) const;
 };
 
 
 
-class BricWithInOut: public virtual BricWithInputs, public virtual BricWithOutputs  {
-public:
-	virtual std::ostream & printInfo(std::ostream &os) const;
-};
+class BricWithInOut: public virtual BricWithInputs, public virtual BricWithOutputs {};
 
 
 
