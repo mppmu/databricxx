@@ -25,7 +25,14 @@ namespace dbrx {
 
 
 template<typename T> class SimpleInput: public ImportBric {
+	bool m_hasNextOutput = true;
 public:
+	bool nextOutput() {
+		bool result = m_hasNextOutput;
+		m_hasNextOutput = false;
+		return result;
+	}
+
 	Output<T> output{this};
 
 	void process() {}

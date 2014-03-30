@@ -214,6 +214,8 @@ public:
 		Output(BricWithOutputs *bric): HasNameImpl(s_defaultOutputName) { bric->addOutput(this); }
 		Output(const Output &other) = delete;
 	};
+
+	virtual bool nextOutput() = 0;
 };
 
 
@@ -241,6 +243,8 @@ public:
 		Input(BricWithInputs *bric): HasNameImpl(s_defaultInputName) { bric->addInput(this); }
 		Input(const Input &other) = delete;
 	};
+
+	virtual void nextInput() = 0;
 };
 
 
@@ -265,9 +269,6 @@ public:
 
 class MapperBric: public virtual BricWithInOut, public virtual BricImpl {
 public:
-	virtual void nextInput() = 0;
-	virtual bool nextOutput() = 0;
-
 	using BricImpl::BricImpl;
 };
 
