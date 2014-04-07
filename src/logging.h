@@ -1,4 +1,4 @@
-// Copyright (C) 2011-2013 Oliver Schulz <oschulz@mpp.mpg.de>
+// Copyright (C) 2011-2014 Oliver Schulz <oschulz@mpp.mpg.de>
 
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,15 +15,15 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
-#ifndef FROAST_LOGGING_H
-#define FROAST_LOGGING_H
+#ifndef DBRX_LOGGING_H
+#define DBRX_LOGGING_H
 
 #include <stdint.h>
 #include <string>
 #include <stdarg.h>
 
 
-namespace froast {
+namespace dbrx {
 
 
 enum LogLevel {
@@ -78,14 +78,14 @@ public:
 };
 
 
-} // namespace froast
+} // namespace dbrx
 
 
-#define log_trace(...) ((froast::LL_TRACE >= froast::g_logLevel) ? froast::log_trace_impl(__VA_ARGS__) : froast::log_nothing_impl())
-#define log_debug(...) ((froast::LL_DEBUG >= froast::g_logLevel) ? froast::log_debug_impl(__VA_ARGS__) : froast::log_nothing_impl())
-#define log_info(...) ((froast::LL_INFO >= froast::g_logLevel) ? froast::log_info_impl(__VA_ARGS__) : froast::log_nothing_impl())
-#define log_warn(...) ((froast::LL_WARN >= froast::g_logLevel) ? froast::log_warn_impl(__VA_ARGS__) : froast::log_nothing_impl())
-#define log_error(...) ((froast::LL_ERROR >= froast::g_logLevel) ? froast::log_error_impl(__VA_ARGS__) : froast::log_nothing_impl())
+#define log_trace(...) ((dbrx::LL_TRACE >= dbrx::g_logLevel) ? dbrx::log_trace_impl(__VA_ARGS__) : dbrx::log_nothing_impl())
+#define log_debug(...) ((dbrx::LL_DEBUG >= dbrx::g_logLevel) ? dbrx::log_debug_impl(__VA_ARGS__) : dbrx::log_nothing_impl())
+#define log_info(...) ((dbrx::LL_INFO >= dbrx::g_logLevel) ? dbrx::log_info_impl(__VA_ARGS__) : dbrx::log_nothing_impl())
+#define log_warn(...) ((dbrx::LL_WARN >= dbrx::g_logLevel) ? dbrx::log_warn_impl(__VA_ARGS__) : dbrx::log_nothing_impl())
+#define log_error(...) ((dbrx::LL_ERROR >= dbrx::g_logLevel) ? dbrx::log_error_impl(__VA_ARGS__) : dbrx::log_nothing_impl())
 
 
-#endif // FROAST_LOGGING_H
+#endif // DBRX_LOGGING_H

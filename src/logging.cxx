@@ -1,4 +1,4 @@
-// Copyright (C) 2011-2013 Oliver Schulz <oschulz@mpp.mpg.de>
+// Copyright (C) 2011-2014 Oliver Schulz <oschulz@mpp.mpg.de>
 
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
 #include <cstdio>
 
 
-namespace froast {
+namespace dbrx {
 
 
 LogLevel g_logLevel = LL_INFO;
@@ -76,4 +76,4 @@ void log_warn_impl(const char *fmt, ...) { va_list argp; va_start(argp, fmt); v_
 void log_error_impl(const char *fmt, ...) { va_list argp; va_start(argp, fmt); v_log_generic_impl("!ERROR: ", fmt, argp);	va_end(argp); }
 
 
-} // namespace froast
+} // namespace dbrx

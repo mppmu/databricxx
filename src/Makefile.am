@@ -6,9 +6,11 @@ MAINTAINERCLEANFILES = Makefile.in
 lib_LTLIBRARIES = libdatabricxx.la
 
 libdatabricxx_la_SOURCES = \
+	logging.cxx \
 	DbrxTools.cxx
 
 libdatabricxx_la_headers = \
+	logging.h \
 	DbrxTools.h
 
 pkginclude_HEADERS = $(libdatabricxx_la_headers)
