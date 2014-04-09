@@ -156,19 +156,19 @@ std::ostream & Bric::printInfo(std::ostream &os) const {
 
 	if (! m_inputs.empty()) {
 		os << "  Inputs: ";
-		for (auto x: m_inputs) os << " " << x.second->name() << "(" << x.second->value().typeInfo().name() << ")";
+		for (auto const &x: m_inputs) os << " " << x.second->name() << "(" << x.second->value().typeInfo().name() << ")";
 		os << endl;
 	}
 
 	if (! m_outputs.empty()) {
 		os << "  Outputs: ";
-		for (auto x: m_outputs) os << " " << x.second->name() << "(" << x.second->value().typeInfo().name() << ")";
+		for (auto const &x: m_outputs) os << " " << x.second->name() << "(" << x.second->value().typeInfo().name() << ")";
 		os << endl;
 	}
 
 	if (! m_params.empty()) {
 		os << "  Params: ";
-		for (auto x: m_params) os << " " << x.second->name() << "(" << x.second->value().typeInfo().name() << ")";
+		for (auto const &x: m_params) os << " " << x.second->name() << "(" << x.second->value().typeInfo().name() << ")";
 		os << endl;
 	}
 
