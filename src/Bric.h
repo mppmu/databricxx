@@ -48,7 +48,7 @@ public:
 	public:
 		virtual void connectTo(const Terminal &other) = 0;
 
-		virtual void connectTo(const Bric &bric, const Name &terminalName) = 0;
+		virtual void connectTo(const Bric &bric, Name terminalName) = 0;
 
 		virtual void connectTo(const Bric &bric) = 0;
 	};
@@ -127,7 +127,7 @@ public:
 			{ TypedParamTerminal<T>::operator=(std::move(v)); return *this; }
 
 
-		Param(Bric *bric, const Name &n): HasNameImpl(n) { bric->addParam(this); }
+		Param(Bric *bric, Name n): HasNameImpl(n) { bric->addParam(this); }
 		Param(const Param &other) = delete;
 	};
 
@@ -140,32 +140,32 @@ public:
 	void parent(Bric *parentBric) { m_parent = parentBric; }
 
 
-	virtual const Terminal& getTerminal(const Name &terminalName) const;
-	virtual Terminal& getTerminal(const Name &terminalName);
+	virtual const Terminal& getTerminal(Name terminalName) const;
+	virtual Terminal& getTerminal(Name terminalName);
 
-	virtual const Terminal& getTerminal(const Name &terminalName, const std::type_info& typeInfo) const;
-	virtual Terminal& getTerminal(const Name &terminalName, const std::type_info& typeInfo);
-
-
-	virtual const OutputTerminal& getOutput(const Name &outputName) const;
-	virtual OutputTerminal& getOutput(const Name &outputName);
-
-	virtual const OutputTerminal& getOutput(const Name &outputName, const std::type_info& typeInfo) const;
-	virtual OutputTerminal& getOutput(const Name &outputName, const std::type_info& typeInfo);
+	virtual const Terminal& getTerminal(Name terminalName, const std::type_info& typeInfo) const;
+	virtual Terminal& getTerminal(Name terminalName, const std::type_info& typeInfo);
 
 
-	virtual const InputTerminal& getInput(const Name &outputName) const;
-	virtual InputTerminal& getInput(const Name &outputName);
+	virtual const OutputTerminal& getOutput(Name outputName) const;
+	virtual OutputTerminal& getOutput(Name outputName);
 
-	virtual const InputTerminal& getInput(const Name &outputName, const std::type_info& typeInfo) const;
-	virtual InputTerminal& getInput(const Name &outputName, const std::type_info& typeInfo);
+	virtual const OutputTerminal& getOutput(Name outputName, const std::type_info& typeInfo) const;
+	virtual OutputTerminal& getOutput(Name outputName, const std::type_info& typeInfo);
 
 
-	virtual const ParamTerminal& getParam(const Name &outputName) const;
-	virtual ParamTerminal& getParam(const Name &outputName);
+	virtual const InputTerminal& getInput(Name outputName) const;
+	virtual InputTerminal& getInput(Name outputName);
 
-	virtual const ParamTerminal& getParam(const Name &outputName, const std::type_info& typeInfo) const;
-	virtual ParamTerminal& getParam(const Name &outputName, const std::type_info& typeInfo);
+	virtual const InputTerminal& getInput(Name outputName, const std::type_info& typeInfo) const;
+	virtual InputTerminal& getInput(Name outputName, const std::type_info& typeInfo);
+
+
+	virtual const ParamTerminal& getParam(Name outputName) const;
+	virtual ParamTerminal& getParam(Name outputName);
+
+	virtual const ParamTerminal& getParam(Name outputName, const std::type_info& typeInfo) const;
+	virtual ParamTerminal& getParam(Name outputName, const std::type_info& typeInfo);
 
 
 	virtual std::ostream & printInfo(std::ostream &os) const;
@@ -181,9 +181,9 @@ class BricImpl: public virtual Bric, public HasNameImpl {
 public:
 	BricImpl() {}
 
-	BricImpl(const Name &n) : HasNameImpl(n) {}
+	BricImpl(Name n) : HasNameImpl(n) {}
 
-	BricImpl(Bric *parentBric, const Name &n)
+	BricImpl(Bric *parentBric, Name n)
 		: BricImpl(n) { m_parent = parentBric; }
 };
 
@@ -210,7 +210,7 @@ public:
 			{ TypedOutputTerminal<T>::operator=(std::move(v)); return *this; }
 
 
-		Output(BricWithOutputs *bric, const Name &n): HasNameImpl(n) { bric->addOutput(this); }
+		Output(BricWithOutputs *bric, Name n): HasNameImpl(n) { bric->addOutput(this); }
 		Output(BricWithOutputs *bric): HasNameImpl(s_defaultOutputName) { bric->addOutput(this); }
 		Output(const Output &other) = delete;
 	};
@@ -233,13 +233,13 @@ public:
 
 		void connectTo(const Terminal &other) { this->value().referTo(other.value()); }
 
-		void connectTo(const Bric &bric, const Name &terminalName)
+		void connectTo(const Bric &bric, Name terminalName)
 			{ connectTo(bric.getOutput(terminalName, this->typeInfo())); }
 
 		void connectTo(const Bric &bric)
 			{ connectTo(bric.getOutput(s_defaultOutputName, this->typeInfo())); }
 
-		Input(BricWithInputs *bric, const Name &n): HasNameImpl(n) { bric->addInput(this); }
+		Input(BricWithInputs *bric, Name n): HasNameImpl(n) { bric->addInput(this); }
 		Input(BricWithInputs *bric): HasNameImpl(s_defaultInputName) { bric->addInput(this); }
 		Input(const Input &other) = delete;
 	};

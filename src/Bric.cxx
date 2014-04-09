@@ -46,27 +46,27 @@ void Bric::addParam(ParamTerminal* param) {
 }
 
 
-const Bric::Terminal& Bric::getTerminal(const Name &terminalName) const {
+const Bric::Terminal& Bric::getTerminal(Name terminalName) const {
 	auto r = m_terminals.find(terminalName);
 	if (r == m_terminals.end()) throw invalid_argument(TString::Format("No terminal \"%s\" found in bric \"%s\"", terminalName.c_str(), name().c_str()).Data());
 	else return *r->second;
 }
 
-Bric::Terminal& Bric::getTerminal(const Name &terminalName) {
+Bric::Terminal& Bric::getTerminal(Name terminalName) {
 	auto r = m_terminals.find(terminalName);
 	if (r == m_terminals.end()) throw invalid_argument(TString::Format("No terminal \"%s\" found in bric \"%s\"", terminalName.c_str(), name().c_str()).Data());
 	else return *r->second;
 }
 
 
-const Bric::Terminal& Bric::getTerminal(const Name &terminalName, const std::type_info& typeInfo) const {
+const Bric::Terminal& Bric::getTerminal(Name terminalName, const std::type_info& typeInfo) const {
 	const Bric::Terminal& terminal = getTerminal(terminalName);
 	if (terminal.value().typeInfo() != typeInfo)
 		throw runtime_error(TString::Format("Type of terminal \"%s\" doesn't match requested type \"%s\"", terminal.name().c_str(), terminal.typeInfo().name()).Data());
 	return terminal;
 }
 
-Bric::Terminal& Bric::getTerminal(const Name &terminalName, const std::type_info& typeInfo) {
+Bric::Terminal& Bric::getTerminal(Name terminalName, const std::type_info& typeInfo) {
 	Bric::Terminal& terminal = getTerminal(terminalName);
 	if (terminal.value().typeInfo() != typeInfo)
 		throw runtime_error(TString::Format("Type of terminal \"%s\" doesn't match requested type \"%s\"", terminal.name().c_str(), terminal.typeInfo().name()).Data());
@@ -74,42 +74,42 @@ Bric::Terminal& Bric::getTerminal(const Name &terminalName, const std::type_info
 }
 
 
-const Bric::OutputTerminal& Bric::getOutput(const Name &outputName) const
+const Bric::OutputTerminal& Bric::getOutput(Name outputName) const
 	{ return dynamic_cast<const Bric::OutputTerminal&>(getTerminal(outputName)); }
 
-Bric::OutputTerminal& Bric::getOutput(const Name &outputName)
+Bric::OutputTerminal& Bric::getOutput(Name outputName)
 	{ return dynamic_cast<Bric::OutputTerminal&>(getTerminal(outputName)); }
 
-const Bric::OutputTerminal& Bric::getOutput(const Name &outputName, const std::type_info& typeInfo) const
+const Bric::OutputTerminal& Bric::getOutput(Name outputName, const std::type_info& typeInfo) const
 	{ return dynamic_cast<const Bric::OutputTerminal&>(getTerminal(outputName, typeInfo)); }
 
-Bric::OutputTerminal& Bric::getOutput(const Name &outputName, const std::type_info& typeInfo)
+Bric::OutputTerminal& Bric::getOutput(Name outputName, const std::type_info& typeInfo)
 	{ return dynamic_cast<Bric::OutputTerminal&>(getTerminal(outputName, typeInfo)); }
 
 
-const Bric::InputTerminal& Bric::getInput(const Name &inputName) const
+const Bric::InputTerminal& Bric::getInput(Name inputName) const
 	{ return dynamic_cast<const Bric::InputTerminal&>(getTerminal(inputName)); }
 
-Bric::InputTerminal& Bric::getInput(const Name &inputName)
+Bric::InputTerminal& Bric::getInput(Name inputName)
 	{ return dynamic_cast<Bric::InputTerminal&>(getTerminal(inputName)); }
 
-const Bric::InputTerminal& Bric::getInput(const Name &inputName, const std::type_info& typeInfo) const
+const Bric::InputTerminal& Bric::getInput(Name inputName, const std::type_info& typeInfo) const
 	{ return dynamic_cast<const Bric::InputTerminal&>(getTerminal(inputName, typeInfo)); }
 
-Bric::InputTerminal& Bric::getInput(const Name &inputName, const std::type_info& typeInfo)
+Bric::InputTerminal& Bric::getInput(Name inputName, const std::type_info& typeInfo)
 	{ return dynamic_cast<Bric::InputTerminal&>(getTerminal(inputName, typeInfo)); }
 
 
-const Bric::ParamTerminal& Bric::getParam(const Name &paramName) const
+const Bric::ParamTerminal& Bric::getParam(Name paramName) const
 	{ return dynamic_cast<const Bric::ParamTerminal&>(getTerminal(paramName)); }
 
-Bric::ParamTerminal& Bric::getParam(const Name &paramName)
+Bric::ParamTerminal& Bric::getParam(Name paramName)
 	{ return dynamic_cast<Bric::ParamTerminal&>(getTerminal(paramName)); }
 
-const Bric::ParamTerminal& Bric::getParam(const Name &paramName, const std::type_info& typeInfo) const
+const Bric::ParamTerminal& Bric::getParam(Name paramName, const std::type_info& typeInfo) const
 	{ return dynamic_cast<const Bric::ParamTerminal&>(getTerminal(paramName, typeInfo)); }
 
-Bric::ParamTerminal& Bric::getParam(const Name &paramName, const std::type_info& typeInfo)
+Bric::ParamTerminal& Bric::getParam(Name paramName, const std::type_info& typeInfo)
 	{ return dynamic_cast<Bric::ParamTerminal&>(getTerminal(paramName, typeInfo)); }
 
 

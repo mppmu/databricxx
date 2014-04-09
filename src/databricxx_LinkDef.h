@@ -21,10 +21,12 @@
 // DbrxTools.h
 #pragma link C++ class dbrx::DbrxTools-;
 
-// Name.h
+// Name.h, NameTable.h
 #pragma link C++ class dbrx::Name-;
 #pragma link C++ class dbrx::HasName-;
 #pragma link C++ class dbrx::HasNameImpl-;
+
+#pragma link C++ class dbrx::NameTable-;
 
 // Prop.h
 #pragma link C++ class dbrx::Prop-;

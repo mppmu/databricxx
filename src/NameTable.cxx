@@ -15,8 +15,6 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
-#include "Name.h"
-
 #include "NameTable.h"
 
 using namespace std;
@@ -25,14 +23,31 @@ using namespace std;
 namespace dbrx {
 
 
-const std::string Name::s_emptyString{};
+NameTable& NameTable::global() {
+	static NameTable globalTable;
+	return globalTable;
+}
 
 
-Name::Name(const std::string &s): Name(s, NameTable::global()) {}
+Name NameTable::resolve(const std::string &s) {
+	if (s.empty()) return Name();
+	else {
+		LockGuard lock(m_mutex);
+		auto found = m_stringMap.find(ConstStringRef(&s));
+		if (found != m_stringMap.end()) return found->second;
+		else {
+			std::unique_ptr<std::string> stringPtr(new std::string(s));
+			ConstStringRef sr(&*stringPtr);
+			Name name(&*stringPtr);
 
+			if (m_strings.size() == m_strings.capacity())
+				m_strings.reserve(std::max(size_t(16), m_strings.size() * 2));
+			m_strings.push_back(std::move(stringPtr));
 
-Name::Name(const std::string &s, NameTable &table)
-	{ *this = table.resolve(s); }
+			return m_stringMap[sr] = name;
+		}
+	}
+}
 
 
 } // namespace dbrx

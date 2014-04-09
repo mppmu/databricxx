@@ -37,11 +37,11 @@ public:
 
 	void process() {}
 
-	SimpleInput(const Name &n): ImportBric(n) { output = T(); }
+	SimpleInput(Name n): ImportBric(n) { output = T(); }
 
-	SimpleInput(const Name &n, T v): ImportBric(n) { output = std::move(v); }
+	SimpleInput(Name n, T v): ImportBric(n) { output = std::move(v); }
 
-	SimpleInput(Bric *parentBric, const Name &n, T v)
+	SimpleInput(Bric *parentBric, Name n, T v)
 		: ImportBric(parentBric, n) { output = std::move(v); }
 };
 

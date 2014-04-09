@@ -9,7 +9,7 @@ libdatabricxx_la_SOURCES = \
 	logging.cxx \
 	Bric.cxx \
 	DbrxTools.cxx \
-	Name.cxx \
+	Name.cxx NameTable.cxx \
 	Prop.cxx \
 	RootIO.cxx \
 	RootReflection.cxx \
@@ -20,7 +20,7 @@ libdatabricxx_la_headers = \
 	logging.h \
 	Bric.h \
 	DbrxTools.h \
-	Name.h \
+	Name.h NameTable.h \
 	Prop.h \
 	RootIO.h \
 	RootReflection.h \
