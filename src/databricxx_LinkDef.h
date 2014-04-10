@@ -28,8 +28,9 @@
 
 #pragma link C++ class dbrx::NameTable-;
 
-// Prop.h
-#pragma link C++ class dbrx::Prop-;
+// Props.h
+#pragma link C++ typedef dbrx::Props;
+#pragma link C++ class dbrx::PropVal-;
 
 // RootIO.h
 #pragma link C++ class dbrx::RootIO-;

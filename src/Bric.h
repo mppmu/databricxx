@@ -23,7 +23,6 @@
 #include <iosfwd>
 
 #include "Name.h"
-#include "Prop.h"
 #include "HasValue.h"
 
 
