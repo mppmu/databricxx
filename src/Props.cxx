@@ -30,9 +30,9 @@ namespace dbrx {
 void PropVal::destructorImpl() {
 	switch (m_type) {
 		case Type::STRING: m_content.s.~String(); break;
-		case Type::ARRAY: m_content.a.~Array(); break;
-		case Type::INDEXED: m_content.m.~Indexed(); break;
-		case Type::STRUC: m_content.o.~Struc(); break;
+		case Type::ARRAY: m_content.a.~ArrayPtr(); break;
+		case Type::INDEXED: m_content.m.~IndexedPtr(); break;
+		case Type::STRUC: m_content.o.~StrucPtr(); break;
 		default: assert(false);
 	}
 }
@@ -145,9 +145,9 @@ std::ostream& PropVal::print(std::ostream &os) const {
 		case Type::REAL: print(os, m_content.r); break;
 		case Type::NAME: print(os, m_content.n); break;
 		case Type::STRING: print(os, m_content.s); break;
-		case Type::ARRAY: print(os, m_content.a); break;
-		case Type::INDEXED: print(os, m_content.m); break;
-		case Type::STRUC: print(os, m_content.o); break;
+		case Type::ARRAY: print(os, *m_content.a); break;
+		case Type::INDEXED: print(os, *m_content.m); break;
+		case Type::STRUC: print(os, *m_content.o); break;
 		default: assert(false);
 	}
 	return os;

@@ -57,141 +57,9 @@ public:
 	using Integer = int64_t;
 	using Real = double;
 	using String = std::string;
-
-
-	class Array {
-	public:
-		using Elements = std::vector<PropVal> ;
-		using iterator = Elements::iterator ;
-		using const_iterator = Elements::const_iterator;
-
-	protected:
-		std::unique_ptr<Elements> m_elements;
-
-	public:
-		bool empty() const noexcept { return m_elements->empty(); }
-		size_t capacity() const noexcept { return m_elements->capacity(); }
-		size_t size() const noexcept { return m_elements->size(); }
-
-		void reserve (size_t n) { m_elements->reserve(n); }
-		void resize (size_t n) { m_elements->resize(n); }
-		void clear() noexcept { m_elements->clear(); }
-
-		PropVal* data() noexcept { return m_elements->data(); }
-		const PropVal* data() const noexcept { return m_elements->data(); }
-
-		PropVal* begin() noexcept { return data(); }
-		const PropVal* begin() const noexcept  { return data(); }
-		const PropVal* cbegin() const noexcept { return data(); }
-
-		PropVal* end() noexcept { return data() + size(); }
-		const PropVal* end() const noexcept  { return data() + size(); }
-		const PropVal* cend() const noexcept { return data() + size(); }
-
-		PropVal& front() { return m_elements->front(); }
-		const PropVal& front() const { return m_elements->front(); }
-
-		PropVal& back() { return m_elements->back(); }
-		const PropVal& back() const { return m_elements->back(); }
-
-		void push_back (const PropVal& val) { m_elements->push_back(val); }
-		void push_back (PropVal&& val) { m_elements->push_back(std::move(val)); }
-
-		PropVal& operator[](size_t i) { return m_elements->operator[](i); }
-		const PropVal& operator[](size_t i) const { return m_elements->operator[](i); }
-
-		PropVal& at(size_t i) { return m_elements->at(i); }
-		const PropVal& at(size_t i) const { return m_elements->at(i); }
-
-		bool operator==(const Array &other) const
-			{ return std::mismatch(begin(), end(), other.begin()).first == end(); }
-
-		Array& operator=(const Array &other) {
-			m_elements->operator=(*other.m_elements);
-			return *this;
-		}
-
-		Array& operator=(Array &&other) {
-			m_elements->operator=(std::move(*other.m_elements));
-			return *this;
-		}
-
-		static void swap(Array &a, Array& b) noexcept
-			{ std::swap(a.m_elements, b.m_elements); }
-
-		Array() : m_elements{new Elements} {}
-		Array(const Array &other) : Array() { *this = other; }
-		Array(Array &&other) : m_elements(std::move(other.m_elements)) {}
-		Array(std::initializer_list<PropVal> init): m_elements(new Elements(init)) {}
-	};
-
-
-	template <typename Key, typename Compare = std::less<Key>> class Map {
-	public:
-		using Entry = std::pair<const Key, PropVal>;
-		using Entries = std::map<const Key, PropVal, Compare>;
-		using iterator = typename Entries::iterator;
-		using const_iterator = typename Entries::const_iterator;
-
-
-	protected:
-		std::unique_ptr<Entries> m_entries;
-
-	public:
-		bool empty() const noexcept { return m_entries->empty(); }
-		size_t size() const noexcept { return m_entries->size(); }
-
-		bool hasMember(const Key &key) const { return m_entries->find(key) != m_entries->end(); }
-
-		iterator begin() noexcept { return m_entries->begin(); }
-		const_iterator begin() const noexcept  { return m_entries->begin(); }
-		const_iterator cbegin() const noexcept { return m_entries->cbegin(); }
-
-		iterator end() noexcept { return m_entries->end(); }
-		const_iterator end() const noexcept  { return m_entries->end(); }
-		const_iterator cend() const noexcept { return m_entries->cend(); }
-
-		PropVal& operator()(Key key, const PropVal &dflt) {
-			if (hasMember(key)) return at(key);
-			else return operator[](key) = dflt;
-		}
-
-		PropVal& operator()(Key key, PropVal &&dflt) {
-			if (hasMember(key)) return at(key);
-			else return operator[](key) = std::move(dflt);
-		}
-
-		PropVal& operator[](Key key) { return m_entries->operator[](key); }
-		const PropVal& operator[](Key key) const { return m_entries->operator[](key); }
-
-		PropVal& at(Key key) { return m_entries->at(key); }
-		const PropVal& at(Key key) const { return m_entries->at(key); }
-
-		bool operator==(const Map &other) const
-			{ return std::mismatch(begin(), end(), other.begin()).first == end(); }
-
-		Map& operator=(const Map &other) {
-			m_entries->operator=(*other.m_entries);
-			return *this;
-		}
-
-		Map& operator=(Map &&other) {
-			m_entries->operator=(std::move(*other.m_entries));
-			return *this;
-		}
-
-		void swap(Map &a, Map &b) noexcept
-			{ std::swap(a.m_entries, b.m_entries); }
-
-		Map() : m_entries{new Entries} {}
-		Map(const Map &other) : Map() { *this = other; }
-		Map(Map &&other) : m_entries(std::move(other.m_entries)) {}
-		Map(std::initializer_list<Entry> init): m_entries(new Entries(init.begin(), init.end())) {}
-	};
-
-	using Indexed = Map<Integer>;
-
-	using Struc = Map<Name, Name::CompareById>;
+	using Array = std::vector<PropVal>;
+	using Indexed = std::map<Integer, PropVal>;
+	using Struc = std::map<Name, PropVal, Name::CompareById>;
 
 
 	template<typename T> static void swapMem(T &a, T &b) noexcept {
@@ -218,6 +86,10 @@ public:
 	}
 
 protected:
+	using ArrayPtr = std::unique_ptr<Array>;
+	using IndexedPtr = std::unique_ptr<Indexed>;
+	using StrucPtr = std::unique_ptr<Struc>;
+
 	union Content {
 		None e;
 		Bool b;
@@ -225,9 +97,9 @@ protected:
 		Real r;
 		Name n;
 		String s;
-		Array a;
-		Indexed m;
-		Struc o;
+		ArrayPtr a;
+		IndexedPtr m;
+		StrucPtr o;
 
 		Content() : e() { }
 
@@ -237,11 +109,11 @@ protected:
 		Content(Real value) : r(std::move(value)) { }
 		Content(Name value) : n(std::move(value)) { }
 		Content(String value) : s(std::move(value)) { }
-		Content(Array value) : a(std::move(value)) { }
-		Content(Indexed value) : m(std::move(value)) { }
-		Content(Struc value) : o(std::move(value)) { }
+		Content(Array value) : a( new Array(std::move(value)) ) { }
+		Content(Indexed value) : m( new Indexed(std::move(value)) ) { }
+		Content(Struc value) : o( new Struc(std::move(value)) ) { }
 
-		Content(std::initializer_list<PropVal> init) : a(init) { }
+		Content(std::initializer_list<PropVal> init) : a(new Array(init)) { }
 
 		Content(Type type) {
 			switch (type) {
@@ -251,9 +123,9 @@ protected:
 				case Type::REAL: new (&r) Real(); break;
 				case Type::NAME: new (&n) Name(); break;
 				case Type::STRING: new (&s) String(); break;
-				case Type::ARRAY: new (&a) Array(); break;
-				case Type::INDEXED: new (&m) Indexed(); break;
-				case Type::STRUC: new (&o) Struc(); break;
+				case Type::ARRAY: new (&a) ArrayPtr(new Array()); break;
+				case Type::INDEXED: new (&m) IndexedPtr(new Indexed()); break;
+				case Type::STRUC: new (&o) StrucPtr(new Struc()); break;
 			}
 		}
 
@@ -265,9 +137,9 @@ protected:
 				case Type::REAL: new (&r) Real(other.r); break;
 				case Type::NAME: new (&n) Name(other.n); break;
 				case Type::STRING: new (&s) String(other.s); break;
-				case Type::ARRAY: new (&a) Array(other.a); break;
-				case Type::INDEXED: new (&m) Indexed(other.m); break;
-				case Type::STRUC: new (&o) Struc(other.o); break;
+				case Type::ARRAY: new (&a) ArrayPtr(new Array(*other.a)); break;
+				case Type::INDEXED: new (&m) IndexedPtr(new Indexed(*other.m)); break;
+				case Type::STRUC: new (&o) StrucPtr(new Struc(*other.o)); break;
 			}
 		}
 
@@ -354,56 +226,53 @@ public:
 
 
 	const Array& asArray() const {
-		if (m_type == Type::ARRAY) return m_content.a;
+		if (m_type == Type::ARRAY) return *m_content.a;
 		else throw std::bad_cast();
 	}
 
 	Array& asArray() {
-		if (m_type == Type::ARRAY) return m_content.a;
+		if (m_type == Type::ARRAY) return *m_content.a;
 		else throw std::bad_cast();
 	}
 
 
 	const Indexed& asIndexed() const {
-		if (m_type == Type::INDEXED) return m_content.m;
+		if (m_type == Type::INDEXED) return *m_content.m;
 		else throw std::bad_cast();
 	}
 
 	Indexed& asIndexed() {
-		if (m_type == Type::INDEXED) return m_content.m;
+		if (m_type == Type::INDEXED) return *m_content.m;
 		else throw std::bad_cast();
 	}
 
 
 	const Struc& asStruc() const {
-		if (m_type == Type::STRUC) return m_content.o;
+		if (m_type == Type::STRUC) return *m_content.o;
 		else throw std::bad_cast();
 	}
 
 	Struc& asStruc() {
-		if (m_type == Type::STRUC) return m_content.o;
+		if (m_type == Type::STRUC) return *m_content.o;
 		else throw std::bad_cast();
 	}
 
 
-	PropVal* begin() noexcept { return m_type == Type::ARRAY ? m_content.a.begin() : this; }
-	const PropVal* begin() const noexcept  { return m_type == Type::ARRAY ? m_content.a.begin() : this; }
-	const PropVal* cbegin() const noexcept { return m_type == Type::ARRAY ? m_content.a.cbegin() : this; }
+	// std::vector is guaranteed to be contiguous in memory, vector iterators
+	// can be converted to simple pointers:
+	PropVal* begin() noexcept { return m_type == Type::ARRAY ? &*m_content.a->begin() : this; }
+	const PropVal* begin() const noexcept  { return m_type == Type::ARRAY ? &*m_content.a->begin() : this; }
+	const PropVal* cbegin() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->cbegin() : this; }
+	PropVal* end() noexcept { return m_type == Type::ARRAY ? &*m_content.a->end() : this; }
+	const PropVal* end() const noexcept  { return m_type == Type::ARRAY ? &*m_content.a->end() : this; }
+	const PropVal* cend() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->cend() : this; }
 
-	PropVal* end() noexcept { return m_type == Type::ARRAY ? m_content.a.end() : this; }
-	const PropVal* end() const noexcept  { return m_type == Type::ARRAY ? m_content.a.end() : this; }
-	const PropVal* cend() const noexcept { return m_type == Type::ARRAY ? m_content.a.cend() : this; }
-
-
-	friend void swap(Array &a, Array& b) noexcept{ Array::swap(a, b); }
-
-	template <typename K, typename C> friend void swap(Map<K, C> &a, Map<K, C> &b) noexcept
-		{ Map<K, C>::swap(a, b); }
 
 	friend void swap(PropVal &a, PropVal&b) noexcept {
 		std::swap(a.m_type, b.m_type);
 		swapMem(a.m_content, b.m_content);
 	}
+
 
 	bool operator==(PropVal other) const {
 		switch (m_type) {
