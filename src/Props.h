@@ -393,8 +393,6 @@ public:
 	~PropVal() {
 		if (m_type > Type::NAME) destructorImpl();
 	}
-
-	friend class PropKey;
 };
 
 
