@@ -17,7 +17,6 @@
 
 #include "Props.h"
 
-#include <cassert>
 #include <iostream>
 #include <sstream>
 
@@ -27,11 +26,59 @@ using namespace std;
 namespace dbrx {
 
 
+std::ostream& PropKey::print(std::ostream &os, const String &x) {
+	os << "\"";
+    for (char c: x) {
+        switch (c) {
+            case '\\': os << "\\\\"; break;
+            case '\f': os << "\\f"; break;
+            case '\n': os << "\\n"; break;
+            case '\r': os << "\\r"; break;
+            case '"': os << "\\\""; break;
+            default: os << c; break;
+        }
+    }
+	os << "\"";
+	return os;
+}
+
+
+std::ostream& PropKey::print(std::ostream &os) const {
+	switch (m_type) {
+		case Type::INTEGER: os << "\"" << m_content.i << "\""; break;
+		case Type::NAME: print(os, m_content.n.str()); break;
+		default: assert(false);
+	}
+	return os;
+}
+
+
+
+std::string PropKey::toString() const {
+	stringstream out;
+	print(out);
+	return out.str();
+}
+
+
+PropKey::PropKey(const std::string &value) {
+	try {
+		long long i = stoll(value);
+		m_content.i = Integer(i);
+		if (m_content.i != i) throw std::out_of_range("Integer key out of range");
+	}
+	catch (std::invalid_argument &e) {
+		m_content.n = value;
+		m_type = Type::NAME;
+	}
+}
+
+
+
 void PropVal::destructorImpl() {
 	switch (m_type) {
 		case Type::STRING: m_content.s.~String(); break;
 		case Type::ARRAY: m_content.a.~ArrayPtr(); break;
-		case Type::INDEXED: m_content.m.~IndexedPtr(); break;
 		case Type::STRUC: m_content.o.~StrucPtr(); break;
 		default: assert(false);
 	}
@@ -53,7 +100,6 @@ bool PropVal::comparisonImpl(const PropVal &other) const {
 				default: return false;
 			}
 		case Type::ARRAY: return (other.m_type == Type::ARRAY) && (m_content.a == other.m_content.a);
-		case Type::INDEXED: return (other.m_type == Type::INDEXED) && (m_content.m == other.m_content.m);
 		case Type::STRUC: return (other.m_type == Type::STRUC) && (m_content.o == other.m_content.o);
 		default: assert(false);
 	}
@@ -71,23 +117,6 @@ std::ostream& PropVal::print(std::ostream &os, Name x) {
 }
 
 
-std::ostream& PropVal::print(std::ostream &os, const String &x) {
-	os << "\"";
-    for (char c: x) {
-        switch (c) {
-            case '\\': os << "\\\\"; break;
-            case '\f': os << "\\f"; break;
-            case '\n': os << "\\n"; break;
-            case '\r': os << "\\r"; break;
-            case '"': os << "\\\""; break;
-            default: os << c; break;
-        }
-    }
-	os << "\"";
-	return os;
-}
-
-
 std::ostream& PropVal::print(std::ostream &os, const Array &x) {
 	os << "[";
 	bool first = true;
@@ -101,22 +130,8 @@ std::ostream& PropVal::print(std::ostream &os, const Array &x) {
 }
 
 
-std::ostream& PropVal::print(std::ostream &os, const Indexed &x) {
-	os << "{";
-	bool first = true;
-	for (auto const &e: x) {
-		if (!first) os << ", ";
-		os << "\"" << e.first << "\": ";
-		e.second.print(os);
-		first = false;
-	}
-	os << "}";
-	return os;
-}
-
-
 std::ostream& PropVal::print(std::ostream &os, const Struc &x) {
-	using CPRef = std::pair<Name, const PropVal*>;
+	using CPRef = std::pair<PropKey, const PropVal*>;
 	vector<CPRef> props;
 	props.reserve(x.size());
 
@@ -128,8 +143,7 @@ std::ostream& PropVal::print(std::ostream &os, const Struc &x) {
 	bool first = true;
 	for (auto const &e: props) {
 		if (!first) os << ", ";
-		os << "\"" << e.first << "\": ";
-		e.second->print(os);
+		os << e.first << ": " << *e.second;
 		first = false;
 	}
 	os << "}";
@@ -146,7 +160,6 @@ std::ostream& PropVal::print(std::ostream &os) const {
 		case Type::NAME: print(os, m_content.n); break;
 		case Type::STRING: print(os, m_content.s); break;
 		case Type::ARRAY: print(os, *m_content.a); break;
-		case Type::INDEXED: print(os, *m_content.m); break;
 		case Type::STRUC: print(os, *m_content.o); break;
 		default: assert(false);
 	}

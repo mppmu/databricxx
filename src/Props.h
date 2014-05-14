@@ -23,6 +23,7 @@
 #include <map>
 #include <algorithm>
 #include <iosfwd>
+#include <cassert>
 
 #include "Name.h"
 #include "Value.h"
@@ -33,8 +34,160 @@ namespace dbrx {
 
 class PropVal;
 
-using Prop = std::pair<const Name, PropVal>;
-using IndexedPropVal = std::pair<const int64_t, PropVal>;
+
+class PropKey {
+public:
+	enum class Type: int32_t {
+		INTEGER = 2,
+		NAME = 4
+	};
+
+	using Integer = int64_t;
+	using String = std::string;
+
+	template<typename T> static void swapMem(T &a, T &b) noexcept {
+		struct Mem { uint8_t bytes[sizeof(T)]; };
+		static_assert(sizeof(Mem) == sizeof(T), "swapMem internal memory size mismatch");
+		Mem &memA = (Mem&) a;
+		Mem &memB = (Mem&) b;
+		std::swap(memA, memB);
+	}
+
+	static int32_t castToInt32(Integer value) {
+		int32_t r = static_cast<int32_t>(value);
+		if (r == value) return r;
+		else throw std::bad_cast();
+	}
+
+protected:
+	union Content {
+		Integer i;
+		Name n;
+
+		Content() : i() { }
+		Content(Integer value) : i(std::move(value)) { }
+		Content(Name value) : n(std::move(value)) { }
+
+		Content(Type type, const Content &other) {
+			switch (type) {
+				case Type::INTEGER: new (&i) Integer(other.i); break;
+				case Type::NAME: new (&n) Name(other.n); break;
+				default: assert(false);
+			}
+		}
+	};
+
+
+	Type m_type = Type::INTEGER;
+
+	Content m_content{0};
+
+public:
+	Type type() const { return m_type; }
+
+	bool isInteger() const { return m_type == Type::INTEGER; }
+	bool isName() const { return m_type == Type::NAME; }
+
+	Integer asInteger() const {
+		switch (m_type) {
+			case Type::INTEGER: return m_content.i;
+			default: throw std::bad_cast();
+		}
+	}
+
+	int32_t asInt32() const { return castToInt32(asInteger()); }
+	int64_t asLong64() const { return asInteger(); }
+
+	Name asName() const {
+		switch (m_type) {
+			case Type::NAME:
+				return m_content.n;
+			default: throw std::bad_cast();
+		}
+	}
+
+	struct CompareById {
+		bool operator() (const PropKey &a, const PropKey &b) {
+			switch (a.m_type) {
+				case Type::INTEGER:  return b.m_type == Type::INTEGER ?
+					a.m_content.i < b.m_content.i : true;
+				case Type::NAME: return b.m_type == Type::NAME ?
+					a.m_content.n.id() < b.m_content.n.id() : false;
+				default: throw std::bad_cast();
+			}
+		}
+	};
+
+
+	friend bool operator<(const PropKey &a, const PropKey &b) {
+		switch (a.m_type) {
+			case Type::INTEGER:  return b.m_type == Type::INTEGER ?
+				a.m_content.i < b.m_content.i : true;
+			case Type::NAME: return b.m_type == Type::NAME ?
+				a.m_content.n < b.m_content.n : false;
+			default: throw std::bad_cast();
+		}
+	}
+
+
+	friend void swap(PropKey &a, PropKey&b) noexcept {
+		std::swap(a.m_type, b.m_type);
+		swapMem(a.m_content, b.m_content);
+	}
+
+
+	bool operator==(PropKey other) const {
+		switch (m_type) {
+			case Type::INTEGER:
+				switch (other.m_type) {
+					case Type::INTEGER: return m_content.i == other.m_content.i;
+					default: return false;
+				}
+			case Type::NAME:
+				switch (other.m_type) {
+					case Type::NAME: return m_content.n == other.m_content.n;
+					default: return false;
+				}
+			default: assert(false);
+		}
+	}
+
+	PropKey& operator=(PropKey other) {
+		using namespace std;
+		swap(*this, other);
+		return *this;
+	}
+
+
+	static std::ostream& print(std::ostream &os, const String &x);
+
+	std::ostream& print(std::ostream &os) const;
+	std::string toString() const;
+
+
+	PropKey() {}
+
+	PropKey(const PropKey &other)
+		: m_type(other.m_type), m_content(other.m_type, other.m_content) {}
+
+	PropKey(PropKey &&other) {
+		using namespace std;
+		swap(*this, other);
+	}
+
+	PropKey(Integer value) : m_type(Type::INTEGER), m_content(value) {}
+
+	PropKey(Name value) : m_type(Type::NAME), m_content(value) {}
+
+	PropKey(const std::string &value);
+
+	PropKey(const char* value) : PropKey(std::string(value)) {}
+};
+
+
+
+
+using Prop = std::pair<const PropKey, PropVal>;
 
 
 class PropVal {
@@ -47,35 +200,23 @@ public:
 		NAME = 4,
 		STRING = 5,
 		ARRAY = 6,
-		INDEXED = 7,
-		STRUC = 8,
+		STRUC = 7,
 	};
 
 
 	using None = std::nullptr_t;
 	using Bool = bool;
-	using Integer = int64_t;
+	using Integer = PropKey::Integer;
 	using Real = double;
-	using String = std::string;
+	using String = PropKey::String;
 	using Array = std::vector<PropVal>;
-	using Indexed = std::map<Integer, PropVal>;
-	using Struc = std::map<Name, PropVal, Name::CompareById>;
+	using Struc = std::map<PropKey, PropVal, PropKey::CompareById>;
 
 
-	template<typename T> static void swapMem(T &a, T &b) noexcept {
-		struct Mem { uint8_t bytes[sizeof(T)]; };
-		static_assert(sizeof(Mem) == sizeof(T), "swapMem internal memory size mismatch");
-		Mem &memA = (Mem&) a;
-		Mem &memB = (Mem&) b;
-		std::swap(memA, memB);
-	}
+	template<typename T> static void swapMem(T &a, T &b) noexcept { PropKey::swapMem(a, b); }
 
 
-	static int32_t castToInt32(Integer value) {
-		int32_t r = static_cast<int32_t>(value);
-		if (r == value) return r;
-		else throw std::bad_cast();
-	}
+	static int32_t castToInt32(Integer value) { return PropKey::castToInt32(value); }
 
 	static bool castToBool(Integer value) {
 		switch (value) {
@@ -87,7 +228,6 @@ public:
 
 protected:
 	using ArrayPtr = std::unique_ptr<Array>;
-	using IndexedPtr = std::unique_ptr<Indexed>;
 	using StrucPtr = std::unique_ptr<Struc>;
 
 	union Content {
@@ -98,7 +238,6 @@ protected:
 		Name n;
 		String s;
 		ArrayPtr a;
-		IndexedPtr m;
 		StrucPtr o;
 
 		Content() : e() { }
@@ -110,7 +249,6 @@ protected:
 		Content(Name value) : n(std::move(value)) { }
 		Content(String value) : s(std::move(value)) { }
 		Content(Array value) : a( new Array(std::move(value)) ) { }
-		Content(Indexed value) : m( new Indexed(std::move(value)) ) { }
 		Content(Struc value) : o( new Struc(std::move(value)) ) { }
 
 		Content(std::initializer_list<PropVal> init) : a(new Array(init)) { }
@@ -124,8 +262,8 @@ protected:
 				case Type::NAME: new (&n) Name(); break;
 				case Type::STRING: new (&s) String(); break;
 				case Type::ARRAY: new (&a) ArrayPtr(new Array()); break;
-				case Type::INDEXED: new (&m) IndexedPtr(new Indexed()); break;
 				case Type::STRUC: new (&o) StrucPtr(new Struc()); break;
+				default: assert(false);
 			}
 		}
 
@@ -138,8 +276,8 @@ protected:
 				case Type::NAME: new (&n) Name(other.n); break;
 				case Type::STRING: new (&s) String(other.s); break;
 				case Type::ARRAY: new (&a) ArrayPtr(new Array(*other.a)); break;
-				case Type::INDEXED: new (&m) IndexedPtr(new Indexed(*other.m)); break;
 				case Type::STRUC: new (&o) StrucPtr(new Struc(*other.o)); break;
+				default: assert(false);
 			}
 		}
 
@@ -165,7 +303,6 @@ public:
 	bool isName() const { return m_type == Type::NAME; }
 	bool isString() const { return m_type == Type::STRING; }
 	bool isArray() const { return m_type == Type::ARRAY; }
-	bool isIndexed() const { return m_type == Type::INDEXED; }
 	bool isStruc() const { return m_type == Type::STRUC; }
 
 	bool asBool() const {
@@ -176,21 +313,17 @@ public:
 		}
 	}
 
-	int32_t asInt() const {
-		switch (m_type) {
-			case Type::INTEGER: return castToInt32(m_content.i);
-			case Type::BOOL: return m_content.b ? 1 : 0;
-			default: throw std::bad_cast();
-		}
-	}
-
-	int64_t asLong64() const {
+	Integer asInteger() const {
 		switch (m_type) {
 			case Type::INTEGER: return m_content.i;
 			case Type::BOOL: return m_content.b ? 1 : 0;
 			default: throw std::bad_cast();
 		}
 	}
+
+	int32_t asInt32() const { return castToInt32(asInteger()); }
+	int64_t asLong64() const { return asInteger(); }
+
 
 	double asDouble() const {
 		switch (m_type) {
@@ -232,17 +365,6 @@ public:
 
 	Array& asArray() {
 		if (m_type == Type::ARRAY) return *m_content.a;
-		else throw std::bad_cast();
-	}
-
-
-	const Indexed& asIndexed() const {
-		if (m_type == Type::INDEXED) return *m_content.m;
-		else throw std::bad_cast();
-	}
-
-	Indexed& asIndexed() {
-		if (m_type == Type::INDEXED) return *m_content.m;
 		else throw std::bad_cast();
 	}
 
@@ -307,9 +429,8 @@ public:
 	static std::ostream& print(std::ostream &os, Bool x) { return os << (x ? "true" : "false"); }
 	static std::ostream& print(std::ostream &os, Real x);
 	static std::ostream& print(std::ostream &os, const Name x);
-	static std::ostream& print(std::ostream &os, const String &x);
+	static std::ostream& print(std::ostream &os, const String &x) { return PropKey::print(os, x); }
 	static std::ostream& print(std::ostream &os, const Array &x);
-	static std::ostream& print(std::ostream &os, const Indexed &x);
 	static std::ostream& print(std::ostream &os, const Struc &x);
 
 	std::ostream& print(std::ostream &os) const;
@@ -351,17 +472,29 @@ public:
 
 	PropVal(const String &value) : m_type(Type::STRING), m_content(value) {}
 
-	PropVal(const char* value) : m_type(Type::STRING), m_content(std::string(value)) {}
+	PropVal(const char* value) : PropVal(std::string(value)) {}
 
 	PropVal(const Array &value) : m_type(Type::ARRAY), m_content(value) {}
 	PropVal(Array &&value) : m_type(Type::ARRAY), m_content(std::move(value)) {}
 	PropVal(std::initializer_list<PropVal> init) : m_type(Type::ARRAY), m_content(init) { }
 
-	PropVal(const Indexed &value) : m_type(Type::INDEXED), m_content(value) {}
-	PropVal(Indexed &&value) : m_type(Type::INDEXED), m_content(std::move(value)) {}
-
 	PropVal(const Struc &value) : m_type(Type::STRUC), m_content(value) {}
 	PropVal(Struc &&value) : m_type(Type::STRUC), m_content(std::move(value)) {}
+
+
+	PropVal(PropKey x) {
+		if (x.isInteger()) { m_content.i = x.asInteger(); m_type = Type::INTEGER; }
+		else {  m_content.n = x.asName(); m_type = Type::NAME; }
+	}
+
+	operator PropKey () const {
+		switch (m_type) {
+			case Type::INTEGER: return PropKey(m_content.i);
+			case Type::NAME: return PropKey(m_content.n);
+			case Type::STRING: return PropKey(m_content.s);
+			default: throw std::bad_cast();
+		}
+	}
 
 
 	static PropVal array() { return PropVal(Type::ARRAY); }
@@ -378,12 +511,6 @@ public:
 		{ return PropVal(Array(init)); }
 
 
-	static PropVal indexed() { return PropVal(Type::INDEXED); }
-
-	static PropVal indexed(std::initializer_list<IndexedPropVal> init)
-		{ return PropVal(Indexed(init)); }
-
-
 	static PropVal struc() { return PropVal(Type::STRUC); }
 
 	static PropVal struc(std::initializer_list<Prop> init)
@@ -394,6 +521,11 @@ public:
 		if (m_type > Type::NAME) destructorImpl();
 	}
 };
+
+
+
+inline std::ostream& operator<<(std::ostream &os, const PropKey &value)
+	{ return value.print(os); }
 
 
 inline std::ostream& operator<<(std::ostream &os, const PropVal &value)
