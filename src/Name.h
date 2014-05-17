@@ -48,6 +48,8 @@ public:
 
 	Id id() const { return Id(m_value); }
 
+	bool empty() const { return m_value == nullptr; }
+
 	const std::string& str() const { return (m_value != nullptr) ? *m_value : s_emptyString; }
 	const char* c_str() const { return m_value->c_str(); }
 

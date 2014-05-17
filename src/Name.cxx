@@ -17,6 +17,8 @@
 
 #include "Name.h"
 
+#include <cassert>
+
 #include "NameTable.h"
 
 using namespace std;
@@ -31,8 +33,10 @@ const std::string Name::s_emptyString{};
 Name::Name(const std::string &s): Name(s, NameTable::global()) {}
 
 
-Name::Name(const std::string &s, NameTable &table)
-	{ *this = table.resolve(s); }
+Name::Name(const std::string &s, NameTable &table) {
+	*this = table.resolve(s);
+	assert( empty() || (str().size() > 0) );
+}
 
 
 } // namespace dbrx
