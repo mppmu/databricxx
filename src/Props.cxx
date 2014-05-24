@@ -18,7 +18,14 @@
 #include "Props.h"
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
+
+#include "external/rapidjson/reader.h"
+#include "external/rapidjson/genericstream.h"
+
+#include <TString.h>
+
 
 using namespace std;
 
@@ -26,32 +33,46 @@ using namespace std;
 namespace dbrx {
 
 
-std::ostream& PropKey::print(std::ostream &os, const String &x) {
-	os << "\"";
+void PropKey::toJSON(std::ostream &out, const String &x) {
+	out << "\"";
     for (char c: x) {
         switch (c) {
-            case '\\': os << "\\\\"; break;
-            case '\f': os << "\\f"; break;
-            case '\n': os << "\\n"; break;
-            case '\r': os << "\\r"; break;
-            case '"': os << "\\\""; break;
-            default: os << c; break;
+            case '\\': out << "\\\\"; break;
+            case '\f': out << "\\f"; break;
+            case '\n': out << "\\n"; break;
+            case '\r': out << "\\r"; break;
+            case '"': out << "\\\""; break;
+            default: out << c; break;
         }
     }
-	os << "\"";
-	return os;
+	out << "\"";
+}
+
+
+void PropKey::toJSON(std::ostream &out) const {
+	switch (m_type) {
+		case Type::INTEGER: out << "\"" << m_content.i << "\""; break;
+		case Type::NAME: toJSON(out, m_content.n.str()); break;
+		default: assert(false);
+	}
+}
+
+
+std::string PropKey::toJSON() const {
+	stringstream tmp;
+	toJSON(tmp);
+	return tmp.str();
 }
 
 
 std::ostream& PropKey::print(std::ostream &os) const {
 	switch (m_type) {
-		case Type::INTEGER: os << "\"" << m_content.i << "\""; break;
-		case Type::NAME: print(os, m_content.n.str()); break;
+		case Type::INTEGER: os << m_content.i; break;
+		case Type::NAME: os << m_content.n; break;
 		default: assert(false);
 	}
 	return os;
 }
-
 
 
 std::string PropKey::toString() const {
@@ -106,31 +127,30 @@ bool PropVal::comparisonImpl(const PropVal &other) const {
 }
 
 
-std::ostream& PropVal::print(std::ostream &os, Real x) {
-	os.precision(17);
-	return cout << x;
+void PropVal::toJSON(std::ostream &out, Real x) {
+	out.precision(17);
+	out << x;
 }
 
 
-std::ostream& PropVal::print(std::ostream &os, Name x) {
-	return print(os, x.str());
+void PropVal::toJSON(std::ostream &out, Name x) {
+	toJSON(out, x.str());
 }
 
 
-std::ostream& PropVal::print(std::ostream &os, const Array &x) {
-	os << "[";
+void PropVal::toJSON(std::ostream &out, const Array &x) {
+	out << "[";
 	bool first = true;
 	for (auto const &v: x) {
-		if (!first) os << ", ";
-		v.print(os);
+		if (!first) out << ", ";
+		v.toJSON(out);
 		first = false;
 	}
-	os << "]";
-	return os;
+	out << "]";
 }
 
 
-std::ostream& PropVal::print(std::ostream &os, const Props &x) {
+void PropVal::toJSON(std::ostream &out, const Props &x) {
 	using CPRef = std::pair<PropKey, const PropVal*>;
 	vector<CPRef> props;
 	props.reserve(x.size());
@@ -139,29 +159,154 @@ std::ostream& PropVal::print(std::ostream &os, const Props &x) {
 	auto compare = [](const CPRef &a, const CPRef &b) { return a.first < b.first; };
 	sort(props.begin(), props.end(), compare);
 
-	os << "{";
+	out << "{";
 	bool first = true;
 	for (auto const &e: props) {
-		if (!first) os << ", ";
-		os << e.first << ": " << *e.second;
+		if (!first) out << ", ";
+		e.first.toJSON(out);
+		out << ": ";
+		e.second->toJSON(out);
 		first = false;
 	}
-	os << "}";
-	return os;
+	out << "}";
+}
+
+
+void PropVal::toJSON(std::ostream &out) const {
+	switch (m_type) {
+		case Type::NONE: toJSON(out, m_content.e); break;
+		case Type::BOOL: toJSON(out, m_content.b); break;
+		case Type::INTEGER: toJSON(out, m_content.i); break;
+		case Type::REAL: toJSON(out, m_content.r); break;
+		case Type::NAME: toJSON(out, m_content.n); break;
+		case Type::STRING: toJSON(out, m_content.s); break;
+		case Type::ARRAY: toJSON(out, *m_content.a); break;
+		case Type::PROPS: toJSON(out, *m_content.o); break;
+		default: assert(false);
+	}
+}
+
+
+PropVal PropVal::fromJSON(std::istream &in) {
+	using Encoding = typename rapidjson::UTF8<>;
+	using rapidjson::SizeType;
+
+	class JSONHandler {
+	protected:
+		std::vector<PropVal> m_valueStack;
+
+		void popCurrent() { m_valueStack.pop_back(); }
+
+		void store(PropVal &&pIn) {
+			if (m_valueStack.capacity() == m_valueStack.size())
+				m_valueStack.reserve(m_valueStack.size() * 2);
+			m_valueStack.push_back(std::move(pIn));
+		}
+
+	public:
+		using Ch = typename Encoding::Ch;
+
+		void Null_() { store(PropVal()); }
+
+		void Bool_(bool b) { store(b); }
+
+		void Int(int i) { store(int64_t(i)); }
+		void Uint(unsigned i) { store(int64_t(i)); }
+		void Int64(int64_t i) { store(i); }
+		void Uint64(uint64_t i) { store(int64_t(i)); }
+
+		void Double(double d) { store(d); }
+
+		void String(const Ch* str, SizeType length, bool copy) { store(string(str, length)); }
+
+		void StartObject() {}
+
+		void EndObject(SizeType memberCount) {
+			if (m_valueStack.size() < memberCount * 2) throw logic_error("Parsing stack size mismatch on object");
+			PropVal objProp = PropVal::props();
+			Props obj = objProp.asProps();
+			for (auto p = m_valueStack.end() - memberCount * 2; p < m_valueStack.end();) {
+				PropKey k(std::move(*p++));
+				obj[std::move(k)] = std::move(*p++);
+			}
+			m_valueStack.resize(m_valueStack.size() - 2 * memberCount);
+			store(std::move(obj));
+		}
+
+		void StartArray() {}
+
+		void EndArray(SizeType elementCount) {
+			if (m_valueStack.size() < elementCount) throw logic_error("Parsing stack size mismatch on array");
+			PropVal arrayProp = PropVal::array();
+			Array arr = arrayProp.asArray();
+			arr.reserve(elementCount);
+			for (auto p = m_valueStack.end() - elementCount; p < m_valueStack.end(); ++p)
+				arr.push_back(std::move(*p));
+			m_valueStack.resize(m_valueStack.size() - elementCount);
+			store(std::move(arr));
+		}
+
+		PropVal& getResult() {
+			if (m_valueStack.size() != 1) throw logic_error("Parsing stack size mismatch - expected size 1");
+			return m_valueStack.front();
+		}
+
+		JSONHandler() {
+			m_valueStack.reserve(8);
+		}
+	};
+
+	rapidjson::GenericReadStream genericIn(in);
+
+	rapidjson::GenericReader<Encoding> reader;
+	JSONHandler handler;
+
+	if (! reader.Parse<rapidjson::kParseDefaultFlags, rapidjson::GenericReadStream, JSONHandler> (genericIn, handler))
+		throw runtime_error("JSON parse error");
+
+	return PropVal( std::move(handler.getResult()) );
+}
+
+
+std::string PropVal::toJSON() const {
+	stringstream tmp;
+	toJSON(tmp);
+	return tmp.str();
+}
+
+
+PropVal PropVal::fromJSON(const std::string &in) {
+	stringstream tmp(in);
+	return fromJSON(tmp);
+}
+
+
+void PropVal::toFile(const std::string &outFileName) const {
+	TString fileName(outFileName);
+
+	if (fileName.EndsWith(".json")) {
+		ofstream out(fileName.Data());
+		toJSON(out);
+		out << "\n";
+	} else throw runtime_error("Unsupported input file type for PropVal");
+}
+
+
+PropVal PropVal::fromFile(const std::string &inFileName) {
+	TString fileName(inFileName);
+
+	if (fileName.EndsWith(".json")) {
+		ifstream in(fileName.Data());
+		return fromJSON(in);
+	} else throw runtime_error("Unsupported input file type for PropVal");
 }
 
 
 std::ostream& PropVal::print(std::ostream &os) const {
 	switch (m_type) {
-		case Type::NONE: print(os, m_content.e); break;
-		case Type::BOOL: print(os, m_content.b); break;
-		case Type::INTEGER: print(os, m_content.i); break;
-		case Type::REAL: print(os, m_content.r); break;
-		case Type::NAME: print(os, m_content.n); break;
-		case Type::STRING: print(os, m_content.s); break;
-		case Type::ARRAY: print(os, *m_content.a); break;
-		case Type::PROPS: print(os, *m_content.o); break;
-		default: assert(false);
+		case Type::NAME: os << m_content.n; break;
+		case Type::STRING: os << m_content.s; break;
+		default: toJSON(os);
 	}
 	return os;
 }

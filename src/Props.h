@@ -161,7 +161,10 @@ public:
 	}
 
 
-	static std::ostream& print(std::ostream &os, const String &x);
+	static void toJSON(std::ostream &out, const String &x);
+
+	void toJSON(std::ostream &out) const;
+	std::string toJSON() const;
 
 	std::ostream& print(std::ostream &os) const;
 	std::string toString() const;
@@ -429,14 +432,25 @@ public:
 	}
 
 
-	template <typename T> static std::ostream& print(std::ostream &os, const T &x) { return os << x; }
-	static std::ostream& print(std::ostream &os, None x) { return os << "none"; }
-	static std::ostream& print(std::ostream &os, Bool x) { return os << (x ? "true" : "false"); }
-	static std::ostream& print(std::ostream &os, Real x);
-	static std::ostream& print(std::ostream &os, const Name x);
-	static std::ostream& print(std::ostream &os, const String &x) { return PropKey::print(os, x); }
-	static std::ostream& print(std::ostream &os, const Array &x);
-	static std::ostream& print(std::ostream &os, const Props &x);
+	template <typename T> static void toJSON(std::ostream &out, const T &x) { out << x; }
+	static void toJSON(std::ostream &out, None x) { out << "none"; }
+	static void toJSON(std::ostream &out, Bool x) { out << (x ? "true" : "false"); }
+	static void toJSON(std::ostream &out, Real x);
+	static void toJSON(std::ostream &out, const Name x);
+	static void toJSON(std::ostream &out, const String &x) { PropKey::toJSON(out, x); }
+	static void toJSON(std::ostream &out, const Array &x);
+	static void toJSON(std::ostream &out, const Props &x);
+
+
+	void toJSON(std::ostream &out) const;
+	static PropVal fromJSON(std::istream &in);
+
+	std::string toJSON() const;
+	static PropVal fromJSON(const std::string &in);
+
+	void toFile(const std::string &outFileName) const;
+	static PropVal fromFile(const std::string &inFileName);
+
 
 	std::ostream& print(std::ostream &os) const;
 	std::string toString() const;
