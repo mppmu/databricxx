@@ -152,6 +152,8 @@ public:
 		}
 	}
 
+	bool operator!=(PropKey other) const { return ! operator==(other); }
+
 	PropKey& operator=(PropKey other) {
 		using namespace std;
 		swap(*this, other);
@@ -396,7 +398,7 @@ public:
 	}
 
 
-	bool operator==(PropVal other) const {
+	bool operator==(const PropVal &other) const {
 		switch (m_type) {
 			case Type::NONE: return other.m_type == Type::NONE;
 			case Type::BOOL:
@@ -416,6 +418,9 @@ public:
 			default: return comparisonImpl(other);
 		}
 	}
+
+	bool operator!=(const PropVal &other) const { return ! operator==(other); }
+
 
 	PropVal& operator=(PropVal other) {
 		using namespace std;

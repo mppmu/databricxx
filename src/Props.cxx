@@ -99,8 +99,8 @@ bool PropVal::comparisonImpl(const PropVal &other) const {
 				case Type::NAME: return m_content.s == other.m_content.n.str();
 				default: return false;
 			}
-		case Type::ARRAY: return (other.m_type == Type::ARRAY) && (m_content.a == other.m_content.a);
-		case Type::PROPS: return (other.m_type == Type::PROPS) && (m_content.o == other.m_content.o);
+		case Type::ARRAY: return (other.m_type == Type::ARRAY) && (*m_content.a == *other.m_content.a);
+		case Type::PROPS: return (other.m_type == Type::PROPS) && (*m_content.o == *other.m_content.o);
 		default: assert(false);
 	}
 }
