@@ -136,23 +136,23 @@ public:
 	}
 
 
-	bool operator==(PropKey other) const {
-		switch (m_type) {
+	friend bool operator==(PropKey a, PropKey b) {
+		switch (a.m_type) {
 			case Type::INTEGER:
-				switch (other.m_type) {
-					case Type::INTEGER: return m_content.i == other.m_content.i;
+				switch (b.m_type) {
+					case Type::INTEGER: return a.m_content.i == b.m_content.i;
 					default: return false;
 				}
 			case Type::NAME:
-				switch (other.m_type) {
-					case Type::NAME: return m_content.n == other.m_content.n;
+				switch (b.m_type) {
+					case Type::NAME: return a.m_content.n == b.m_content.n;
 					default: return false;
 				}
 			default: assert(false);
 		}
 	}
 
-	bool operator!=(PropKey other) const { return ! operator==(other); }
+	friend bool operator!=(PropKey a, PropKey b) { return ! operator==(a, b); }
 
 	PropKey& operator=(PropKey other) {
 		using namespace std;
@@ -398,28 +398,28 @@ public:
 	}
 
 
-	bool operator==(const PropVal &other) const {
-		switch (m_type) {
-			case Type::NONE: return other.m_type == Type::NONE;
+	friend bool operator==(const PropVal &a, const PropVal &b) {
+		switch (a.m_type) {
+			case Type::NONE: return b.m_type == Type::NONE;
 			case Type::BOOL:
-				switch (other.m_type) {
-					case Type::BOOL: return m_content.b == other.m_content.b;
-					case Type::INTEGER: return (m_content.b ? 1 : 0) == other.m_content.i;
+				switch (b.m_type) {
+					case Type::BOOL: return a.m_content.b == b.m_content.b;
+					case Type::INTEGER: return (a.m_content.b ? 1 : 0) == b.m_content.i;
 					default: return false;
 				}
 			case Type::INTEGER:
-				switch (other.m_type) {
-					case Type::INTEGER: return m_content.i == other.m_content.i;
-					case Type::BOOL: return m_content.i == (other.m_content.b ? 1 : 0);
+				switch (b.m_type) {
+					case Type::INTEGER: return a.m_content.i == b.m_content.i;
+					case Type::BOOL: return a.m_content.i == (b.m_content.b ? 1 : 0);
 					default: return false;
 				}
-			case Type::REAL: return (other.m_type == Type::REAL) &&
-				(m_content.r == other.m_content.r);
-			default: return comparisonImpl(other);
+			case Type::REAL: return (b.m_type == Type::REAL) &&
+				(a.m_content.r == b.m_content.r);
+			default: return a.comparisonImpl(b);
 		}
 	}
 
-	bool operator!=(const PropVal &other) const { return ! operator==(other); }
+	friend bool operator!=(const PropVal &a, const PropVal &b) { return ! operator==(a, b); }
 
 
 	PropVal& operator=(PropVal other) {
