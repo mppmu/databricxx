@@ -294,7 +294,14 @@ protected:
 
 	Content m_content;
 
-	void destructorImpl();
+	void destructorImpl() {
+		switch (m_type) {
+			case Type::STRING: m_content.s.~String(); break;
+			case Type::ARRAY: m_content.a.~ArrayPtr(); break;
+			case Type::PROPS: m_content.o.~PropsPtr(); break;
+			default: assert(false);
+		}
+	}
 
 	bool comparisonImpl(const PropVal &other) const;
 

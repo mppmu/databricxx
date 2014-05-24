@@ -95,17 +95,6 @@ PropKey::PropKey(const std::string &value) {
 }
 
 
-
-void PropVal::destructorImpl() {
-	switch (m_type) {
-		case Type::STRING: m_content.s.~String(); break;
-		case Type::ARRAY: m_content.a.~ArrayPtr(); break;
-		case Type::PROPS: m_content.o.~PropsPtr(); break;
-		default: assert(false);
-	}
-}
-
-
 bool PropVal::comparisonImpl(const PropVal &other) const {
 	switch (m_type) {
 		case Type::NAME:
