@@ -200,7 +200,7 @@ public:
 		NAME = 4,
 		STRING = 5,
 		ARRAY = 6,
-		STRUC = 7,
+		PROPS = 7,
 	};
 
 
@@ -210,7 +210,7 @@ public:
 	using Real = double;
 	using String = PropKey::String;
 	using Array = std::vector<PropVal>;
-	using Struc = std::map<PropKey, PropVal, PropKey::CompareById>;
+	using Props = std::map<PropKey, PropVal, PropKey::CompareById>;
 
 
 	template<typename T> static void swapMem(T &a, T &b) noexcept { PropKey::swapMem(a, b); }
@@ -228,7 +228,7 @@ public:
 
 protected:
 	using ArrayPtr = std::unique_ptr<Array>;
-	using StrucPtr = std::unique_ptr<Struc>;
+	using PropsPtr = std::unique_ptr<Props>;
 
 	union Content {
 		None e;
@@ -238,7 +238,7 @@ protected:
 		Name n;
 		String s;
 		ArrayPtr a;
-		StrucPtr o;
+		PropsPtr o;
 
 		Content() : e() { }
 
@@ -249,7 +249,7 @@ protected:
 		Content(Name value) : n(std::move(value)) { }
 		Content(String value) : s(std::move(value)) { }
 		Content(Array value) : a( new Array(std::move(value)) ) { }
-		Content(Struc value) : o( new Struc(std::move(value)) ) { }
+		Content(Props value) : o( new Props(std::move(value)) ) { }
 
 		Content(std::initializer_list<PropVal> init) : a(new Array(init)) { }
 
@@ -262,7 +262,7 @@ protected:
 				case Type::NAME: new (&n) Name(); break;
 				case Type::STRING: new (&s) String(); break;
 				case Type::ARRAY: new (&a) ArrayPtr(new Array()); break;
-				case Type::STRUC: new (&o) StrucPtr(new Struc()); break;
+				case Type::PROPS: new (&o) PropsPtr(new Props()); break;
 				default: assert(false);
 			}
 		}
@@ -276,7 +276,7 @@ protected:
 				case Type::NAME: new (&n) Name(other.n); break;
 				case Type::STRING: new (&s) String(other.s); break;
 				case Type::ARRAY: new (&a) ArrayPtr(new Array(*other.a)); break;
-				case Type::STRUC: new (&o) StrucPtr(new Struc(*other.o)); break;
+				case Type::PROPS: new (&o) PropsPtr(new Props(*other.o)); break;
 				default: assert(false);
 			}
 		}
@@ -303,7 +303,7 @@ public:
 	bool isName() const { return m_type == Type::NAME; }
 	bool isString() const { return m_type == Type::STRING; }
 	bool isArray() const { return m_type == Type::ARRAY; }
-	bool isStruc() const { return m_type == Type::STRUC; }
+	bool isProps() const { return m_type == Type::PROPS; }
 
 	bool asBool() const {
 		switch (m_type) {
@@ -369,13 +369,13 @@ public:
 	}
 
 
-	const Struc& asStruc() const {
-		if (m_type == Type::STRUC) return *m_content.o;
+	const Props& asProps() const {
+		if (m_type == Type::PROPS) return *m_content.o;
 		else throw std::bad_cast();
 	}
 
-	Struc& asStruc() {
-		if (m_type == Type::STRUC) return *m_content.o;
+	Props& asProps() {
+		if (m_type == Type::PROPS) return *m_content.o;
 		else throw std::bad_cast();
 	}
 
@@ -431,7 +431,7 @@ public:
 	static std::ostream& print(std::ostream &os, const Name x);
 	static std::ostream& print(std::ostream &os, const String &x) { return PropKey::print(os, x); }
 	static std::ostream& print(std::ostream &os, const Array &x);
-	static std::ostream& print(std::ostream &os, const Struc &x);
+	static std::ostream& print(std::ostream &os, const Props &x);
 
 	std::ostream& print(std::ostream &os) const;
 	std::string toString() const;
@@ -478,8 +478,8 @@ public:
 	PropVal(Array &&value) : m_type(Type::ARRAY), m_content(std::move(value)) {}
 	PropVal(std::initializer_list<PropVal> init) : m_type(Type::ARRAY), m_content(init) { }
 
-	PropVal(const Struc &value) : m_type(Type::STRUC), m_content(value) {}
-	PropVal(Struc &&value) : m_type(Type::STRUC), m_content(std::move(value)) {}
+	PropVal(const Props &value) : m_type(Type::PROPS), m_content(value) {}
+	PropVal(Props &&value) : m_type(Type::PROPS), m_content(std::move(value)) {}
 
 
 	PropVal(PropKey x) {
@@ -511,10 +511,10 @@ public:
 		{ return PropVal(Array(init)); }
 
 
-	static PropVal struc() { return PropVal(Type::STRUC); }
+	static PropVal props() { return PropVal(Type::PROPS); }
 
-	static PropVal struc(std::initializer_list<Prop> init)
-		{ return PropVal(Struc(init)); }
+	static PropVal props(std::initializer_list<Prop> init)
+		{ return PropVal(Props(init)); }
 
 
 	~PropVal() {
@@ -533,7 +533,7 @@ inline std::ostream& operator<<(std::ostream &os, const PropVal &value)
 
 
 
-using Props = PropVal::Struc;
+using Props = PropVal::Props;
 
 
 } // namespace dbrx

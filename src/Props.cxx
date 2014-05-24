@@ -79,7 +79,7 @@ void PropVal::destructorImpl() {
 	switch (m_type) {
 		case Type::STRING: m_content.s.~String(); break;
 		case Type::ARRAY: m_content.a.~ArrayPtr(); break;
-		case Type::STRUC: m_content.o.~StrucPtr(); break;
+		case Type::PROPS: m_content.o.~PropsPtr(); break;
 		default: assert(false);
 	}
 }
@@ -100,7 +100,7 @@ bool PropVal::comparisonImpl(const PropVal &other) const {
 				default: return false;
 			}
 		case Type::ARRAY: return (other.m_type == Type::ARRAY) && (m_content.a == other.m_content.a);
-		case Type::STRUC: return (other.m_type == Type::STRUC) && (m_content.o == other.m_content.o);
+		case Type::PROPS: return (other.m_type == Type::PROPS) && (m_content.o == other.m_content.o);
 		default: assert(false);
 	}
 }
@@ -130,7 +130,7 @@ std::ostream& PropVal::print(std::ostream &os, const Array &x) {
 }
 
 
-std::ostream& PropVal::print(std::ostream &os, const Struc &x) {
+std::ostream& PropVal::print(std::ostream &os, const Props &x) {
 	using CPRef = std::pair<PropKey, const PropVal*>;
 	vector<CPRef> props;
 	props.reserve(x.size());
@@ -160,7 +160,7 @@ std::ostream& PropVal::print(std::ostream &os) const {
 		case Type::NAME: print(os, m_content.n); break;
 		case Type::STRING: print(os, m_content.s); break;
 		case Type::ARRAY: print(os, *m_content.a); break;
-		case Type::STRUC: print(os, *m_content.o); break;
+		case Type::PROPS: print(os, *m_content.o); break;
 		default: assert(false);
 	}
 	return os;
