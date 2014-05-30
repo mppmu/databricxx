@@ -431,6 +431,10 @@ public:
 
 	friend bool operator!=(const PropVal &a, const PropVal &b) { return ! operator==(a, b); }
 
+	friend bool operator==(const Props &a, const Props &b);
+
+	friend bool operator!=(const Props &a, const Props &b) { return ! operator==(a, b); }
+
 
 	PropVal& operator=(PropVal other) {
 		using namespace std;

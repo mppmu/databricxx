@@ -116,6 +116,43 @@ bool PropVal::comparisonImpl(const PropVal &other) const {
 }
 
 
+bool operator==(const Props &a, const Props &b) {
+	auto itA = a.begin(), itB = b.begin();
+
+	while ((itA != a.end()) && (itB != b.end())) {
+		const auto &keyA = itA->first;
+		const auto &valA = itA->second;
+		const auto &keyB = itB->first;
+		const auto &valB = itB->second;
+
+		if (keyA == keyB) {
+			if (valA != valB) return false;
+			++itA; ++itB;
+		} else if (PropKey::CompareById()(keyA, keyB)) {
+			if (! valA.isNone()) return false;
+			++itA;
+		} else {
+			if (! valB.isNone()) return false;
+			++itB;
+		}
+	}
+
+	while (itA != a.end()) {
+		const auto &valA = itA->second;
+		if (! valA.isNone()) return false;
+		++itA;
+	}
+
+	while (itB != b.end()) {
+		const auto &valB = itB->second;
+		if (! valB.isNone()) return false;
+		++itB;
+	}
+
+	return true;
+}
+
+
 void PropVal::toJSON(std::ostream &out, Real x) {
 	out.precision(17);
 	out << x;
