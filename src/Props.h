@@ -550,8 +550,24 @@ public:
 	~PropVal() {
 		if (m_type > Type::NAME) destructorImpl();
 	}
-};
 
+
+protected:
+	static Props diff(const Props &a, const Props &b);
+
+	static Props& patchMerge(Props &a, Props b, bool merge);
+
+public:
+	friend Props operator-(const Props &a, const Props &b) { return diff(a, b); }
+
+	friend Props& operator+=(Props &a, Props b) { return patchMerge(a, std::move(b), false); }
+
+	friend Props operator+(Props a, const Props b) { return operator+=(a, std::move(b)); }
+
+	friend Props& operator&=(Props &a, Props b) { return patchMerge(a, std::move(b), true); }
+
+	friend Props operator&(Props a, const Props b) { return operator&=(a, std::move(b)); }
+};
 
 
 inline std::ostream& operator<<(std::ostream &os, const PropKey &value)

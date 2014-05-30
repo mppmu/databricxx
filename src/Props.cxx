@@ -345,4 +345,86 @@ std::string PropVal::toString() const {
 }
 
 
+Props PropVal::diff(const Props &a, const Props &b) {
+	auto itA = a.begin(), itB = b.begin();
+
+	Props result;
+
+	while ((itA != a.end()) && (itB != b.end())) {
+		const auto &keyA = itA->first;
+		const auto &valA = itA->second;
+		const auto &keyB = itB->first;
+		const auto &valB = itB->second;
+
+		if (keyA == keyB) {
+			if (valA.isProps() && valB.isProps()) {
+				Props d = operator-(valA.asProps(), valB.asProps());
+				if (! d.empty()) result[keyA] = PropVal(std::move(d));
+			}
+			else if (valA != valB) result[keyA] = valA;
+			++itA; ++itB;
+		} else if (PropKey::CompareById()(keyA, keyB)) {
+			result[keyA] = valA;
+			++itA;
+		} else {
+			result[keyB] = PropVal();
+			++itB;
+		}
+	}
+
+	while (itA != a.end()) {
+		const auto &keyA = itA->first;
+		const auto &valA = itA->second;
+		result[keyA] = valA;
+		++itA;
+	}
+
+	while (itB != b.end()) {
+		const auto &keyB = itB->first;
+		const auto &valB = itB->second;
+		result[keyB] = PropVal();
+		++itB;
+	}
+
+	return result;
+}
+
+
+Props& PropVal::patchMerge(Props &a, Props b, bool merge) {
+	auto itA = a.begin(), itB = b.begin();
+
+	while ((itA != a.end()) && (itB != b.end())) {
+		const auto &keyA = itA->first;
+		auto &valA = itA->second;
+		const auto &keyB = itB->first;
+		auto &valB = itB->second;
+
+		if (keyA == keyB) {
+			if (valA.isProps() && valB.isProps())
+				patchMerge(valA.asProps(), std::move(valB.asProps()), merge);
+			else {
+				if ((merge) && (valA != valB))
+					throw invalid_argument("Can't merge Props with conflicting contents");
+				else valA = std::move(valB);
+			}
+			++itA; ++itB;
+		} else if (PropKey::CompareById()(keyA, keyB)) {
+			++itA;
+		} else {
+			a[keyB] = std::move(valB);
+			++itB;
+		}
+	}
+
+	while (itB != b.end()) {
+		const auto &keyB = itB->first;
+		auto &valB = itB->second;
+		a[keyB] = std::move(valB);
+		++itB;
+	}
+
+	return a;
+}
+
+
 } // namespace dbrxq
