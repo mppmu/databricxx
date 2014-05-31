@@ -392,14 +392,126 @@ public:
 	}
 
 
+	size_t size() const {
+		switch (m_type) {
+			case Type::ARRAY: return m_content.a->size();
+			case Type::PROPS: return m_content.o->size();
+			default: return 1;
+		}
+	}
+
+
 	// std::vector is guaranteed to be contiguous in memory, vector iterators
 	// can be converted to simple pointers:
-	PropVal* begin() noexcept { return m_type == Type::ARRAY ? &*m_content.a->begin() : this; }
-	const PropVal* begin() const noexcept  { return m_type == Type::ARRAY ? &*m_content.a->begin() : this; }
-	const PropVal* cbegin() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->cbegin() : this; }
-	PropVal* end() noexcept { return m_type == Type::ARRAY ? &*m_content.a->end() : this; }
-	const PropVal* end() const noexcept  { return m_type == Type::ARRAY ? &*m_content.a->end() : this; }
-	const PropVal* cend() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->cend() : this; }
+	// TODO: Make this work for Props (iterate over keys), probably will
+	// require new map type based on separate key and value vectors).
+	using iterator = PropVal*;
+	using const_iterator = const PropVal*;
+
+
+	iterator begin() noexcept {
+		switch (m_type) {
+			case Type::ARRAY: return &*m_content.a->begin();
+			case Type::PROPS: throw std::logic_error("begin() not implemented for Props-type PropVal.");
+			default: return this;
+		}
+	}
+
+	const_iterator begin() const noexcept {
+		switch (m_type) {
+			case Type::ARRAY: return &*m_content.a->begin();
+			case Type::PROPS: throw std::logic_error("begin() not implemented for Props-type PropVal.");
+			default: return this;
+		}
+	}
+
+	const_iterator cbegin() const noexcept {
+		switch (m_type) {
+			case Type::ARRAY: return &*m_content.a->cbegin();
+			case Type::PROPS: throw std::logic_error("cbegin() not implemented for Props-type PropVal.");
+			default: return this;
+		}
+	}
+
+	iterator end() noexcept {
+		switch (m_type) {
+			case Type::ARRAY: return &*m_content.a->end();
+			case Type::PROPS: throw std::logic_error("end() not implemented for Props-type PropVal.");
+			default: return this + 1;
+		}
+	}
+
+	const_iterator end() const noexcept {
+		switch (m_type) {
+			case Type::ARRAY: return &*m_content.a->end();
+			case Type::PROPS: throw std::logic_error("end() not implemented for Props-type PropVal.");
+			default: return this + 1;
+		}
+	}
+
+	const_iterator cend() const noexcept {
+		switch (m_type) {
+			case Type::ARRAY: return &*m_content.a->cend();
+			case Type::PROPS: throw std::logic_error("cend() not implemented for Props-type PropVal.");
+			default: return this + 1;
+		}
+	}
+
+
+	PropVal& operator[](PropKey key) {
+		if (m_type == Type::PROPS) return (*m_content.o)[key];
+		else {
+			if (key.isInteger()) {
+				Integer index = key.asInteger();
+				if (m_type == Type::ARRAY) return (*m_content.a)[index];
+				else {
+					if (index == 0) return *this;
+					else throw std::out_of_range("PropVal of this type has fixed size 1");
+				}
+			}
+			else throw std::invalid_argument("Can't use non-integer key with non-Props PropVal value");
+		}
+	}
+
+
+	const PropVal& operator[](PropKey key) const {
+		if (m_type == Type::PROPS) return (*m_content.o)[key];
+		else {
+			if (key.isInteger()) {
+				Integer index = key.asInteger();
+				if (m_type == Type::ARRAY) return (*m_content.a)[index];
+				else {
+					if (index == 0) return *this;
+					else throw std::out_of_range("PropVal of this type has fixed size 1");
+				}
+			}
+			else throw std::invalid_argument("Can't use non-integer key with non-Props PropVal value");
+		}
+	}
+
+
+	PropVal& operator[](Integer index) {
+		if (m_type == Type::PROPS) return operator[](PropKey(index));
+		else {
+			if (m_type == Type::ARRAY) return (*m_content.a)[index];
+			else {
+				if (index == 0) return *this;
+				else throw std::out_of_range("PropVal of this type has fixed size 1");
+			}
+		}
+	}
+
+
+	const PropVal& operator[](Integer index) const {
+		if (m_type == Type::PROPS) return operator[](PropKey(index));
+		else {
+			if (m_type == Type::ARRAY) return (*m_content.a)[index];
+			else {
+				if (index == 0) return *this;
+				else throw std::out_of_range("PropVal of this type has fixed size 1");
+			}
+		}
+	}
 
 
 	friend void swap(PropVal &a, PropVal&b) noexcept {
