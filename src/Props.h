@@ -182,6 +182,8 @@ public:
 
 	PropKey(Integer value) : m_type(Type::INTEGER), m_content(value) {}
 
+	PropKey(int32_t value) : PropKey(Integer(value)) {}
+
 	PropKey(Name value) : m_type(Type::NAME), m_content(value) {}
 
 	PropKey(const std::string &value);
