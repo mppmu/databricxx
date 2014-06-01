@@ -381,7 +381,6 @@ Props PropVal::diff(const Props &a, const Props &b) {
 
 	while (itB != b.end()) {
 		const auto &keyB = itB->first;
-		const auto &valB = itB->second;
 		result[keyB] = PropVal();
 		++itB;
 	}
