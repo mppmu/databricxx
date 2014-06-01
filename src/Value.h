@@ -70,6 +70,9 @@ public:
 
 	virtual void setToDefault() = 0;
 	virtual void clear() = 0;
+
+	friend void swap(WritableValue &a, WritableValue &b)
+		{ std::swap(*a.untypedPPtr(), *b.untypedPPtr()); }
 };
 
 
@@ -77,6 +80,9 @@ public:
 class PrimaryValue: public virtual WritableValue {
 public:
 	bool valid() { return true; }
+
+	friend void swap(PrimaryValue &a, PrimaryValue &b)
+		{ swap(static_cast<WritableValue &>(a), static_cast<WritableValue &>(b)); }
 };
 
 
@@ -84,6 +90,9 @@ public:
 class ValueRef: public virtual WritableValue {
 public:
 	virtual void referTo(WritableValue &source) = 0;
+
+	friend void swap(ValueRef &a, ValueRef &b)
+		{ swap(static_cast<WritableValue &>(a), static_cast<WritableValue &>(b)); }
 };
 
 
@@ -138,11 +147,15 @@ public:
 	}
 
 	TypedWritableValue<T>& operator=(std::unique_ptr<T> &&v) noexcept {
-		std::unique_ptr<T> thisV(ptr()); *pptr() = nullptr;
+		using namespace std;
+		unique_ptr<T> thisV(ptr()); *pptr() = nullptr;
 		swap(thisV, v);
 		*pptr() = thisV.release();
 		return *this;
 	}
+
+	friend void swap(TypedWritableValue &a, TypedWritableValue &b)
+		{ swap(static_cast<WritableValue &>(a), static_cast<WritableValue &>(b)); }
 };
 
 
@@ -203,6 +216,9 @@ public:
 	TypedPrimaryValue(std::unique_ptr<T> &&v) = delete;
 
 	~TypedPrimaryValue() { if (m_value != nullptr) delete m_value; }
+
+	friend void swap(TypedPrimaryValue &a, TypedPrimaryValue &b)
+		{ swap(static_cast<PrimaryValue &>(a), static_cast<PrimaryValue &>(b)); }
 };
 
 
@@ -259,6 +275,9 @@ public:
 	TypedValueRef(TypedWritableValue<T> &v) : m_value(v.pptr()) {}
 
 	TypedValueRef(WritableValue &source) { referTo(source); }
+
+	friend void swap(TypedValueRef &a, TypedValueRef &b)
+		{ swap(static_cast<ValueRef &>(a), static_cast<ValueRef &>(b)); }
 };
 
 
