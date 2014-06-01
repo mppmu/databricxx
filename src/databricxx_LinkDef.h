@@ -35,8 +35,8 @@
 // RootIO.h
 #pragma link C++ class dbrx::RootIO-;
 
-// RootReflection.h
-#pragma link C++ class dbrx::RootReflection-;
+// TypeReflection.h
+#pragma link C++ class dbrx::TypeReflection-;
 
 // Value.h, HasValue.h
 #pragma link C++ class dbrx::Value-;

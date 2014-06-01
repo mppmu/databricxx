@@ -12,7 +12,7 @@ libdatabricxx_la_SOURCES = \
 	Name.cxx NameTable.cxx \
 	Props.cxx \
 	RootIO.cxx \
-	RootReflection.cxx \
+	TypeReflection.cxx \
 	Value.cxx HasValue.cxx\
 	brics.cxx
 
@@ -23,7 +23,7 @@ libdatabricxx_la_headers = \
 	Name.h NameTable.h \
 	Props.h \
 	RootIO.h \
-	RootReflection.h \
+	TypeReflection.h \
 	Value.h HasValue.h \
 	brics.h
 

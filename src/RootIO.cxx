@@ -19,7 +19,7 @@
 
 #include <stdexcept>
 
-#include "RootReflection.h"
+#include "TypeReflection.h"
 
 
 using namespace std;
@@ -53,13 +53,13 @@ void RootIO::inputValueFrom(PrimaryValue& value, TTree *tree, const TString& bra
 	if (tree->GetBranch(bName)) {
 		tree->SetBranchStatus(bName, true);
 
-		EDataType dataType = RootReflection::getDataType(value.typeInfo());
+		EDataType dataType = TDataType::GetType(value.typeInfo());
 		Int_t result = -1;
 		if (dataType == kNoType_t) { // Unknown type
 			throw invalid_argument("Cannot set branch address for kNoType_t");
 		} else if (dataType == EDataType::kOther_t) { // Object type
-			TClass *cl = RootReflection::getClass(value.typeInfo());
-			result = tree->SetBranchAddress(branchName, value.untypedPPtr(), nullptr, cl, dataType, true);
+			const TClass *cl = TypeReflection(value.typeInfo()).getTClass();
+			result = tree->SetBranchAddress(branchName, value.untypedPPtr(), nullptr, const_cast<TClass*>(cl), dataType, true);
 		} else { // Primitive type
 			if (value.empty()) value.setToDefault();
 			result = tree->SetBranchAddress(branchName, value.untypedPtr(), nullptr, nullptr, dataType, false);
@@ -75,13 +75,13 @@ void RootIO::inputValueFrom(PrimaryValue& value, TTree *tree, const TString& bra
 void RootIO::outputValueTo(Value& value, TTree *tree, const TString& branchName, Int_t bufsize, Int_t splitlevel) {
 	if (! value.valid()) throw invalid_argument("Cannot output invalid value object to branch");
 	const char* bName = branchName.Data();
-	EDataType dataType = RootReflection::getDataType(value.typeInfo());
+	EDataType dataType = TDataType::GetType(value.typeInfo());
 
 	TBranch* branch = nullptr;
 	if (dataType == kNoType_t) { // Unknown type
 		throw invalid_argument("Cannot create branch for kNoType_t");
 	} else if (dataType == EDataType::kOther_t) { // Object type
-		TClass *cl = RootReflection::getClass(value.typeInfo());
+		const TClass *cl = TypeReflection(value.typeInfo()).getTClass();
 		branch = tree->Branch(bName, cl->GetName(), const_cast<void**>(value.untypedPPtr()), bufsize, splitlevel);
 	} else { // Primitive type
 		char typeSymbol = getTypeSymbol(value.typeInfo());
