@@ -19,6 +19,8 @@
 
 #include <stdexcept>
 
+#include <TDataType.h>
+
 #include "TypeReflection.h"
 
 

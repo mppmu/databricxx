@@ -18,9 +18,11 @@
 #include "TypeReflection.h"
 
 #include <stdexcept>
+#include <cassert>
 
 #include <TClass.h>
 #include <TString.h>
+#include <TDataType.h>
 #include <TROOT.h>
 
 #include "logging.h"
@@ -46,7 +48,7 @@ bool TypeReflection::isAssignableFrom(const TClass* a, const TClass* b) {
 
 
 const char* TypeReflection::name() const {
-	return getTClass()->GetName();	
+	return isPrimitive() ? getTypeInfo()->name() : getTClass()->GetName();
 }
 
 
@@ -54,36 +56,58 @@ void* TypeReflection::newInstanceImpl(const TypeReflection& ptrType) {
 	if (! ptrType.isAssignableFrom(*this))
 		throw invalid_argument(TString::Format("Target pointer type \"%s\" cannot be assigned from object type \"%s\"", ptrType.name(), name()).Data());
 
-	void *obj = getTClass()->New(TClass::ENewType::kClassNew, true);
-	if (obj == nullptr) {
-		// May be necessary the first time the class is loaded, for some reason,
-		// to make an inherited default constructor visible:
-		log_debug("Failed to create object of class\"%s\", first-time load? Trying work-around.", name());
-		gROOT->ProcessLine(TString::Format("delete new %s", name()));
-		obj = getTClass()->New();
+	if (isPrimitive()) {
+		const type_info &ti = *getTypeInfo();
+		if      (ti == typeid(bool)) return new bool();
+		else if (ti == typeid(int8_t)) return new int8_t();
+		else if (ti == typeid(uint8_t)) return new uint8_t();
+		else if (ti == typeid(int16_t)) return new int16_t();
+		else if (ti == typeid(uint16_t)) return new uint16_t();
+		else if (ti == typeid(int32_t)) return new int32_t();
+		else if (ti == typeid(uint32_t)) return new uint32_t();
+		else if (ti == typeid(int64_t)) return new int64_t();
+		else if (ti == typeid(uint64_t)) return new uint64_t();
+		else if (ti == typeid(float)) return new float();
+		else if (ti == typeid(double)) return new double();
+		else throw invalid_argument(TString::Format("Dynamic instance creation of primitive type \"%s\" not supported", ti.name()).Data());
+	} else {	
+		void *obj = getTClass()->New(TClass::ENewType::kClassNew, true);
+		if (obj == nullptr) {
+			// May be necessary the first time the class is loaded, for some reason,
+			// to make an inherited default constructor visible:
+			log_debug("Failed to create object of class\"%s\", first-time load? Trying work-around.", name());
+			gROOT->ProcessLine(TString::Format("delete new %s", name()));
+			obj = getTClass()->New();
+		}
+		if (obj == nullptr) throw runtime_error(TString::Format("Dynamic object creation of class \"%s\" failed", name()).Data());
+		log_debug("Dynamically created object of class\"%s\"", name());
+		return obj;
 	}
-	if (obj == nullptr) throw runtime_error(TString::Format("Dynamic object creation of class \"%s\" failed", name()).Data());
-	log_debug("Dynamically created object of class\"%s\"", name());
-	return obj;
 }
 
 
 bool TypeReflection::isAssignableFrom(const TypeReflection& other) const {
-	return isAssignableFrom(getTClass(), other.getTClass());
+	if (isPrimitive()) return *getTypeInfo() == *other.getTypeInfo();
+	else return isAssignableFrom(getTClass(), other.getTClass());
 }
 
 
-TypeReflection::TypeReflection(const std::type_info& typeInfo) {
-	m_tClass = TClass::GetClass(typeInfo, true, true);
-	if (m_tClass == nullptr) throw runtime_error(TString::Format("Could not resolve class for type_info \"%s\"", typeInfo.name()).Data());
+TypeReflection::TypeReflection(const std::type_info& typeInfo)
+	: m_tClass(TClass::GetClass(typeInfo, true, true)), m_typeInfo(&typeInfo)
+{
+	// If class not found, check if primitive type, else throw exception
+	if ( (m_tClass == nullptr) && (TDataType::GetType(typeInfo) == EDataType::kOther_t) )
+		throw runtime_error(TString::Format("Could not resolve class for type_info \"%s\"", typeInfo.name()).Data());
 }
 
 
-TypeReflection::TypeReflection(const char* typeName) {
-	m_tClass = TClass::GetClass(typeName, true, true);
-	if (m_tClass == nullptr) throw runtime_error(TString::Format("Could not resolve class \"%s\"", typeName).Data());
+TypeReflection::TypeReflection(const char* typeName)
+	: m_tClass(TClass::GetClass(typeName, true, true)), m_typeInfo(m_tClass->GetTypeInfo())
+{
+	// Currently does not support primitive types
+	if (m_tClass == nullptr)
+		throw runtime_error(TString::Format("Could not resolve class for type_info \"%s\"", typeName).Data());
 }
-
 
 TypeReflection::TypeReflection(const std::string& typeName)
 	: TypeReflection(typeName.c_str()) {}
@@ -91,8 +115,39 @@ TypeReflection::TypeReflection(const std::string& typeName)
 TypeReflection::TypeReflection(const TString& typeName)
 	: TypeReflection(typeName.Data()) {}
 
+
 TypeReflection::TypeReflection(const TClass* cl)
 	: m_tClass(cl) {}
+
+
+TypeReflection::TypeReflection(const TDataType& dt) {
+	switch(EDataType(dt.GetType())) {
+		case kChar_t: m_typeInfo = &typeid(Char_t); break;
+		case kUChar_t: m_typeInfo = &typeid(UChar_t); break;
+		case kShort_t: m_typeInfo = &typeid(Short_t); break;
+		case kUShort_t: m_typeInfo = &typeid(UShort_t); break;
+		case kInt_t: m_typeInfo = &typeid(Int_t); break;
+		case kUInt_t: m_typeInfo = &typeid(UInt_t); break;
+		case kLong_t: m_typeInfo = &typeid(Long_t); break;
+		case kULong_t: m_typeInfo = &typeid(ULong_t); break;
+		case kFloat_t: m_typeInfo = &typeid(Float_t); break;
+		case kDouble_t: m_typeInfo = &typeid(Double_t); break;
+		case kDouble32_t: m_typeInfo = &typeid(Double32_t); break;
+		case kchar: m_typeInfo = &typeid(char); break;
+		case kBool_t: m_typeInfo = &typeid(Bool_t); break;
+		case kLong64_t: m_typeInfo = &typeid(Long64_t); break;
+		case kULong64_t: m_typeInfo = &typeid(ULong64_t); break;
+		case kOther_t: throw invalid_argument("TypeReflection does not support TDataType kOther_t"); break;
+		case kNoType_t: throw invalid_argument("TypeReflection does not support TDataType kNoType_t"); break;
+		case kFloat16_t: m_typeInfo = &typeid(Float16_t); break;
+		case kCounter: throw invalid_argument("TypeReflection does not support TDataType kCounter"); break;
+		case kCharStar: m_typeInfo = &typeid(char*); break;
+		case kBits: throw invalid_argument("TypeReflection does not support TDataType kBits"); break;
+		case kVoid_t: m_typeInfo = &typeid(void); break;
+		case kDataTypeAliasUnsigned_t: throw invalid_argument("TypeReflection does not support TDataType kDataTypeAliasUnsigned_t"); break;
+		default: assert(false);
+	}
+}
 
 
 } // namespace dbrx
