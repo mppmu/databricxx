@@ -26,7 +26,6 @@
 #include <cassert>
 
 #include "Name.h"
-#include "Value.h"
 
 
 namespace dbrx {
@@ -180,9 +179,15 @@ public:
 		swap(*this, other);
 	}
 
-	PropKey(Integer value) : m_type(Type::INTEGER), m_content(value) {}
+	PropKey(int32_t value) : m_type(Type::INTEGER), m_content(Integer(value)) {}
 
-	PropKey(int32_t value) : PropKey(Integer(value)) {}
+	PropKey(uint32_t value) : m_type(Type::INTEGER), m_content(Integer(value)) {}
+
+	PropKey(int64_t value) : m_type(Type::INTEGER), m_content(Integer(value)) {}
+
+	PropKey(uint64_t value) : m_type(Type::INTEGER), m_content(Integer(value)) {
+		if (uint64_t(m_content.i) != value) throw std::bad_cast();
+	}
 
 	PropKey(Name value) : m_type(Type::NAME), m_content(value) {}
 
@@ -598,7 +603,13 @@ public:
 
 	PropVal(int32_t value) : m_type(Type::INTEGER), m_content(Integer(value)) {}
 
-	PropVal(Integer value) : m_type(Type::INTEGER), m_content(value) {}
+	PropVal(uint32_t value) : m_type(Type::INTEGER), m_content(Integer(value)) {}
+
+	PropVal(int64_t value) : m_type(Type::INTEGER), m_content(Integer(value)) {}
+
+	PropVal(uint64_t value) : m_type(Type::INTEGER), m_content(Integer(value)) {
+		if (uint64_t(m_content.i) != value) throw std::bad_cast();
+	}
 
 	PropVal(double value) {
 		int64_t intVal = static_cast<int64_t>(value);
