@@ -704,6 +704,43 @@ inline std::ostream& operator<<(std::ostream &os, const PropVal &value)
 
 
 
+inline void assign_from(PropVal &to, const PropVal &from) { to = from; }
+
+
+inline void assign_from(bool &to, const PropVal &from) { to = from.asBool(); }
+inline void assign_from(int8_t &to, const PropVal &from) { to = from.asInt32(); }
+inline void assign_from(uint8_t &to, const PropVal &from) { to = from.asInt32(); }
+inline void assign_from(int16_t &to, const PropVal &from) { to = from.asInt32(); }
+inline void assign_from(uint16_t &to, const PropVal &from) { to = from.asInt32(); }
+inline void assign_from(int32_t &to, const PropVal &from) { to = from.asInt32(); }
+inline void assign_from(uint32_t &to, const PropVal &from) { to = from.asInt32(); }
+inline void assign_from(int64_t &to, const PropVal &from) { to = from.asLong64(); }
+inline void assign_from(uint64_t &to, const PropVal &from) { to = from.asLong64(); }
+inline void assign_from(float &to, const PropVal &from) { to = from.asDouble(); }
+inline void assign_from(double &to, const PropVal &from) { to = from.asDouble(); }
+inline void assign_from(Name &to, const PropVal &from) { to = from.asName(); }
+inline void assign_from(std::string &to, const PropVal &from) { to = from.asString(); }
+inline void assign_from(PropVal::Array &to, const PropVal &from) { to = from.asArray(); }
+inline void assign_from(PropVal::Props &to, const PropVal &from) { to = from.asProps(); }
+
+
+template<typename T> void assign_from(std::vector<T> &to, const PropVal &from) {
+	const PropVal::Array &a = from.asArray();
+	to.clear();
+	to.reserve(a.size());
+	for (const PropVal& x: a) { T tmp; assign_from(tmp, x); to.push_back(std::move(tmp)); }
+}
+
+template<typename T> void assign_from(PropVal &to, const std::vector<T> &from) {
+	if (to.isArray()) to.asArray().clear();
+	else to = PropVal::array();
+	PropVal::Array &a = to.asArray();
+	a.reserve(from.size());
+	for (const T& x: from) { PropVal tmp; assign_from(tmp, x); a.push_back(std::move(tmp)); }
+}
+
+
+
 using Props = PropVal::Props;
 
 

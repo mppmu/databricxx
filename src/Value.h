@@ -21,6 +21,8 @@
 #include <memory>
 #include <typeindex>
 
+#include "Props.h"
+
 
 namespace dbrx {
 
@@ -42,6 +44,8 @@ public:
 	}
 
 	template<typename T> const T* typedPtr() const { return *typedPPtr<T>(); }
+
+	virtual PropVal toPropVal() const = 0;
 
 	Value& operator=(const Value& v) = delete;
 	Value& operator=(Value &&v) = delete;
@@ -70,6 +74,8 @@ public:
 
 	virtual void setToDefault() = 0;
 	virtual void clear() = 0;
+
+	virtual void fromPropVal(const PropVal &p) = 0;
 
 	friend void swap(WritableValue &a, WritableValue &b)
 		{ std::swap(*a.untypedPPtr(), *b.untypedPPtr()); }
@@ -105,6 +111,14 @@ public:
 
 
 template <typename T> class TypedValue: public virtual Value {
+protected:
+	// SFINAE-based default implementation if convertToPropVal not available for T.
+    struct PropValConvGeneral {};
+    struct PropValConvSpecial : PropValConvGeneral {};
+	template <typename U> static auto assignToPropVal(PropVal &p, const U& x, PropValConvSpecial) -> decltype(assign_from(p, x)) { assign_from(p, x); }
+	static void assignToPropVal(PropVal &p, const T& x, PropValConvGeneral) { throw std::invalid_argument("No conversion from content type of this Value to PropVal available"); }
+
+
 public:
 	virtual operator const T& () const = 0;
 	virtual const T* operator->() const = 0;
@@ -115,11 +129,20 @@ public:
 	virtual const T* const * pptr() const = 0;
 
 	virtual const T* ptr() const = 0;
+
+	PropVal toPropVal() const { PropVal p; assignToPropVal(p, get(), PropValConvSpecial()); return p; }
 };
 
 
 
 template <typename T> class TypedWritableValue: public virtual WritableValue, public virtual TypedValue<T> {
+protected:
+	// SFINAE-based default implementation if assignFromPropVal not available for T.
+	using PropValConvGeneral = typename TypedValue<T>::PropValConvGeneral;
+	using PropValConvSpecial = typename TypedValue<T>::PropValConvSpecial;
+	template <typename U> static auto assignFromPropVal(U& x, const PropVal &p, PropValConvSpecial) -> decltype(assign_from(x, p)) { assign_from(x, p); }
+	static void assignFromPropVal(T &x, const PropVal &p, PropValConvGeneral) { throw std::invalid_argument("No conversion from PropVal to content type of this Value available"); }
+
 public:
 	virtual operator T& () = 0;
 	virtual T* operator->() = 0;
@@ -153,6 +176,8 @@ public:
 		*pptr() = thisV.release();
 		return *this;
 	}
+
+	void fromPropVal(const PropVal &p) { assignFromPropVal(get(), p, PropValConvSpecial()); }
 
 	friend void swap(TypedWritableValue &a, TypedWritableValue &b)
 		{ swap(static_cast<WritableValue &>(a), static_cast<WritableValue &>(b)); }
