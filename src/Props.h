@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <vector>
+#include <list>
 #include <map>
 #include <algorithm>
 #include <iosfwd>
@@ -196,6 +197,19 @@ public:
 	PropKey(const char* value) : PropKey(std::string(value)) {}
 };
 
+
+inline void assign_from(PropKey &to, const PropKey &from) { to = from; }
+
+inline void assign_from(int8_t &to, const PropKey &from) { to = from.asInt32(); }
+inline void assign_from(uint8_t &to, const PropKey &from) { to = from.asInt32(); }
+inline void assign_from(int16_t &to, const PropKey &from) { to = from.asInt32(); }
+inline void assign_from(uint16_t &to, const PropKey &from) { to = from.asInt32(); }
+inline void assign_from(int32_t &to, const PropKey &from) { to = from.asInt32(); }
+inline void assign_from(uint32_t &to, const PropKey &from) { to = from.asInt32(); }
+inline void assign_from(int64_t &to, const PropKey &from) { to = from.asLong64(); }
+inline void assign_from(uint64_t &to, const PropKey &from) { to = from.asLong64(); }
+inline void assign_from(Name &to, const PropKey &from) { to = from.asName(); }
+inline void assign_from(std::string &to, const PropKey &from) { to = from.toString(); }
 
 
 
@@ -724,21 +738,67 @@ inline void assign_from(PropVal::Array &to, const PropVal &from) { to = from.asA
 inline void assign_from(PropVal::Props &to, const PropVal &from) { to = from.asProps(); }
 
 
-template<typename T> void assign_from(std::vector<T> &to, const PropVal &from) {
+template<typename T, typename Alloc> void assign_from(std::vector<T, Alloc> &to, const PropVal &from) {
 	const PropVal::Array &a = from.asArray();
 	to.clear();
 	to.reserve(a.size());
-	for (const PropVal& x: a) { T tmp; assign_from(tmp, x); to.push_back(std::move(tmp)); }
+	for (const auto& x: a) { T tmp; assign_from(tmp, x); to.push_back(std::move(tmp)); }
 }
 
-template<typename T> void assign_from(PropVal &to, const std::vector<T> &from) {
+template<typename T, typename Alloc> void assign_from(PropVal &to, const std::vector<T, Alloc> &from) {
 	if (to.isArray()) to.asArray().clear();
 	else to = PropVal::array();
 	PropVal::Array &a = to.asArray();
 	a.reserve(from.size());
-	for (const T& x: from) { PropVal tmp; assign_from(tmp, x); a.push_back(std::move(tmp)); }
+	for (const auto& x: from) { PropVal tmp; assign_from(tmp, x); a.push_back(std::move(tmp)); }
 }
 
+
+template<typename T, typename Alloc> void assign_from(std::list<T, Alloc> &to, const PropVal &from) {
+	const PropVal::Array &a = from.asArray();
+	to.clear();
+	for (const auto& x: a) { T tmp; assign_from(tmp, x); to.push_back(std::move(tmp)); }
+}
+
+template<typename T, typename Alloc> void assign_from(PropVal &to, const std::list<T, Alloc> &from) {
+	if (to.isArray()) to.asArray().clear();
+	else to = PropVal::array();
+	PropVal::Array &a = to.asArray();
+	a.reserve(from.size());
+	for (const auto& x: from) { PropVal tmp; assign_from(tmp, x); a.push_back(std::move(tmp)); }
+}
+
+
+template<typename K, typename V, typename Compare, typename Alloc>
+void assign_from(std::map<K, V, Compare, Alloc> &to, const PropVal::Props &from) {
+	to.clear();
+	for (const auto& x: from) {
+		K tmpKey; assign_from(tmpKey, x.first);
+		V tmpVal; assign_from(tmpVal, x.second);
+		to[std::move(tmpKey)] = std::move(tmpVal);
+	}
+}
+
+template<typename K, typename V, typename Compare, typename Alloc>
+void assign_from(PropVal::Props &to, const std::map<K, V, Compare, Alloc> &from) {
+	to.clear();
+	for (const auto& x: from) {
+		PropKey tmpKey; assign_from(tmpKey, x.first);
+		PropVal tmpVal; assign_from(tmpVal, x.second);
+		to[std::move(tmpKey)] = std::move(tmpVal);
+	}
+}
+
+
+template<typename K, typename V, typename Compare, typename Alloc>
+void assign_from(std::map<K, V, Compare, Alloc> &to, const PropVal &from)
+	{ assign_from(to, from.asProps()); }
+
+template<typename K, typename V, typename Compare, typename Alloc>
+void assign_from(PropVal &to, const std::map<K, V, Compare, Alloc> &from) {
+	if (! to.isProps()) to = PropVal::props();
+	assign_from(to.asProps(), from);
+}
 
 
 using Props = PropVal::Props;
