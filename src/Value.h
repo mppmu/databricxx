@@ -203,7 +203,9 @@ public:
 	TypedPrimaryValue<T>& operator=(const TypedPrimaryValue<T>& v) = delete;
 	TypedPrimaryValue<T>& operator=(TypedPrimaryValue<T> &&v) = delete;
 
-	TypedPrimaryValue() = default;
+	TypedPrimaryValue(): m_value(new T()) {}
+
+	TypedPrimaryValue(std::nullptr_t) {};
 
 	TypedPrimaryValue(const TypedPrimaryValue<T> &other) { *this = other.get(); }
 
