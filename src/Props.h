@@ -666,6 +666,10 @@ public:
 	}
 
 
+	template<typename T, typename = decltype(assign_from(std::declval<PropVal&>(), std::declval<T>()))>
+		explicit PropVal(const T &x) : PropVal() { assign_from(*this, x); }
+
+
 	static PropVal array() { return PropVal(Type::ARRAY); }
 
 	template <typename InputIterator> static PropVal array(InputIterator first, InputIterator last) {
