@@ -11,6 +11,7 @@ libdatabricxx_la_SOURCES = \
 	DbrxTools.cxx \
 	Name.cxx NameTable.cxx \
 	Props.cxx \
+	RootCollection.cxx \
 	RootIO.cxx \
 	TypeReflection.cxx \
 	Value.cxx HasValue.cxx\
@@ -22,6 +23,7 @@ libdatabricxx_la_headers = \
 	DbrxTools.h \
 	Name.h NameTable.h \
 	Props.h \
+	RootCollection.h \
 	RootIO.h \
 	TypeReflection.h \
 	Value.h HasValue.h \

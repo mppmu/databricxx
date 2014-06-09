@@ -32,6 +32,8 @@
 #pragma link C++ typedef dbrx::Props;
 #pragma link C++ class dbrx::PropVal-;
 
+// RootCollection.h
+
 // RootIO.h
 #pragma link C++ class dbrx::RootIO-;
 
