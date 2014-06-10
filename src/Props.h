@@ -713,14 +713,6 @@ public:
 };
 
 
-inline std::ostream& operator<<(std::ostream &os, const PropKey &value)
-	{ return value.print(os); }
-
-
-inline std::ostream& operator<<(std::ostream &os, const PropVal &value)
-	{ return value.print(os); }
-
-
 
 inline void assign_from(PropVal &to, const PropVal &from) { to = from; }
 
@@ -813,6 +805,123 @@ void assign_from(PropVal &to, const std::map<K, V, Compare, Alloc> &from) {
 
 
 using Props = PropVal::Props;
+
+
+
+class PropPath {
+public:
+	using Elements = std::vector<PropKey>;
+protected:
+	Elements m_elements;
+
+public:
+	using iterator = Elements::iterator;
+	using const_iterator = Elements::const_iterator;
+
+	class SubPath {
+	public:
+		using const_iterator = PropPath::const_iterator;
+
+	protected:
+		const_iterator m_begin{};
+		const_iterator m_end{};
+
+	public:
+		const_iterator begin() const noexcept { return m_begin; }
+		const_iterator cbegin() const noexcept { return m_begin; }
+		const_iterator end() const noexcept { return m_end; }
+		const_iterator cend() const noexcept { return m_end; }
+
+		PropKey front() const { return *begin(); }
+		SubPath tail() const { const_iterator from = begin(); return SubPath(++from, end()); }
+
+		std::string toString() const;
+
+		std::ostream& print(std::ostream &os) const;
+
+		SubPath() {}
+		SubPath(const_iterator from, const_iterator until): m_begin(from), m_end(until){}
+		SubPath(const PropPath &path): m_begin(path.begin()), m_end(path.end()) {}
+	};
+
+
+	Elements& elements() noexcept { return m_elements; }
+	const Elements& elements() const noexcept { return m_elements; }
+
+	iterator begin() noexcept { return m_elements.begin(); }
+	const_iterator begin() const noexcept { return m_elements.begin(); }
+	const_iterator cbegin() const noexcept { return m_elements.cbegin(); }
+	iterator end() noexcept { return m_elements.end(); }
+	const_iterator end() const noexcept { return m_elements.end(); }
+	const_iterator cend() const noexcept { return m_elements.cend(); }
+
+	PropPath& operator%=(PropKey key) {
+		m_elements.reserve(4); // minimum capacity
+		m_elements.push_back(key);
+		return *this;
+	}
+
+	PropPath& operator%=(const PropPath& other) {
+		for (PropKey key: other.m_elements) operator%=(key);
+		return *this;
+	}
+
+	std::string toString() const { return SubPath(*this).toString(); }
+
+	std::ostream& print(std::ostream &os) const { return SubPath(*this).print(os); }
+
+	operator PropVal () const { return PropVal(toString()); }
+
+	PropPath& operator=(const PropPath& other) = default;
+	PropPath& operator=(PropPath&& other) = default;
+
+	PropPath& operator=(const std::vector<PropKey>& path) { m_elements = path; return *this; }
+	PropPath& operator=(std::vector<PropKey>&& path) { m_elements = std::move(path); return *this; }
+
+	PropPath& operator=(PropKey key) { m_elements.clear(); m_elements.push_back(key); return *this; }
+	PropPath& operator=(Name name) { return *this = PropKey(name); }
+
+	PropPath& operator=(const std::string& path);
+	PropPath& operator=(const char *path) { return *this = std::string(path); }
+
+	PropPath& operator=(const PropVal& propVal);
+
+	PropPath() { }
+
+	PropPath(const PropPath& other) { *this = other; }
+	PropPath(PropPath&& other) { *this = std::move(other); }
+
+	PropPath(std::initializer_list<PropKey> elements): m_elements(elements.begin(), elements.end()) {}
+
+	PropPath(std::vector<PropKey> path) { *this = std::move(path); }
+
+	PropPath(PropKey key) { *this = key; }
+	PropPath(Name name) { *this = name; }
+
+	PropPath(const std::string& path) { *this = path; }
+	PropPath(const char *path) { *this = path; }
+
+	PropPath(const PropVal& path) { *this = path; }
+
+	friend PropPath operator%(PropPath a, PropKey b) { a %= b; return a; }
+	friend PropPath operator%(PropPath a, const PropPath& b) { a %= b; return a; }
+};
+
+
+
+inline std::ostream& operator<<(std::ostream &os, const PropKey &value)
+	{ return value.print(os); }
+
+
+inline std::ostream& operator<<(std::ostream &os, const PropVal &value)
+	{ return value.print(os); }
+
+
+inline std::ostream& operator<<(std::ostream &os, const PropPath &value)
+	{ return value.print(os); }
+
+inline std::ostream& operator<<(std::ostream &os, const PropPath::SubPath &value)
+	{ return value.print(os); }
 
 
 } // namespace dbrx

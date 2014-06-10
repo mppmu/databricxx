@@ -426,4 +426,51 @@ Props& PropVal::patchMerge(Props &a, Props b, bool merge) {
 }
 
 
+
+std::string PropPath::SubPath::toString() const {
+	stringstream out;
+	print(out);
+	return out.str();
+}
+
+
+std::ostream& PropPath::SubPath::print(std::ostream &os) const {
+	bool first = true;
+	for (PropKey key: *this) {
+		if (first) first = false; else os << ".";
+		os << key;
+	}
+	return os;
+}
+
+
+PropPath& PropPath::operator=(const std::string& path) {
+	size_t from = 0;
+	for (size_t i = 0; i < path.size(); ++i) {
+		if (path[i] == '.') {
+			m_elements.push_back(PropKey(path.substr(from, i - from)));
+			if (i + 1 == path.size()) m_elements.push_back(Name());
+			from = ++i;
+			//if (i == path.size()) m_elements.push_back(Name());
+		}
+	}
+	if (from < path.size()) m_elements.push_back(PropKey(path.substr(from, path.size() - from)));
+	return *this;
+}
+
+
+PropPath& PropPath::operator=(const PropVal& propVal) {
+	if (propVal.isName()) *this = propVal.asName();
+	else if (propVal.isString()) *this = propVal.asString();
+	else if (propVal.isArray()) {
+		const auto& a = propVal.asArray();
+		m_elements.reserve(a.size());
+		for (const auto& x: a) m_elements.push_back(x);
+	} else throw std::invalid_argument("Can't initialize PropPath from content of this PropVal");
+	return *this;
+}
+
+
+
+
 } // namespace dbrxq
