@@ -725,6 +725,13 @@ inline std::ostream& operator<<(std::ostream &os, const PropVal &value)
 inline void assign_from(PropVal &to, const PropVal &from) { to = from; }
 
 
+template<typename T, typename = decltype(std::declval<T&>() = std::declval<const PropVal&>())>
+	void assign_from(T& to, const PropVal& from) { to = from; }
+
+template<typename T, typename = decltype(std::declval<PropVal&>() = std::declval<const T&>())>
+	void assign_from(PropVal& to, const T& from) { to = from; }
+
+
 inline void assign_from(bool &to, const PropVal &from) { to = from.asBool(); }
 inline void assign_from(int8_t &to, const PropVal &from) { to = from.asInt32(); }
 inline void assign_from(uint8_t &to, const PropVal &from) { to = from.asInt32(); }
