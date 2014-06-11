@@ -114,6 +114,9 @@ public:
 		: public virtual TypedParamTerminal<T>, public virtual HasNameImpl, public virtual HasTypedPrimaryValueImpl<T>
 	{
 	public:
+		using HasTypedPrimaryValueImpl<T>::value;
+		using HasTypedPrimaryValueImpl<T>::typeInfo;
+
 		Param<T>& operator=(const Param<T>& v) = delete;
 
 		Param<T>& operator=(const T &v)
@@ -197,6 +200,9 @@ public:
 		: public virtual TypedOutputTerminal<T>, public virtual HasNameImpl, public virtual HasTypedPrimaryValueImpl<T>
 	{
 	public:
+		using HasTypedPrimaryValueImpl<T>::value;
+		using HasTypedPrimaryValueImpl<T>::typeInfo;
+
 		Output<T>& operator=(const Output<T>& v) = delete;
 
 		Output<T>& operator=(const T &v)
@@ -228,15 +234,18 @@ public:
 		: public virtual TypedInputTerminal<T>, public virtual HasNameImpl, public virtual HasTypedConstValueRefImpl<T>
 	{
 	public:
-		//void connectTo(const TypedTerminal<T> &other) { this->value().referTo(other.value()); }
+		using HasTypedConstValueRefImpl<T>::value;
+		using HasTypedConstValueRefImpl<T>::typeInfo;
 
-		void connectTo(const Terminal &other) { this->value().referTo(other.value()); }
+		//void connectTo(const TypedTerminal<T> &other) { value().referTo(other.value()); }
+
+		void connectTo(const Terminal &other) { value().referTo(other.value()); }
 
 		void connectTo(const Bric &bric, Name terminalName)
-			{ connectTo(bric.getOutput(terminalName, this->typeInfo())); }
+			{ connectTo(bric.getOutput(terminalName, typeInfo())); }
 
 		void connectTo(const Bric &bric)
-			{ connectTo(bric.getOutput(s_defaultOutputName, this->typeInfo())); }
+			{ connectTo(bric.getOutput(s_defaultOutputName, typeInfo())); }
 
 		Input(BricWithInputs *bric, Name n): HasNameImpl(n) { bric->addInput(this); }
 		Input(BricWithInputs *bric): HasNameImpl(s_defaultInputName) { bric->addInput(this); }
