@@ -903,6 +903,16 @@ inline std::ostream& operator<<(std::ostream &os, const PropPath::Fragment &valu
 	{ return value.print(os); }
 
 
+
+class Configurable {
+public:
+	virtual void applyConfig(const PropVal& config) = 0;
+	virtual PropVal getConfig() const = 0;
+
+	virtual ~Configurable() {}
+};
+
+
 } // namespace dbrx
 
 #endif // DBRX_PROPS_H
