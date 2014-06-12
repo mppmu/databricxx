@@ -427,14 +427,14 @@ Props& PropVal::patchMerge(Props &a, Props b, bool merge) {
 
 
 
-std::string PropPath::SubPath::toString() const {
+std::string PropPath::Fragment::toString() const {
 	stringstream out;
 	print(out);
 	return out.str();
 }
 
 
-std::ostream& PropPath::SubPath::print(std::ostream &os) const {
+std::ostream& PropPath::Fragment::print(std::ostream &os) const {
 	bool first = true;
 	for (PropKey key: *this) {
 		if (first) first = false; else os << ".";

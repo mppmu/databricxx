@@ -818,30 +818,34 @@ public:
 	using iterator = Elements::iterator;
 	using const_iterator = Elements::const_iterator;
 
-	class SubPath {
+	class Fragment {
 	public:
-		using const_iterator = PropPath::const_iterator;
+		using const_iterator = typename PropPath::const_iterator;
+		using size_type = typename const_iterator::difference_type;
 
 	protected:
 		const_iterator m_begin{};
 		const_iterator m_end{};
 
 	public:
+		bool empty() { return m_begin == m_end; }
+		size_type size() { return m_end - m_begin; }
+
 		const_iterator begin() const noexcept { return m_begin; }
 		const_iterator cbegin() const noexcept { return m_begin; }
 		const_iterator end() const noexcept { return m_end; }
 		const_iterator cend() const noexcept { return m_end; }
 
 		PropKey front() const { return *begin(); }
-		SubPath tail() const { const_iterator from = begin(); return SubPath(++from, end()); }
+		Fragment tail() const { const_iterator from = begin(); return Fragment(++from, end()); }
 
 		std::string toString() const;
 
 		std::ostream& print(std::ostream &os) const;
 
-		SubPath() {}
-		SubPath(const_iterator from, const_iterator until): m_begin(from), m_end(until){}
-		SubPath(const PropPath &path): m_begin(path.begin()), m_end(path.end()) {}
+		Fragment() {}
+		Fragment(const_iterator from, const_iterator until): m_begin(from), m_end(until){}
+		Fragment(const PropPath &path): m_begin(path.begin()), m_end(path.end()) {}
 	};
 
 
@@ -861,14 +865,14 @@ public:
 		return *this;
 	}
 
-	PropPath& operator%=(const PropPath& other) {
+	PropPath& operator+=(const PropPath& other) {
 		for (PropKey key: other.m_elements) operator%=(key);
 		return *this;
 	}
 
-	std::string toString() const { return SubPath(*this).toString(); }
+	std::string toString() const { return Fragment(*this).toString(); }
 
-	std::ostream& print(std::ostream &os) const { return SubPath(*this).print(os); }
+	std::ostream& print(std::ostream &os) const { return Fragment(*this).print(os); }
 
 	operator PropVal () const { return PropVal(toString()); }
 
@@ -904,7 +908,7 @@ public:
 	PropPath(const PropVal& path) { *this = path; }
 
 	friend PropPath operator%(PropPath a, PropKey b) { a %= b; return a; }
-	friend PropPath operator%(PropPath a, const PropPath& b) { a %= b; return a; }
+	friend PropPath operator+(PropPath a, const PropPath& b) { a += b; return a; }
 };
 
 
@@ -920,7 +924,7 @@ inline std::ostream& operator<<(std::ostream &os, const PropVal &value)
 inline std::ostream& operator<<(std::ostream &os, const PropPath &value)
 	{ return value.print(os); }
 
-inline std::ostream& operator<<(std::ostream &os, const PropPath::SubPath &value)
+inline std::ostream& operator<<(std::ostream &os, const PropPath::Fragment &value)
 	{ return value.print(os); }
 
 
