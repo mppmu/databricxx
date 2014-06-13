@@ -18,6 +18,7 @@
 #include "Bric.h"
 
 #include <iostream>
+#include <algorithm>
 
 #include <TString.h>
 
@@ -28,21 +29,83 @@ using namespace std;
 namespace dbrx {
 
 
+
+PropPath BricComponent::absolutePath() const {
+	return hasParent() ? parent().absolutePath() % name() : name();
+}
+
+
+
+void Bric::Terminal::connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath) {
+	if (!sourcePath.empty()) throw runtime_error("Couldn't resolve source path during input lookup, terminals have no inner components");
+	else bric.connectOwnInputTo(inputName, *this);
+}
+
+
+
 const Name Bric::s_defaultInputName("input");
 
 const Name Bric::s_defaultOutputName("output");
 
 
-void Bric::addTerminal(Terminal* terminal) {
-	auto r = m_terminals.find(terminal->name());
-	if (r != m_terminals.end()) throw invalid_argument(TString::Format("Can't add duplicate terminal with name \"%s\" to bric \"%s\"", terminal->name().c_str(), name().c_str()).Data());
-	m_terminals[terminal->name()] = terminal;
+void Bric::registerComponent(BricComponent* component) {
+	if (component->name().empty()) throw invalid_argument("Can't register BricComponent with empty name");
+
+	auto r = m_components.find(component->name());
+	if (r != m_components.end()) throw invalid_argument(TString::Format("Can't add duplicate component with name \"%s\" to bric \"%s\"", component->name().c_str(), name().c_str()).Data());
+	m_components[component->name()] = component;
 }
 
 
-void Bric::addParam(ParamTerminal* param) {
-	addTerminal(param);
-	m_params[param->name()] = param;
+void Bric::connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath) {
+	if (sourcePath.empty()) {
+		auto found = m_components.find(s_defaultOutputName);
+		if (found != m_components.end()) found->second->connectInputToInner(bric, inputName, sourcePath);
+	} else {
+		auto found = m_components.find(sourcePath.front().asName());
+		if (found != m_components.end()) found->second->connectInputToInner(bric, inputName, sourcePath.tail());
+		else throw runtime_error("Couldn't resolve source path during input lookup, no such component");
+	}
+}
+
+
+void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragment sourcePath) {
+	if (sourcePath.empty()) throw runtime_error("Empty source path during input lookup");
+	Name siblingName = sourcePath.front().asName();
+	if (siblingName == name()) connectInputToInner(bric, inputName, sourcePath.tail());
+	else {
+		if (hasParent()) {
+			auto found = parent().m_brics.find(siblingName);
+			if (found != parent().m_brics.end()) {
+				Bric* sibling = found->second;
+				sibling->connectInputToInner(bric, inputName, sourcePath.tail());
+				addDependency(sibling);
+			}
+		} else throw runtime_error("Reached top-level Bric during input lookup");
+	}
+}
+
+
+void Bric::connectOwnInputTo(Name inputName, const Terminal& terminal) {
+	auto found = m_inputs.find(inputName);
+	if (found != m_inputs.end()) found->second->connectTo(terminal);
+	else throw invalid_argument(TString::Format("Can't connect non-existing input \"%s\" to terminal \"%s\"", inputName.c_str(), terminal.absolutePath().toString().c_str()).Data());
+}
+
+
+void Bric::applyConfig(const PropVal& config) {
+	for (const auto& entry: config.asProps())
+		m_components[entry.first.asName()]->applyConfig(entry.second);
+}
+
+
+PropVal Bric::getConfig() const  {
+	Props props;
+	for (const auto& entry: m_components) {
+		PropVal componentConfig = entry.second->getConfig();
+		if (! componentConfig.isNone())	props[entry.second->name()] = std::move(componentConfig);
+	}
+	return PropVal(std::move(props));
 }
 
 
@@ -135,20 +198,6 @@ std::ostream & Bric::printInfo(std::ostream &os) const {
 	}
 
 	return os;
-}
-
-
-
-void BricWithOutputs::addOutput(OutputTerminal* output) {
-	addTerminal(output);
-	m_outputs[output->name()] = output;
-}
-
-
-
-void BricWithInputs::addInput(InputTerminal* input) {
-	addTerminal(input);
-	m_inputs[input->name()] = input;
 }
 
 

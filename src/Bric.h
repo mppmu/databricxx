@@ -29,22 +29,61 @@
 namespace dbrx {
 
 
-class Bric: public virtual HasName {
+class Bric;
+
+
+
+class BricComponent: public virtual HasName, public virtual Configurable {
+protected:
+	virtual void connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath) = 0;
+
 public:
-	class Terminal
-		: public virtual HasName, public virtual HasValue
-	{
-	public:
-		Terminal& operator=(const Terminal& v) = delete;
-		Terminal& operator=(Terminal &&v) = delete;
+	PropPath absolutePath() const;
+
+	virtual bool hasParent() const = 0;
+
+	virtual const Bric& parent() const = 0;
+	virtual Bric& parent() = 0;
+
+	BricComponent& operator=(const BricComponent& v) = delete;
+	BricComponent& operator=(BricComponent &&v) = delete;
+
+	friend class Bric;
+};
+
+
+class BricComponentImpl: public virtual BricComponent, public HasNameImpl {
+protected:
+	Bric *m_parent = nullptr;
+
+public:
+	bool hasParent() const { return m_parent != nullptr; }
+
+	const Bric& parent() const { return *m_parent; }
+	Bric& parent() { return *m_parent; }
+
+	BricComponentImpl() {}
+	BricComponentImpl(Name componentName): HasNameImpl(componentName) {}
+	BricComponentImpl(Bric *parentBric, Name componentName);
+};
+
+
+
+class Bric: public virtual BricComponent {
+public:
+	class Terminal: public virtual BricComponent, public virtual HasValue {
+	protected:
+		virtual void connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath);
 	};
 
 
-	class OutputTerminal : public virtual Terminal, public virtual HasWritableValue {};
+	class OutputTerminal: public virtual Terminal, public virtual HasWritableValue {};
 
 
-	class InputTerminal	: public virtual Terminal, public virtual HasConstValueRef {
+	class InputTerminal: public virtual Terminal, public virtual HasConstValueRef {
 	public:
+		virtual const PropPath& source() = 0;
+
 		virtual void connectTo(const Terminal &other) = 0;
 
 		virtual void connectTo(const Bric &bric, Name terminalName) = 0;
@@ -59,17 +98,26 @@ protected:
 	static const Name s_defaultInputName;
 	static const Name s_defaultOutputName;
 
-	Bric *m_parent = nullptr;
-
+	std::map<Name, BricComponent*> m_components;
+	std::map<Name, Bric*> m_brics;
 	std::map<Name, Terminal*> m_terminals;
-
+	std::map<Name, ParamTerminal*> m_params;
 	std::map<Name, OutputTerminal*> m_outputs;
 	std::map<Name, InputTerminal*> m_inputs;
-	std::map<Name, ParamTerminal*> m_params;
 
-	void addTerminal(Terminal* terminal);
+	void registerComponent(BricComponent* component);
+	void registerBric(Bric* bric) { registerComponent(bric); m_brics[bric->name()] = bric; }
+	void registerTerminal(Terminal* terminal) { registerComponent(terminal); m_terminals[terminal->name()] = terminal; }
+	void registerParam(ParamTerminal* param) { registerTerminal(param); m_params[param->name()] = param; }
+	void registerOutput(OutputTerminal* output) { registerTerminal(output); m_outputs[output->name()] = output; }
+	void registerInput(InputTerminal* input) { registerTerminal(input); m_inputs[input->name()] = input; }
 
-	void addParam(ParamTerminal* param);
+	std::vector<Bric*> m_deps;
+	void addDependency(Bric* dep) { m_deps.push_back(dep); }
+
+	virtual void connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath);
+	virtual void connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragment sourcePath);
+	virtual void connectOwnInputTo(Name inputName, const Terminal& terminal);
 
 public:
 	template <typename T> class TypedTerminal
@@ -111,11 +159,14 @@ public:
 
 
 	template <typename T> class Param
-		: public virtual TypedParamTerminal<T>, public virtual HasNameImpl, public virtual HasTypedPrimaryValueImpl<T>
+		: public virtual TypedParamTerminal<T>, public BricComponentImpl, public HasTypedPrimaryValueImpl<T>
 	{
 	public:
 		using HasTypedPrimaryValueImpl<T>::value;
 		using HasTypedPrimaryValueImpl<T>::typeInfo;
+
+		virtual void applyConfig(const PropVal& config) { assign_from(value(), config); }
+		virtual PropVal getConfig() const { PropVal config; assign_from(config, value()); return config; }
 
 		Param<T>& operator=(const Param<T>& v) = delete;
 
@@ -129,18 +180,15 @@ public:
 			{ TypedParamTerminal<T>::operator=(std::move(v)); return *this; }
 
 
-		Param(Bric *bric, Name n): HasNameImpl(n) { bric->addParam(this); }
+		Param(Bric *parentBric, Name paramName)
+			: BricComponentImpl(parentBric, paramName) { parentBric->registerParam(this); }
+
 		Param(const Param &other) = delete;
 	};
 
 
-	bool hasParent() const { return m_parent != nullptr; }
-
-	const Bric& parent() const { return *m_parent; }
-	Bric& parent() { return *m_parent; }
-
-	void parent(Bric *parentBric) { m_parent = parentBric; }
-
+	virtual void applyConfig(const PropVal& config);
+	virtual PropVal getConfig() const;
 
 	virtual const Terminal& getTerminal(Name terminalName) const;
 	virtual Terminal& getTerminal(Name terminalName);
@@ -174,34 +222,37 @@ public:
 
 	virtual void init() {};
 
-	virtual ~Bric() {}
+	friend class BricImpl;
 };
 
 
 
-class BricImpl: public virtual Bric, public HasNameImpl {
+class BricImpl: public virtual Bric, public BricComponentImpl {
 public:
 	BricImpl() {}
-
-	BricImpl(Name n) : HasNameImpl(n) {}
-
-	BricImpl(Bric *parentBric, Name n)
-		: BricImpl(n) { m_parent = parentBric; }
+	BricImpl(Name bricName): BricComponentImpl(bricName) {}
+	BricImpl(Bric *parentBric, Name bricName)
+		: BricComponentImpl(parentBric, bricName) { parentBric->registerBric(this); }
 };
+
+
+
+inline BricComponentImpl::BricComponentImpl(Bric *parentBric, Name componentName)
+	: BricComponentImpl(componentName) { m_parent = parentBric; }
 
 
 
 class BricWithOutputs: public virtual Bric  {
-protected:
-	void addOutput(OutputTerminal* output);
-
 public:
 	template <typename T> class Output
-		: public virtual TypedOutputTerminal<T>, public virtual HasNameImpl, public virtual HasTypedPrimaryValueImpl<T>
+		: public virtual TypedOutputTerminal<T>, public BricComponentImpl, public HasTypedPrimaryValueImpl<T>
 	{
 	public:
 		using HasTypedPrimaryValueImpl<T>::value;
 		using HasTypedPrimaryValueImpl<T>::typeInfo;
+
+		virtual void applyConfig(const PropVal& config) { if (!config.isNone()) throw std::invalid_argument("Output is not configurable"); }
+		virtual PropVal getConfig() const  { return PropVal(); }
 
 		Output<T>& operator=(const Output<T>& v) = delete;
 
@@ -215,8 +266,12 @@ public:
 			{ TypedOutputTerminal<T>::operator=(std::move(v)); return *this; }
 
 
-		Output(BricWithOutputs *bric, Name n): HasNameImpl(n) { bric->addOutput(this); }
-		Output(BricWithOutputs *bric): HasNameImpl(s_defaultOutputName) { bric->addOutput(this); }
+		Output(BricWithOutputs *parentBric, Name outputName)
+			: BricComponentImpl(parentBric, outputName) { parentBric->registerOutput(this); }
+
+		Output(BricWithOutputs *parentBric)
+			: BricComponentImpl(parentBric, s_defaultOutputName) { parentBric->registerOutput(this); }
+
 		Output(const Output &other) = delete;
 	};
 
@@ -226,16 +281,21 @@ public:
 
 
 class BricWithInputs: public virtual Bric  {
-protected:
-	void addInput(InputTerminal* input);
-
 public:
 	template <typename T> class Input
-		: public virtual TypedInputTerminal<T>, public virtual HasNameImpl, public virtual HasTypedConstValueRefImpl<T>
+		: public virtual TypedInputTerminal<T>, public BricComponentImpl, public HasTypedConstValueRefImpl<T>
 	{
+	protected:
+		PropPath m_source;
+
 	public:
 		using HasTypedConstValueRefImpl<T>::value;
 		using HasTypedConstValueRefImpl<T>::typeInfo;
+
+		virtual void applyConfig(const PropVal& config) { m_source = config; }
+		virtual PropVal getConfig() const  { return m_source; }
+
+		virtual const PropPath& source() { return m_source; }
 
 		//void connectTo(const TypedTerminal<T> &other) { value().referTo(other.value()); }
 
@@ -247,8 +307,12 @@ public:
 		void connectTo(const Bric &bric)
 			{ connectTo(bric.getOutput(s_defaultOutputName, typeInfo())); }
 
-		Input(BricWithInputs *bric, Name n): HasNameImpl(n) { bric->addInput(this); }
-		Input(BricWithInputs *bric): HasNameImpl(s_defaultInputName) { bric->addInput(this); }
+		Input(BricWithInputs *parentBric, Name inputName)
+			: BricComponentImpl(parentBric, inputName) { parentBric->registerInput(this); }
+
+		Input(BricWithInputs *parentBric)
+			: BricComponentImpl(parentBric, s_defaultInputName) { parentBric->registerInput(this); }
+
 		Input(const Input &other) = delete;
 	};
 
@@ -261,21 +325,21 @@ class BricWithInOut: public virtual BricWithInputs, public virtual BricWithOutpu
 
 
 
-class ImportBric: public virtual BricWithOutputs, public virtual BricImpl  {
+class ImportBric: public virtual BricWithOutputs, public BricImpl  {
 public:
 	using BricImpl::BricImpl;
 };
 
 
 
-class ExportBric: public virtual BricWithInputs, public virtual BricImpl {
+class ExportBric: public virtual BricWithInputs, public BricImpl {
 public:
 	using BricImpl::BricImpl;
 };
 
 
 
-class MapperBric: public virtual BricWithInOut, public virtual BricImpl {
+class MapperBric: public virtual BricWithInOut, public BricImpl {
 public:
 	using BricImpl::BricImpl;
 };
@@ -305,7 +369,7 @@ public:
 
 
 
-class ReducerBric: public virtual BricWithInOut, public virtual BricImpl {
+class ReducerBric: public virtual BricWithInOut, public BricImpl {
 public:
 	virtual void resetOutput() = 0;
 	virtual void nextInput() = 0;
@@ -316,9 +380,5 @@ public:
 
 } // namespace dbrx
 
-/* Add to ...LinkDef.h:
-
-
-*/
 
 #endif // DBRX_BRIC_H
