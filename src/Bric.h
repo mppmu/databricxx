@@ -221,6 +221,7 @@ public:
 	virtual const ParamTerminal& getParam(Name outputName, const std::type_info& typeInfo) const;
 	virtual ParamTerminal& getParam(Name outputName, const std::type_info& typeInfo);
 
+	void connectInputs();
 
 	virtual std::ostream & printInfo(std::ostream &os) const;
 

@@ -176,6 +176,15 @@ Bric::ParamTerminal& Bric::getParam(Name paramName, const std::type_info& typeIn
 	{ return dynamic_cast<Bric::ParamTerminal&>(getTerminal(paramName, typeInfo)); }
 
 
+void Bric::connectInputs() {
+	m_deps.clear();
+	for (const auto& input: m_inputs)
+		connectInputToSiblingOrUp(*this, input.second->name(), input.second->source());
+	for (const auto& brics: m_brics)
+		brics.second->connectInputs();
+}
+
+
 std::ostream & Bric::printInfo(std::ostream &os) const {
 	os << "Bric " << name() << ":" << endl;
 
