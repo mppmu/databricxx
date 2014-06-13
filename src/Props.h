@@ -413,70 +413,17 @@ public:
 	}
 
 
-	size_t size() const {
-		switch (m_type) {
-			case Type::ARRAY: return m_content.a->size();
-			case Type::PROPS: return m_content.o->size();
-			default: return 1;
-		}
-	}
+	size_t size() const { return m_type == Type::ARRAY ? m_content.a->size() : 1; }
 
-
-	// std::vector is guaranteed to be contiguous in memory, vector iterators
-	// can be converted to simple pointers:
-	// TODO: Make this work for Props (iterate over keys), probably will
-	// require new map type based on separate key and value vectors).
 	using iterator = PropVal*;
 	using const_iterator = const PropVal*;
 
-
-	iterator begin() noexcept {
-		switch (m_type) {
-			case Type::ARRAY: return &*m_content.a->begin();
-			case Type::PROPS: throw std::logic_error("begin() not implemented for Props-type PropVal.");
-			default: return this;
-		}
-	}
-
-	const_iterator begin() const noexcept {
-		switch (m_type) {
-			case Type::ARRAY: return &*m_content.a->begin();
-			case Type::PROPS: throw std::logic_error("begin() not implemented for Props-type PropVal.");
-			default: return this;
-		}
-	}
-
-	const_iterator cbegin() const noexcept {
-		switch (m_type) {
-			case Type::ARRAY: return &*m_content.a->cbegin();
-			case Type::PROPS: throw std::logic_error("cbegin() not implemented for Props-type PropVal.");
-			default: return this;
-		}
-	}
-
-	iterator end() noexcept {
-		switch (m_type) {
-			case Type::ARRAY: return &*m_content.a->end();
-			case Type::PROPS: throw std::logic_error("end() not implemented for Props-type PropVal.");
-			default: return this + 1;
-		}
-	}
-
-	const_iterator end() const noexcept {
-		switch (m_type) {
-			case Type::ARRAY: return &*m_content.a->end();
-			case Type::PROPS: throw std::logic_error("end() not implemented for Props-type PropVal.");
-			default: return this + 1;
-		}
-	}
-
-	const_iterator cend() const noexcept {
-		switch (m_type) {
-			case Type::ARRAY: return &*m_content.a->cend();
-			case Type::PROPS: throw std::logic_error("cend() not implemented for Props-type PropVal.");
-			default: return this + 1;
-		}
-	}
+	iterator begin() noexcept { return m_type == Type::ARRAY ? &*m_content.a->begin() : this; }
+	const_iterator begin() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->begin() : this; }
+	const_iterator cbegin() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->cbegin() : this; }
+	iterator end() noexcept { return m_type == Type::ARRAY ? &*m_content.a->end() : this; }
+	const_iterator end() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->end() : this; }
+	const_iterator cend() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->cend() : this; }
 
 
 	PropVal& operator[](PropKey key) {
