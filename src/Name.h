@@ -77,6 +77,8 @@ public:
 	Name(const char *s) : Name(std::string(s)) { }
 
 	friend class NameTable;
+
+	friend const std::string& to_string(Name name) { return name.str(); }
 };
 
 

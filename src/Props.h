@@ -195,6 +195,8 @@ public:
 	PropKey(const std::string &value);
 
 	PropKey(const char* value) : PropKey(std::string(value)) {}
+
+	friend std::string to_string(PropKey propKey) { return propKey.toString(); }
 };
 
 
@@ -673,6 +675,8 @@ protected:
 	static Props& patchMerge(Props &a, Props b, bool merge);
 
 public:
+	friend std::string to_string(const PropVal &propVal) { return propVal.toString(); }
+
 	friend Props operator-(const Props &a, const Props &b) { return diff(a, b); }
 
 	friend Props& operator+=(Props &a, Props b) { return patchMerge(a, std::move(b), false); }
@@ -813,6 +817,8 @@ public:
 		Fragment() {}
 		Fragment(const_iterator from, const_iterator until): m_begin(from), m_end(until){}
 		Fragment(const PropPath &path): m_begin(path.begin()), m_end(path.end()) {}
+
+		friend std::string to_string(const Fragment &fragment) { return fragment.toString(); }
 	};
 
 
@@ -876,6 +882,8 @@ public:
 
 	friend PropPath operator%(PropPath a, PropKey b) { a %= b; return a; }
 	friend PropPath operator+(PropPath a, const PropPath& b) { a += b; return a; }
+
+	friend std::string to_string(const PropPath &propPath) { return Fragment(propPath).toString(); }
 };
 
 
