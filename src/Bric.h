@@ -18,6 +18,7 @@
 #ifndef DBRX_BRIC_H
 #define DBRX_BRIC_H
 
+#include <memory>
 #include <stdexcept>
 #include <map>
 #include <iosfwd>
@@ -101,6 +102,7 @@ public:
 protected:
 	static const Name s_defaultInputName;
 	static const Name s_defaultOutputName;
+	static const Name s_bricTypeKey;
 
 	std::map<Name, BricComponent*> m_components;
 	std::map<Name, Bric*> m_brics;
@@ -109,12 +111,16 @@ protected:
 	std::map<Name, OutputTerminal*> m_outputs;
 	std::map<Name, InputTerminal*> m_inputs;
 
+	std::map<Name, std::unique_ptr<Bric>> m_dynBrics;
+
 	void registerComponent(BricComponent* component);
 	void registerBric(Bric* bric) { registerComponent(bric); m_brics[bric->name()] = bric; }
 	void registerTerminal(Terminal* terminal) { registerComponent(terminal); m_terminals[terminal->name()] = terminal; }
 	void registerParam(ParamTerminal* param) { registerTerminal(param); m_params[param->name()] = param; }
 	void registerOutput(OutputTerminal* output) { registerTerminal(output); m_outputs[output->name()] = output; }
 	void registerInput(InputTerminal* input) { registerTerminal(input); m_inputs[input->name()] = input; }
+
+	void addDynBric(Name bricName, const std::string& className);
 
 	std::vector<Bric*> m_deps;
 	void addDependency(Bric* dep) { m_deps.push_back(dep); }
@@ -200,6 +206,8 @@ public:
 
 	virtual void applyConfig(const PropVal& config);
 	virtual PropVal getConfig() const;
+
+	virtual bool configSubBricsAllowed() { return false; }
 
 	virtual const Terminal& getTerminal(Name terminalName) const;
 	virtual Terminal& getTerminal(Name terminalName);

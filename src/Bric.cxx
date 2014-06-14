@@ -22,6 +22,8 @@
 
 #include <TString.h>
 
+#include "TypeReflection.h"
+
 
 using namespace std;
 
@@ -44,16 +46,24 @@ void Bric::Terminal::connectInputToInner(Bric &bric, Name inputName, PropPath::F
 
 
 const Name Bric::s_defaultInputName("input");
-
 const Name Bric::s_defaultOutputName("output");
+const Name Bric::s_bricTypeKey("type");
 
 
 void Bric::registerComponent(BricComponent* component) {
+	if (component->name() == s_bricTypeKey) throw invalid_argument(TString::Format("Can't add component with reserved name \"%s\" to bric \"%s\"", component->name().c_str(), absolutePath().toString().c_str()).Data());
 	if (component->name().empty()) throw invalid_argument("Can't register BricComponent with empty name");
 
 	auto r = m_components.find(component->name());
-	if (r != m_components.end()) throw invalid_argument(TString::Format("Can't add duplicate component with name \"%s\" to bric \"%s\"", component->name().c_str(), name().c_str()).Data());
+	if (r != m_components.end()) throw invalid_argument(TString::Format("Can't add duplicate component with name \"%s\" to bric \"%s\"", component->name().c_str(), absolutePath().toString().c_str()).Data());
 	m_components[component->name()] = component;
+}
+
+
+void Bric::addDynBric(Name bricName, const std::string& className) {
+	unique_ptr<Bric> dynBric(TypeReflection(className).newInstance<Bric>());
+	registerBric(dynBric.get());
+	m_dynBrics[dynBric->name()] = std::move(dynBric);
 }
 
 
@@ -94,8 +104,22 @@ void Bric::connectOwnInputTo(Name inputName, const Terminal& terminal) {
 
 
 void Bric::applyConfig(const PropVal& config) {
-	for (const auto& entry: config.asProps())
-		m_components[entry.first.asName()]->applyConfig(entry.second);
+	for (const auto& entry: config.asProps()) {
+		Name componentName = entry.first.asName();
+		const PropVal& componentConfig = entry.second;
+		if (componentName != s_bricTypeKey) {
+			const auto& found = m_components.find(componentName);
+			if (found != m_components.end())
+				m_components[entry.first.asName()]->applyConfig(componentConfig);
+			else if (configSubBricsAllowed()) {
+				if (!componentConfig.isProps()) throw invalid_argument(TString::Format("Invalid configuration format for dynamic sub-bric \"%s\" in bric \"%s\"", componentName.c_str(), absolutePath().toString().c_str()).Data());
+				Props subBricProps = entry.second.asProps();
+				const std::string className = entry.second[s_bricTypeKey].asString();
+				addDynBric(componentName, className);
+			}
+			else throw runtime_error(TString::Format("Invalid configuration, bric \"%s\" doesn't have a component named \"%s\"", absolutePath().toString().c_str(), componentName.c_str()).Data());
+		}
+	}
 }
 
 
@@ -105,6 +129,7 @@ PropVal Bric::getConfig() const  {
 		PropVal componentConfig = entry.second->getConfig();
 		if (! componentConfig.isNone())	props[entry.second->name()] = std::move(componentConfig);
 	}
+	props[s_bricTypeKey] = TypeReflection(typeid(this)).name();
 	return PropVal(std::move(props));
 }
 
