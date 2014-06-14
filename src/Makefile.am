@@ -6,6 +6,7 @@ MAINTAINERCLEANFILES = Makefile.in
 lib_LTLIBRARIES = libdatabricxx.la
 
 libdatabricxx_la_SOURCES = \
+	format.cxx \
 	logging.cxx \
 	Bric.cxx \
 	DbrxTools.cxx \
@@ -18,6 +19,7 @@ libdatabricxx_la_SOURCES = \
 	brics.cxx
 
 libdatabricxx_la_headers = \
+	format.h \
 	logging.h \
 	Bric.h \
 	DbrxTools.h \
