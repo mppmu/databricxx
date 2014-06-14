@@ -169,8 +169,15 @@ public:
 		using HasTypedPrimaryValueImpl<T>::value;
 		using HasTypedPrimaryValueImpl<T>::typeInfo;
 
-		virtual void applyConfig(const PropVal& config) { assign_from(value(), config); }
-		virtual PropVal getConfig() const { PropVal config; assign_from(config, value()); return config; }
+		virtual void applyConfig(const PropVal& config) {
+			PropVal currCfg = getConfig();
+			if (currCfg.isProps() && config.isProps())
+				assign_from(value().get(), currCfg.asProps() + config.asProps());
+			else
+				assign_from(value().get(), config);
+		}
+
+		virtual PropVal getConfig() const { PropVal config; assign_from(config, value().get()); return config; }
 
 		Param<T>& operator=(const Param<T>& v) = delete;
 
