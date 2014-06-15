@@ -20,9 +20,9 @@
 #include <iostream>
 #include <algorithm>
 
-#include <TString.h>
-
 #include "TypeReflection.h"
+
+#include "format.h"
 
 
 using namespace std;
@@ -39,7 +39,7 @@ PropPath BricComponent::absolutePath() const {
 
 
 void Bric::Terminal::connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath) {
-	if (!sourcePath.empty()) throw runtime_error("Couldn't resolve source path during input lookup, terminals have no inner components");
+	if (!sourcePath.empty()) throw runtime_error("Couldn't resolve source path %s during input lookup, terminal \"%s\" has no inner components"_format(sourcePath, absolutePath()));
 	else bric.connectOwnInputTo(inputName, *this);
 }
 
@@ -51,11 +51,11 @@ const Name Bric::s_bricTypeKey("type");
 
 
 void Bric::registerComponent(BricComponent* component) {
-	if (component->name() == s_bricTypeKey) throw invalid_argument(TString::Format("Can't add component with reserved name \"%s\" to bric \"%s\"", component->name().c_str(), absolutePath().toString().c_str()).Data());
-	if (component->name().empty()) throw invalid_argument("Can't register BricComponent with empty name");
+	if (component->name() == s_bricTypeKey) throw invalid_argument("Can't add component with reserved name \"%s\" to bric \"%s\""_format(component->name(), absolutePath()));
+	if (component->name().empty()) throw invalid_argument("Can't register BricComponent with empty name in bric \"%s\""_format(absolutePath()));
 
 	auto r = m_components.find(component->name());
-	if (r != m_components.end()) throw invalid_argument(TString::Format("Can't add duplicate component with name \"%s\" to bric \"%s\"", component->name().c_str(), absolutePath().toString().c_str()).Data());
+	if (r != m_components.end()) throw invalid_argument("Can't add duplicate component with name \"%s\" to bric \"%s\""_format(component->name(), absolutePath()));
 	m_components[component->name()] = component;
 }
 
@@ -74,13 +74,13 @@ void Bric::connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment so
 	} else {
 		auto found = m_components.find(sourcePath.front().asName());
 		if (found != m_components.end()) found->second->connectInputToInner(bric, inputName, sourcePath.tail());
-		else throw runtime_error("Couldn't resolve source path during input lookup, no such component");
+		else throw runtime_error("Couldn't resolve source path \"%s\" during input lookup, no such component in bric \"%s\""_format(sourcePath, absolutePath()));
 	}
 }
 
 
 void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragment sourcePath) {
-	if (sourcePath.empty()) throw runtime_error("Empty source path during input lookup");
+	if (sourcePath.empty()) throw runtime_error("Empty source path during input lookup in bric \"%s\""_format(absolutePath()));
 	Name siblingName = sourcePath.front().asName();
 	if (siblingName == name()) connectInputToInner(bric, inputName, sourcePath.tail());
 	else {
@@ -91,7 +91,7 @@ void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragm
 				sibling->connectInputToInner(bric, inputName, sourcePath.tail());
 				addDependency(sibling);
 			}
-		} else throw runtime_error("Reached top-level Bric during input lookup");
+		} else throw runtime_error("Reached top-level Bric \"%s\" during input lookup"_format(absolutePath()));
 	}
 }
 
@@ -99,7 +99,7 @@ void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragm
 void Bric::connectOwnInputTo(Name inputName, const Terminal& terminal) {
 	auto found = m_inputs.find(inputName);
 	if (found != m_inputs.end()) found->second->connectTo(terminal);
-	else throw invalid_argument(TString::Format("Can't connect non-existing input \"%s\" to terminal \"%s\"", inputName.c_str(), terminal.absolutePath().toString().c_str()).Data());
+	else throw invalid_argument("Can't connect non-existing input \"%s\" to terminal \"%s\""_format(inputName, terminal.absolutePath()));
 }
 
 
@@ -112,12 +112,12 @@ void Bric::applyConfig(const PropVal& config) {
 			if (found != m_components.end())
 				m_components[entry.first.asName()]->applyConfig(componentConfig);
 			else if (configSubBricsAllowed()) {
-				if (!componentConfig.isProps()) throw invalid_argument(TString::Format("Invalid configuration format for dynamic sub-bric \"%s\" in bric \"%s\"", componentName.c_str(), absolutePath().toString().c_str()).Data());
+				if (!componentConfig.isProps()) throw invalid_argument("Invalid configuration format for dynamic sub-bric \"%s\" in bric \"%s\""_format(componentName, absolutePath()));
 				Props subBricProps = entry.second.asProps();
 				const std::string className = entry.second[s_bricTypeKey].asString();
 				addDynBric(componentName, className);
 			}
-			else throw runtime_error(TString::Format("Invalid configuration, bric \"%s\" doesn't have a component named \"%s\"", absolutePath().toString().c_str(), componentName.c_str()).Data());
+			else throw runtime_error("Invalid configuration, bric \"%s\" doesn't have a component named \"%s\""_format(absolutePath(), componentName));
 		}
 	}
 }
@@ -136,13 +136,13 @@ PropVal Bric::getConfig() const  {
 
 const Bric::Terminal& Bric::getTerminal(Name terminalName) const {
 	auto r = m_terminals.find(terminalName);
-	if (r == m_terminals.end()) throw invalid_argument(TString::Format("No terminal \"%s\" found in bric \"%s\"", terminalName.c_str(), name().c_str()).Data());
+	if (r == m_terminals.end()) throw invalid_argument("No terminal \"%s\" found in bric \"%s\""_format(terminalName, absolutePath()));
 	else return *r->second;
 }
 
 Bric::Terminal& Bric::getTerminal(Name terminalName) {
 	auto r = m_terminals.find(terminalName);
-	if (r == m_terminals.end()) throw invalid_argument(TString::Format("No terminal \"%s\" found in bric \"%s\"", terminalName.c_str(), name().c_str()).Data());
+	if (r == m_terminals.end()) throw invalid_argument("No terminal \"%s\" found in bric \"%s\""_format(terminalName, absolutePath()));
 	else return *r->second;
 }
 
@@ -150,14 +150,14 @@ Bric::Terminal& Bric::getTerminal(Name terminalName) {
 const Bric::Terminal& Bric::getTerminal(Name terminalName, const std::type_info& typeInfo) const {
 	const Bric::Terminal& terminal = getTerminal(terminalName);
 	if (terminal.value().typeInfo() != typeInfo)
-		throw runtime_error(TString::Format("Type of terminal \"%s\" doesn't match requested type \"%s\"", terminal.name().c_str(), terminal.typeInfo().name()).Data());
+		throw runtime_error("Type of terminal \"%s\" doesn't match requested type \"%s\""_format(terminal.absolutePath(), terminal.typeInfo().name()));
 	return terminal;
 }
 
 Bric::Terminal& Bric::getTerminal(Name terminalName, const std::type_info& typeInfo) {
 	Bric::Terminal& terminal = getTerminal(terminalName);
 	if (terminal.value().typeInfo() != typeInfo)
-		throw runtime_error(TString::Format("Type of terminal \"%s\" doesn't match requested type \"%s\"", terminal.name().c_str(), terminal.typeInfo().name()).Data());
+		throw runtime_error("Type of terminal \"%s\" doesn't match requested type \"%s\""_format(terminal.absolutePath(), terminal.typeInfo().name()));
 	return terminal;
 }
 
