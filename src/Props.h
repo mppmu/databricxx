@@ -107,7 +107,7 @@ public:
 	}
 
 	struct CompareById {
-		bool operator() (const PropKey &a, const PropKey &b) {
+		bool operator() (const PropKey &a, const PropKey &b) const {
 			switch (a.m_type) {
 				case Type::INTEGER:  return b.m_type == Type::INTEGER ?
 					a.m_content.i < b.m_content.i : true;
