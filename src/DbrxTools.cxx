@@ -25,10 +25,9 @@ using namespace std;
 namespace dbrx {
 
 
-TString DbrxTools::s_version(VERSION);
+const std::string& DbrxTools::version() {
+	static std::string s_version(VERSION);
 
-
-const TString& DbrxTools::version() {
 	return s_version;
 }
 

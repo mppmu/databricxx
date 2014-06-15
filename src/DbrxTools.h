@@ -18,7 +18,7 @@
 #ifndef DBRX_DBRXTOOLS_H
 #define DBRX_DBRXTOOLS_H
 
-#include <TString.h>
+#include <string>
 
 
 namespace dbrx {
@@ -30,12 +30,9 @@ namespace dbrx {
 /// function calls, so static methods have to be used instead.
 
 class DbrxTools {
-protected:
-	static TString s_version;
-
 public:
 	/// Get DatABriCxx version
-	static const TString& version();
+	static const std::string& version();
 };
 
 

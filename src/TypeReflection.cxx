@@ -112,9 +112,6 @@ TypeReflection::TypeReflection(const char* typeName)
 TypeReflection::TypeReflection(const std::string& typeName)
 	: TypeReflection(typeName.c_str()) {}
 
-TypeReflection::TypeReflection(const TString& typeName)
-	: TypeReflection(typeName.Data()) {}
-
 
 TypeReflection::TypeReflection(const TClass* cl)
 	: m_tClass(cl) {}

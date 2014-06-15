@@ -22,8 +22,6 @@
 #include <string>
 #include <iosfwd>
 
-#include <TString.h>
-
 
 namespace dbrx {
 
@@ -54,7 +52,6 @@ public:
 	const char* c_str() const { return m_value->c_str(); }
 
 	operator const std::string& () const { return str(); }
-	operator TString () const { return str(); }
 	operator const char* () const { return str().c_str(); }
 
 	bool operator==(Name other) const { return m_value == other.m_value; }
@@ -73,7 +70,6 @@ public:
 	Name(const std::string &s);
 	Name(const std::string &s, NameTable &table);
 
-	Name(const TString &s) : Name(std::string(s)) { }
 	Name(const char *s) : Name(std::string(s)) { }
 
 	friend class NameTable;

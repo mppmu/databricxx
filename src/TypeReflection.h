@@ -19,10 +19,10 @@
 #define DBRX_TYPEREFLECTION_H
 
 #include <memory>
+#include <string>
 #include <typeindex>
 
 
-class TString;
 class TClass;
 class TDataType;
 
@@ -71,9 +71,6 @@ public:
 
 	// Currently does not support primitive types
 	TypeReflection(const std::string& typeName);
-
-	// Currently does not support primitive types
-	TypeReflection(const TString& typeName);
 
 	TypeReflection(const TClass* cl);
 
