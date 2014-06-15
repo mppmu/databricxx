@@ -1,4 +1,4 @@
-// Copyright (C) 2011-2014 Oliver Schulz <oschulz@mpp.mpg.de>
+// Copyright (C) 2014 Oliver Schulz <oschulz@mpp.mpg.de>
 
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,63 +17,37 @@
 
 #include "logging.h"
 
-#include <stdexcept>
-#include <cstring>
-#include <cstdio>
+#include <iostream>
+
+
+using namespace std;
 
 
 namespace dbrx {
 
 
-LogLevel g_logLevel = LL_INFO;
+LoggingFacility& LoggingFacility::global() { static LoggingFacility f; return f; }
 
 
-void log_level(LogLevel level)
-	{ g_logLevel = level; }
-
-void log_level(const char *level)
-	{ log_level(string2LogLevel(level)); }
-
-void log_level(const std::string &level)
-	{ log_level(level.c_str()); }
-
-
-LogLevel string2LogLevel(const char *level) {
-	if      (strncasecmp(level, "off",   6) == 0) return LL_OFF;
-	else if (strncasecmp(level, "trace", 6) == 0) return LL_TRACE;
-	else if (strncasecmp(level, "debug", 6) == 0) return LL_DEBUG;
-	else if (strncasecmp(level, "info",  6) == 0) return LL_INFO;
-	else if (strncasecmp(level, "warn",  6) == 0) return LL_WARN;
-	else if (strncasecmp(level, "error", 6) == 0) return LL_ERROR;
-	else if (strncasecmp(level, "all",   6) == 0) return LL_ALL;
-	else throw std::invalid_argument(std::string("Invalid logging level name \"") + level + "\"");
+void LoggingFacility::applyConfig(const PropVal& config) {
+	static const char *s_invalidConfErr = "Invalid configuration for LoggingFacility";
+	try {
+		PropVal logLevel = config.asProps().at(Names::level());
+		if (logLevel.isName()) level(logLevel.asName());
+		else if (logLevel.isString()) level(logLevel.asString());
+		else throw invalid_argument(s_invalidConfErr);
+	}
+	catch (const std::bad_cast&) { throw invalid_argument(s_invalidConfErr); }
+	catch (const std::out_of_range&) { throw invalid_argument(s_invalidConfErr); }
 }
 
 
-const char* logLevel2String(LogLevel level) {
-	if (level > LL_ERROR  ) return "ALL";
-	else if (level > LL_WARN  ) return "ERROR";
-	else if (level > LL_INFO  ) return "WARN";
-	else if (level > LL_DEBUG  ) return "INFO";
-	else if (level > LL_TRACE  ) return "DEBUG";
-	else if (level > LL_OFF  ) return "TRACE";
-	else return "OFF";
+PropVal LoggingFacility::getConfig() const {
+	return Props{{Names::level(), nameOf(level())}};
 }
 
 
-void v_log_generic_impl(const char* tag, const char *fmt, va_list argp) {
-	vfprintf(stderr, (std::string(tag) + fmt + "\n").c_str(), argp);
-}
-
-void log_trace_impl(const char *fmt, ...) { va_list argp; va_start(argp, fmt); v_log_generic_impl("!TRACE: ", fmt, argp);	va_end(argp); }
-
-void log_debug_impl(const char *fmt, ...) { va_list argp; va_start(argp, fmt); v_log_generic_impl("!DEBUG: ", fmt, argp);	va_end(argp); }
-
-void log_info_impl(const char *fmt, ...) { va_list argp; va_start(argp, fmt); v_log_generic_impl("!INFO:  ", fmt, argp);	va_end(argp); }
-
-void log_warn_impl(const char *fmt, ...) { va_list argp; va_start(argp, fmt); v_log_generic_impl("!WARN: ", fmt, argp);	va_end(argp); }
-
-void log_error_impl(const char *fmt, ...) { va_list argp; va_start(argp, fmt); v_log_generic_impl("!ERROR: ", fmt, argp);	va_end(argp); }
+LoggingFacility::LoggingFacility(): m_output(&std::cerr) {}
 
 
 } // namespace dbrx
