@@ -425,56 +425,84 @@ public:
 
 	PropVal& operator[](PropKey key) {
 		if (m_type == Type::PROPS) return (*m_content.o)[key];
-		else {
-			if (key.isInteger()) {
-				Integer index = key.asInteger();
-				if (m_type == Type::ARRAY) return (*m_content.a)[index];
-				else {
-					if (index == 0) return *this;
-					else throw std::out_of_range("PropVal of this type has fixed size 1");
-				}
-			}
-			else throw std::invalid_argument("Can't use non-integer key with non-Props PropVal value");
+		else if (key.isInteger()) {
+			Integer index = key.asInteger();
+			if (m_type == Type::ARRAY) return (*m_content.a)[index];
+			else if (index == 0) return *this;
+			else throw std::out_of_range("PropVal of this type has fixed size 1");
 		}
+		else throw std::invalid_argument("Can't use non-integer key with non-Props PropVal value");
 	}
 
 
 	const PropVal& operator[](PropKey key) const {
 		if (m_type == Type::PROPS) return (*m_content.o)[key];
-		else {
-			if (key.isInteger()) {
-				Integer index = key.asInteger();
-				if (m_type == Type::ARRAY) return (*m_content.a)[index];
-				else {
-					if (index == 0) return *this;
-					else throw std::out_of_range("PropVal of this type has fixed size 1");
-				}
-			}
-			else throw std::invalid_argument("Can't use non-integer key with non-Props PropVal value");
+		else if (key.isInteger()) {
+			Integer index = key.asInteger();
+			if (m_type == Type::ARRAY) return (*m_content.a)[index];
+			else if (index == 0) return *this;
+			else throw std::out_of_range("PropVal of this type has fixed size 1");
 		}
+		else throw std::invalid_argument("Can't use non-integer key with non-Props PropVal value");
 	}
 
 
 	PropVal& operator[](Integer index) {
 		if (m_type == Type::PROPS) return operator[](PropKey(index));
-		else {
-			if (m_type == Type::ARRAY) return (*m_content.a)[index];
-			else {
-				if (index == 0) return *this;
-				else throw std::out_of_range("PropVal of this type has fixed size 1");
-			}
-		}
+		else if (m_type == Type::ARRAY) return (*m_content.a)[index];
+		else if (index == 0) return *this;
+		else throw std::out_of_range("PropVal of this type has fixed size 1");
 	}
 
 
 	const PropVal& operator[](Integer index) const {
 		if (m_type == Type::PROPS) return operator[](PropKey(index));
+		else if (m_type == Type::ARRAY) return (*m_content.a)[index];
+		else if (index == 0) return *this;
+		else throw std::out_of_range("PropVal of this type has fixed size 1");
+	}
+
+
+	PropVal& at(PropKey key) {
+		if (m_type == Type::PROPS) return m_content.o->at(key);
+		else if (key.isInteger()) {
+			Integer index = key.asInteger();
+			if (m_type == Type::ARRAY) return m_content.a->at(index);
+			else if (index == 0) return *this;
+			else throw std::out_of_range("PropVal of this type has fixed size 1");
+		}
+		else throw std::invalid_argument("Can't use non-integer key with non-Props PropVal value");
+	}
+
+
+	const PropVal& at(PropKey key) const {
+		if (m_type == Type::PROPS) return m_content.o->at(key);
+		else if (key.isInteger()) {
+			Integer index = key.asInteger();
+			if (m_type == Type::ARRAY) return m_content.a->at(index);
+			else if (index == 0) return *this;
+			else throw std::out_of_range("PropVal of this type has fixed size 1");
+		}
+		else throw std::invalid_argument("Can't use non-integer key with non-Props PropVal value");
+	}
+
+
+	PropVal& at(Integer index) {
+		if (m_type == Type::PROPS) return at(PropKey(index));
+		else if (m_type == Type::ARRAY) return m_content.a->at(index);
 		else {
-			if (m_type == Type::ARRAY) return (*m_content.a)[index];
-			else {
-				if (index == 0) return *this;
-				else throw std::out_of_range("PropVal of this type has fixed size 1");
-			}
+			if (index == 0) return *this;
+			else throw std::out_of_range("PropVal of this type has fixed size 1");
+		}
+	}
+
+
+	const PropVal& at(Integer index) const {
+		if (m_type == Type::PROPS) return at(PropKey(index));
+		else if (m_type == Type::ARRAY) return m_content.a->at(index);
+		else {
+			if (index == 0) return *this;
+			else throw std::out_of_range("PropVal of this type has fixed size 1");
 		}
 	}
 
