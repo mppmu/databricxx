@@ -60,6 +60,28 @@ void Bric::registerComponent(BricComponent* component) {
 }
 
 
+void Bric::registerBric(Bric* bric)
+	{ registerComponent(bric); m_brics[bric->name()] = bric; }
+
+void Bric::registerTerminal(Terminal* terminal)
+	{ registerComponent(terminal); m_terminals[terminal->name()] = terminal; }
+
+void Bric::registerParam(ParamTerminal* param)
+	{ registerTerminal(param); m_params[param->name()] = param; }
+
+void Bric::registerOutput(OutputTerminal* output) {
+	if (!canHaveOutputs()) throw invalid_argument("Bric \"%s\" cannot have outputs"_format(absolutePath()));
+	registerTerminal(output);
+	m_outputs[output->name()] = output;
+}
+
+void Bric::registerInput(InputTerminal* input) {
+	if (!canHaveInputs()) throw invalid_argument("Bric \"%s\" cannot have inputs"_format(absolutePath()));
+	registerTerminal(input);
+	m_inputs[input->name()] = input;
+}
+
+
 void Bric::addDynBric(Name bricName, const std::string& className) {
 	unique_ptr<Bric> dynBric(TypeReflection(className).newInstance<Bric>());
 	registerBric(dynBric.get());
@@ -111,7 +133,7 @@ void Bric::applyConfig(const PropVal& config) {
 			const auto& found = m_components.find(componentName);
 			if (found != m_components.end())
 				m_components[entry.first.asName()]->applyConfig(componentConfig);
-			else if (configSubBricsAllowed()) {
+			else if (subBricsFromConfig()) {
 				if (!componentConfig.isProps()) throw invalid_argument("Invalid configuration format for dynamic sub-bric \"%s\" in bric \"%s\""_format(componentName, absolutePath()));
 				Props subBricProps = entry.second.asProps();
 				const std::string className = entry.second[s_bricTypeKey].asString();

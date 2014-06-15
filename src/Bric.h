@@ -114,11 +114,11 @@ protected:
 	std::map<Name, std::unique_ptr<Bric>> m_dynBrics;
 
 	void registerComponent(BricComponent* component);
-	void registerBric(Bric* bric) { registerComponent(bric); m_brics[bric->name()] = bric; }
-	void registerTerminal(Terminal* terminal) { registerComponent(terminal); m_terminals[terminal->name()] = terminal; }
-	void registerParam(ParamTerminal* param) { registerTerminal(param); m_params[param->name()] = param; }
-	void registerOutput(OutputTerminal* output) { registerTerminal(output); m_outputs[output->name()] = output; }
-	void registerInput(InputTerminal* input) { registerTerminal(input); m_inputs[input->name()] = input; }
+	void registerBric(Bric* bric);
+	void registerTerminal(Terminal* terminal);
+	void registerParam(ParamTerminal* param);
+	void registerOutput(OutputTerminal* output);
+	void registerInput(InputTerminal* input);
 
 	void addDynBric(Name bricName, const std::string& className);
 
@@ -207,7 +207,10 @@ public:
 	virtual void applyConfig(const PropVal& config);
 	virtual PropVal getConfig() const;
 
-	virtual bool configSubBricsAllowed() { return false; }
+	virtual bool canHaveInputs() const { return false; }
+	virtual bool canHaveOutputs() const { return false; }
+
+	virtual bool subBricsFromConfig() { return false; }
 
 	virtual const Terminal& getTerminal(Name terminalName) const;
 	virtual Terminal& getTerminal(Name terminalName);
@@ -295,6 +298,8 @@ public:
 		Output(const Output &other) = delete;
 	};
 
+	bool canHaveOutputs() const { return true; }
+
 	virtual bool nextOutput() = 0;
 };
 
@@ -335,6 +340,8 @@ public:
 
 		Input(const Input &other) = delete;
 	};
+
+	bool canHaveInputs() const { return true; }
 
 	virtual void nextInput() = 0;
 };
