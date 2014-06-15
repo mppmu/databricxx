@@ -132,11 +132,11 @@ void Bric::applyConfig(const PropVal& config) {
 		if (componentName != s_bricTypeKey) {
 			const auto& found = m_components.find(componentName);
 			if (found != m_components.end())
-				m_components[entry.first.asName()]->applyConfig(componentConfig);
+				m_components.at(entry.first.asName())->applyConfig(componentConfig);
 			else if (subBricsFromConfig()) {
 				if (!componentConfig.isProps()) throw invalid_argument("Invalid configuration format for dynamic sub-bric \"%s\" in bric \"%s\""_format(componentName, absolutePath()));
 				Props subBricProps = entry.second.asProps();
-				const std::string className = entry.second[s_bricTypeKey].asString();
+				const std::string className = entry.second.at(s_bricTypeKey).asString();
 				addDynBric(componentName, className);
 			}
 			else throw runtime_error("Invalid configuration, bric \"%s\" doesn't have a component named \"%s\""_format(absolutePath(), componentName));
