@@ -27,7 +27,7 @@
 
 #include "logging.h"
 
-#include "../config.h"
+#include "format.h"
 
 using namespace std;
 
@@ -54,7 +54,7 @@ const char* TypeReflection::name() const {
 
 void* TypeReflection::newInstanceImpl(const TypeReflection& ptrType) {
 	if (! ptrType.isAssignableFrom(*this))
-		throw invalid_argument(TString::Format("Target pointer type \"%s\" cannot be assigned from object type \"%s\"", ptrType.name(), name()).Data());
+		throw invalid_argument("Target pointer type \"%s\" cannot be assigned from object type \"%s\""_format(ptrType.name(), name()));
 
 	if (isPrimitive()) {
 		const type_info &ti = *getTypeInfo();
@@ -69,17 +69,17 @@ void* TypeReflection::newInstanceImpl(const TypeReflection& ptrType) {
 		else if (ti == typeid(uint64_t)) return new uint64_t();
 		else if (ti == typeid(float)) return new float();
 		else if (ti == typeid(double)) return new double();
-		else throw invalid_argument(TString::Format("Dynamic instance creation of primitive type \"%s\" not supported", ti.name()).Data());
+		else throw invalid_argument("Dynamic instance creation of primitive type \"%s\" not supported"_format(ti.name()));
 	} else {	
 		void *obj = getTClass()->New(TClass::ENewType::kClassNew, true);
 		if (obj == nullptr) {
 			// May be necessary the first time the class is loaded, for some reason,
 			// to make an inherited default constructor visible:
 			log_debug("Failed to create object of class\"%s\", first-time load? Trying work-around.", name());
-			gROOT->ProcessLine(TString::Format("delete new %s", name()));
+			gROOT->ProcessLine("delete new %s"_format(name()).c_str());
 			obj = getTClass()->New();
 		}
-		if (obj == nullptr) throw runtime_error(TString::Format("Dynamic object creation of class \"%s\" failed", name()).Data());
+		if (obj == nullptr) throw runtime_error("Dynamic object creation of class \"%s\" failed"_format(name()));
 		log_debug("Dynamically created object of class\"%s\"", name());
 		return obj;
 	}
@@ -97,7 +97,7 @@ TypeReflection::TypeReflection(const std::type_info& typeInfo)
 {
 	// If class not found, check if primitive type, else throw exception
 	if ( (m_tClass == nullptr) && (TDataType::GetType(typeInfo) == EDataType::kOther_t) )
-		throw runtime_error(TString::Format("Could not resolve class for type_info \"%s\"", typeInfo.name()).Data());
+		throw runtime_error("Could not resolve class for type_info \"%s\""_format(typeInfo.name()));
 }
 
 
@@ -106,7 +106,7 @@ TypeReflection::TypeReflection(const char* typeName)
 {
 	// Currently does not support primitive types
 	if (m_tClass == nullptr)
-		throw runtime_error(TString::Format("Could not resolve class for type_info \"%s\"", typeName).Data());
+		throw runtime_error("Could not resolve class for type_info \"%s\""_format(typeName));
 }
 
 TypeReflection::TypeReflection(const std::string& typeName)

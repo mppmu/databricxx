@@ -21,6 +21,7 @@
 
 #include <TDataType.h>
 
+#include "format.h"
 #include "TypeReflection.h"
 
 
@@ -43,7 +44,7 @@ char RootIO::getTypeSymbol(const std::type_info& typeInfo) {
 	else if (typeInfo == typeid(Double_t))  return 'D';
 	else if (typeInfo == typeid(Float_t))   return 'F';
 	else if (typeInfo == typeid(char*))     return 'C';
-	else throw invalid_argument(TString::Format("No ROOT type symbol equivalent for type_info \"%s\"", typeInfo.name()).Data());
+	else throw invalid_argument("No ROOT type symbol equivalent for type_info \"%s\""_format(typeInfo.name()));
 }
 
 
@@ -88,8 +89,8 @@ void RootIO::outputValueTo(Value& value, TTree *tree, const TString& branchName,
 	} else { // Primitive type
 		char typeSymbol = getTypeSymbol(value.typeInfo());
 		if (value.empty()) throw invalid_argument("Cannot output empty value object of primitive type to branch");
-		TString formatString = TString::Format("%s/%c", bName, typeSymbol);
-		branch = tree->Branch(bName, const_cast<void*>(value.untypedPtr()), formatString.Data(), bufsize);
+		string formatString("%s/%c"_format(bName, typeSymbol));
+		branch = tree->Branch(bName, const_cast<void*>(value.untypedPtr()), formatString.c_str(), bufsize);
 	}
 	if (branch == nullptr) throw runtime_error("Failed to create branch");
 }
