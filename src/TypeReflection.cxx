@@ -75,12 +75,12 @@ void* TypeReflection::newInstanceImpl(const TypeReflection& ptrType) {
 		if (obj == nullptr) {
 			// May be necessary the first time the class is loaded, for some reason,
 			// to make an inherited default constructor visible:
-			log_debug("Failed to create object of class\"%s\", first-time load? Trying work-around.", name());
+			dbrx_log_debug("Failed to create object of class \"%s\", first-time load? Trying work-around.", name());
 			gROOT->ProcessLine("delete new %s"_format(name()).c_str());
 			obj = getTClass()->New();
 		}
 		if (obj == nullptr) throw runtime_error("Dynamic object creation of class \"%s\" failed"_format(name()));
-		log_debug("Dynamically created object of class\"%s\"", name());
+		dbrx_log_debug("Dynamically created object of class \"%s\"", name());
 		return obj;
 	}
 }

@@ -175,11 +175,11 @@ inline bool log_enabled(LogLevel logLevel) { return log_facility().logEnabled(lo
 } // namespace dbrx
 
 
-#define log_trace(...) (dbrx::log_facility().logEnabled(dbrx::LogLevel::TRACE) ? dbrx::log_facility().logTrace(__VA_ARGS__) : dbrx::log_facility().logNothing())
-#define log_debug(...) (dbrx::log_facility().logEnabled(dbrx::LogLevel::DEBUG) ? dbrx::log_facility().logDebug(__VA_ARGS__) : dbrx::log_facility().logNothing())
-#define log_info(...) (dbrx::log_facility().logEnabled(dbrx::LogLevel::INFO) ? dbrx::log_facility().logInfo(__VA_ARGS__) : dbrx::log_facility().logNothing())
-#define log_warn(...) (dbrx::log_facility().logEnabled(dbrx::LogLevel::WARN) ? dbrx::log_facility().logWarn(__VA_ARGS__) : dbrx::log_facility().logNothing())
-#define log_error(...) (dbrx::log_facility().logEnabled(dbrx::LogLevel::ERROR) ? dbrx::log_facility().logError(__VA_ARGS__) : dbrx::log_facility().logNothing())
+#define dbrx_log_trace(...) (dbrx::log_facility().logEnabled(dbrx::LogLevel::TRACE) ? dbrx::log_facility().logTrace(__VA_ARGS__) : dbrx::log_facility().logNothing())
+#define dbrx_log_debug(...) (dbrx::log_facility().logEnabled(dbrx::LogLevel::DEBUG) ? dbrx::log_facility().logDebug(__VA_ARGS__) : dbrx::log_facility().logNothing())
+#define dbrx_log_info(...) (dbrx::log_facility().logEnabled(dbrx::LogLevel::INFO) ? dbrx::log_facility().logInfo(__VA_ARGS__) : dbrx::log_facility().logNothing())
+#define dbrx_log_warn(...) (dbrx::log_facility().logEnabled(dbrx::LogLevel::WARN) ? dbrx::log_facility().logWarn(__VA_ARGS__) : dbrx::log_facility().logNothing())
+#define dbrx_log_error(...) (dbrx::log_facility().logEnabled(dbrx::LogLevel::ERROR) ? dbrx::log_facility().logError(__VA_ARGS__) : dbrx::log_facility().logNothing())
 
 
 #endif // DBRX_LOGGING_H
