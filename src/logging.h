@@ -45,6 +45,12 @@ enum class LogLevel: int32_t {
 
 class LoggingFacility: public Configurable {
 protected:
+	// Static value is safe here, as C++ guarantees static values to be zero
+	// initialized before any other form of initialization. Logging will just
+	// remain disabled during construction of other static values until
+	// constructor of g_facility is reached.
+	static LoggingFacility g_facility;
+
 	LogLevel m_level{LogLevel::INFO};
 	std::ostream* m_output{nullptr};
 
@@ -92,14 +98,14 @@ public:
 		else return Names::off();
 	}
 
-	static LoggingFacility& global();
+	static LoggingFacility& global() { return g_facility; }
 
 	LogLevel level() const { return m_level; }
 	void level(LogLevel logLevel) { m_level = logLevel; }
 	void level(Name logLevel) { level(levelOf(logLevel)); }
 
-	std::ostream& output() const { return *m_output; }
-	void output(std::ostream& os) { m_output = &os; }
+	std::ostream* output() const { return m_output; }
+	void output(std::ostream* os) { m_output = os; }
 
 	bool logEnabled(LogLevel logLevel) { return logLevel >= m_level; }
 
@@ -108,22 +114,24 @@ public:
 		// Build intermediate stringstream to make sure output is atomic.
 		// Assumes output stream is thread-safe (default for standard streams).
 		using namespace std;
+		if (output() == nullptr) return;
 		stringstream tmp;
 		tmp << tag(logLevel);
 		FormatString(std::move(fmt)).print(tmp, std::forward<Args>(args)...);
 		tmp << endl;
-		output() << tmp.str();
+		*output() << tmp.str() << flush;
 	}
 
 	void log(LogLevel logLevel, const std::string& msg) const {
 		// Build intermediate stringstream to make sure output is atomic.
 		// Assumes output stream is thread-safe (default for standard streams).
 		using namespace std;
+		if (output() == nullptr) return;
 		stringstream tmp;
 		tmp << tag(logLevel);
 		tmp << msg;
 		tmp << endl;
-		output() << tmp.str();
+		*output() << tmp.str() << flush;
 	}
 
 	template <typename ...Args> void logTrace(Args&&... args) const

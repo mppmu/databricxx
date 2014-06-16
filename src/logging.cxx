@@ -26,7 +26,7 @@ using namespace std;
 namespace dbrx {
 
 
-LoggingFacility& LoggingFacility::global() { static LoggingFacility f; return f; }
+LoggingFacility LoggingFacility::g_facility;
 
 
 void LoggingFacility::applyConfig(const PropVal& config) {
