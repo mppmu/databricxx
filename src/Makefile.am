@@ -50,7 +50,8 @@ rootmap_DATA += .libs/libdatabricxx.rootmap
 rootmap_DATA += .libs/libdatabricxx_rdict.pcm
 
 libdatabricxx_rdict.cxx: $(libdatabricxx_la_headers) databricxx_LinkDef.h
-	$(ROOTCLING) -f $@ -s libdatabricxx@SHLIBEXT@ -rml libdatabricxx@SHLIBEXT@ -rmf libdatabricxx.rootmap -c $(CPPFLAGS) $(CXXFLAGS) -I$(pkgincludedir) $+
+	$(ROOTCLING) -f $@.tmp -s libdatabricxx@SHLIBEXT@ -rml libdatabricxx@SHLIBEXT@ -rmf libdatabricxx.rootmap -c $(CPPFLAGS) $(CXXFLAGS) -I$(pkgincludedir) $+
+	$(GREP) -F -v '"'"`pwd`"'/",' $@.tmp > $@ && $(RM) $@.tmp
 
 .libs/libdatabricxx.rootmap: libdatabricxx.la
 	cp libdatabricxx.rootmap libdatabricxx_rdict.pcm .libs/
