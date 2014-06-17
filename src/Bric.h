@@ -104,6 +104,8 @@ protected:
 	static const Name s_defaultOutputName;
 	static const Name s_bricTypeKey;
 
+	bool m_isInitialized{false};
+
 	std::map<Name, BricComponent*> m_components;
 	std::map<Name, Bric*> m_brics;
 	std::map<Name, Terminal*> m_terminals;
@@ -243,7 +245,14 @@ public:
 
 	virtual std::ostream & printInfo(std::ostream &os) const;
 
+	// Undefined when run in relation to sub-bric init (possibly in parallel?):
 	virtual void init() {};
+
+	// Run before init_parentFirst for sub-brics:
+	virtual void init_parentFirst() {};
+
+	// Run after init_childrenFirst for sub-brics:
+	virtual void init_childrenFirst() {};
 
 	friend class BricImpl;
 };
