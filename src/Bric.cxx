@@ -82,10 +82,30 @@ void Bric::registerInput(InputTerminal* input) {
 }
 
 
-void Bric::addDynBric(Name bricName, const std::string& className) {
+bool Bric::isBricConfig(const PropVal& config) {
+	if (!config.isProps()) return false;
+	Props props = config.asProps();
+	const auto& bricType = props.find(s_bricTypeKey);
+	if (bricType == props.end()) return false;
+	return bricType->second.isString() ? true : false;
+}
+
+
+void Bric::addDynBric(Name bricName, const PropVal& config) {
+	if (!isBricConfig(config)) throw invalid_argument("Invalid configuration format for dynamic sub-bric \"%s\" in bric \"%s\""_format(bricName, absolutePath()));
+	Props subBricProps = config.asProps();
+	const std::string className = config.at(s_bricTypeKey).asString();
 	unique_ptr<Bric> dynBric(TypeReflection(className).newInstance<Bric>());
+	Bric* dynBricPtr = dynBric.get();
 	registerBric(dynBric.get());
 	m_dynBrics[dynBric->name()] = std::move(dynBric);
+	dynBricPtr->applyConfig(config);
+}
+
+
+void Bric::delDynBric(Name bricName) {
+	m_dynBrics.erase(m_dynBrics.find(bricName));
+	m_components.erase(m_components.find(bricName));
 }
 
 
@@ -130,16 +150,25 @@ void Bric::applyConfig(const PropVal& config) {
 		Name componentName = entry.first.asName();
 		const PropVal& componentConfig = entry.second;
 		if (componentName != s_bricTypeKey) {
-			const auto& found = m_components.find(componentName);
-			if (found != m_components.end())
-				m_components.at(entry.first.asName())->applyConfig(componentConfig);
-			else if (subBricsFromConfig()) {
-				if (!componentConfig.isProps()) throw invalid_argument("Invalid configuration format for dynamic sub-bric \"%s\" in bric \"%s\""_format(componentName, absolutePath()));
-				Props subBricProps = entry.second.asProps();
-				const std::string className = entry.second.at(s_bricTypeKey).asString();
-				addDynBric(componentName, className);
+			const auto& foundDynBric = m_dynBrics.find(componentName);
+			if (foundDynBric != m_dynBrics.end()) {
+				if (componentConfig.isNone()) delDynBric(componentName);
+				else {
+					try {
+						foundDynBric->second->applyConfig(componentConfig);
+					} catch (const NotReconfigurable&) {
+						delDynBric(componentName);
+						addDynBric(componentName, componentConfig);						
+					}
+				}
+			} else {
+				const auto& foundComponent = m_components.find(componentName);
+				if (foundComponent != m_components.end()) {
+					foundComponent->second->applyConfig(componentConfig);
+				} else if (isBricConfig(componentConfig)) {
+					addDynBric(componentName, componentConfig);
+				} else throw runtime_error("Invalid configuration, bric \"%s\" doesn't have a component named \"%s\""_format(absolutePath(), componentName));
 			}
-			else throw runtime_error("Invalid configuration, bric \"%s\" doesn't have a component named \"%s\""_format(absolutePath(), componentName));
 		}
 	}
 }

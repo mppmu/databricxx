@@ -36,6 +36,8 @@ class Bric;
 
 class BricComponent: public virtual HasName, public virtual Configurable {
 protected:
+	struct NotReconfigurable : public std::runtime_error { using std::runtime_error::runtime_error; };
+
 	virtual void connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath) = 0;
 
 public:
@@ -122,7 +124,10 @@ protected:
 	void registerOutput(OutputTerminal* output);
 	void registerInput(InputTerminal* input);
 
-	void addDynBric(Name bricName, const std::string& className);
+	bool isBricConfig(const PropVal& config);
+
+	virtual void addDynBric(Name bricName, const PropVal& config);
+	virtual void delDynBric(Name bricName);
 
 	std::vector<Bric*> m_deps;
 	void addDependency(Bric* dep) { m_deps.push_back(dep); }
@@ -212,7 +217,7 @@ public:
 	virtual bool canHaveInputs() const { return false; }
 	virtual bool canHaveOutputs() const { return false; }
 
-	virtual bool subBricsFromConfig() { return false; }
+	virtual bool canHaveDynBrics() { return false; }
 
 	virtual const Terminal& getTerminal(Name terminalName) const;
 	virtual Terminal& getTerminal(Name terminalName);
