@@ -334,7 +334,7 @@ public:
 	bool isInteger() const { return m_type == Type::INTEGER; }
 	bool isReal() const { return m_type == Type::INTEGER || m_type == Type::REAL; }
 	bool isName() const { return m_type == Type::NAME; }
-	bool isString() const { return m_type == Type::STRING; }
+	bool isString() const { return m_type == Type::NAME || m_type == Type::STRING; }
 	bool isArray() const { return m_type == Type::ARRAY; }
 	bool isProps() const { return m_type == Type::PROPS; }
 
@@ -370,15 +370,12 @@ public:
 		}
 	}
 
+
 	Name asName() const {
-		switch (m_type) {
-			case Type::NAME:
-				return m_content.n;
-			case Type::STRING:
-				return Name(m_content.s);
-			default: throw std::bad_cast();
-		}
+		if (m_type == Type::NAME) return m_content.n;
+		else throw std::bad_cast();
 	}
+
 
 	const std::string& asString() const {
 		switch (m_type) {
