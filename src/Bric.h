@@ -19,18 +19,22 @@
 #define DBRX_BRIC_H
 
 #include <memory>
+#include <atomic>
 #include <stdexcept>
 #include <map>
 #include <iosfwd>
 
 #include "Name.h"
 #include "HasValue.h"
+#include "logging.h"
 
 
 namespace dbrx {
 
 
 class Bric;
+class BricWithOutputs;
+class BricWithInputs;
 
 
 
@@ -47,6 +51,8 @@ public:
 
 	virtual const Bric& parent() const = 0;
 	virtual Bric& parent() = 0;
+
+	bool isInside(const Bric& other) const;
 
 	BricComponent& operator=(const BricComponent& v) = delete;
 	BricComponent& operator=(BricComponent &&v) = delete;
@@ -68,6 +74,8 @@ public:
 
 	const Bric& parent() const { return *m_parent; }
 	Bric& parent() { return *m_parent; }
+
+	virtual bool syncedInput() const { return false; }
 
 	BricComponentImpl() {}
 	BricComponentImpl(Name componentName): m_name(componentName) {}
@@ -106,8 +114,6 @@ protected:
 	static const Name s_defaultOutputName;
 	static const Name s_bricTypeKey;
 
-	bool m_isInitialized{false};
-
 	std::map<Name, BricComponent*> m_components;
 	std::map<Name, Bric*> m_brics;
 	std::map<Name, Terminal*> m_terminals;
@@ -128,9 +134,6 @@ protected:
 
 	virtual void addDynBric(Name bricName, const PropVal& config);
 	virtual void delDynBric(Name bricName);
-
-	std::vector<Bric*> m_deps;
-	void addDependency(Bric* dep) { m_deps.push_back(dep); }
 
 	virtual void connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath);
 	virtual void connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragment sourcePath);
@@ -213,6 +216,12 @@ public:
 		Param(const Param &other) = delete;
 	};
 
+	virtual bool hasSingleValueOutput() const { return false; }
+
+	virtual bool outputSyncedWith(const Bric& other) {
+		return hasSingleValueOutput() && other.hasSingleValueOutput()
+			&& isInside(other);
+	}
 
 	virtual void applyConfig(const PropVal& config);
 	virtual PropVal getConfig() const;
@@ -262,7 +271,132 @@ public:
 	// Run after init_childrenFirst for sub-brics:
 	virtual void init_childrenFirst() {};
 
+protected:
+	bool m_execFinished = false;
+
+	// See nextExecStep for guarantees on behaviour and return value.
+	virtual bool nextExecStepImpl() = 0;
+
+	void setOutputsToErrorState() {
+		dbrx_log_info("Due to an error, setting outputs of bric \"%s\" to default values", absolutePath());
+		for (auto& output: m_outputs) output.second->value().setToDefault();
+	}
+
+
+// Sources //
+
+protected:
+	std::vector<Bric*> m_sources;
+
+	std::atomic<size_t> m_nSourcesAvailable;
+
+	std::atomic<size_t> m_nSourcesFinished;
+
+	void addSource(Bric* source) { m_sources.push_back(source); }
+
+
+	void incNSourcesAvailable() { atomic_fetch_add(&m_nSourcesAvailable, size_t(1)); }
+	void decNSourcesAvailable() { atomic_fetch_sub(&m_nSourcesAvailable, size_t(1)); }
+	void clearNSourcesAvailable() { atomic_store(&m_nSourcesAvailable, size_t(0)); }
+
+	size_t nSourcesAvailable() const {
+		size_t nAvail = atomic_load(&m_nSourcesAvailable);
+		assert(nAvail <= m_sources.size()); // Sanity check
+		if (nAvail > 0) assert(!allSourcesFinished()); // Sanity check
+		return nAvail;
+	}
+
+	bool allSourcesAvailable() const { return nSourcesAvailable() == m_sources.size(); }
+	bool anySourceAvailable() const { return nSourcesAvailable() > 0; }
+
+
+	void incSourcesFinished() { atomic_fetch_add(&m_nSourcesFinished, size_t(1)); }
+
+	size_t nSourcesFinished() const {
+		size_t nFinished = atomic_load(&m_nSourcesFinished);
+		assert(nFinished <= m_sources.size()); // Sanity check
+		return nFinished;
+	}
+
+	bool allSourcesFinished() const { return nSourcesFinished() == m_sources.size(); }
+
+public:
+	const std::vector<Bric*>& sources() { return m_sources; }
+
+
+// Dests //
+
+protected:
+	std::vector<Bric*> m_dests;
+
+	std::atomic<size_t> m_nDestsReadyForInput;
+
+	size_t m_outputCounter;
+
+
+	void incNDestsReadyForInput() { atomic_fetch_add(&m_nDestsReadyForInput, size_t(1)); }
+	void clearNDestsReadyForInput() { atomic_store(&m_nDestsReadyForInput, size_t(0)); }
+
+	size_t nDestsReadyForInput() const {
+		size_t nReady = atomic_load(&m_nDestsReadyForInput);
+		assert(nReady <= m_dests.size()); // Sanity check
+		return nReady;
+	}
+
+	bool allDestsReadyForInput() const { return nDestsReadyForInput() == m_dests.size(); }
+
+
+	void announceNewOutput() {
+		for (auto &dest: m_dests) dest->incNSourcesAvailable();
+		clearNDestsReadyForInput();
+		++m_outputCounter;
+	}
+
+	inline void setExecFinished() {
+		assert(m_execFinished == false); // Sanity check
+		m_execFinished = true;
+		for (auto &dest: m_dests) dest->incSourcesFinished();
+	}
+
+public:
+	const std::vector<Bric*>& dests() { return m_dests; }
+
+
+// Execution //
+
+public:
+
+	// Must always be called for a whole set of interdependent sibling brics
+	virtual void resetExec() {
+		atomic_store(&m_nDestsReadyForInput, m_dests.size());
+		m_execFinished = false;
+	}
+
+	// Returns true if execution is finished or new output was produced.
+	// A repeated call, before any changes in higher/lower processing layers,
+	// is guaranteed not to change the state of the bric and to return
+	// true if bric execution is finished and false if not.
+	bool nextExecStep() {
+		if (!execFinished()) {
+			return nextExecStepImpl();
+		} else return true;
+	}
+
+	bool execFinished() const { return m_execFinished; }
+
+public:
 	friend class BricImpl;
+	friend class BricWithInputs;
+	friend class BricWithOutputs;
+	friend class SyncedInputBric;
+	friend class AsyncInputBric;
+	friend class ProcessingBric;
+	friend class ImportBric;
+	friend class TransformBric;
+	friend class MapperBric;
+	friend class AbstractReducerBric;
+	friend class ReducerBric;
+	friend class AsyncReducerBric;
 };
 
 
@@ -275,6 +409,10 @@ public:
 		: BricComponentImpl(parentBric, bricName) { parentBric->registerBric(this); }
 };
 
+
+
+inline bool BricComponent::isInside(const Bric& other) const
+	{ return hasParent() && (&parent() == &other || parent().isInside(other)); }
 
 
 inline BricComponentImpl::BricComponentImpl(Bric *parentBric, Name componentName)
@@ -320,8 +458,6 @@ public:
 	};
 
 	bool canHaveOutputs() const { return true; }
-
-	virtual bool nextOutput() = 0;
 };
 
 
@@ -363,65 +499,302 @@ public:
 	};
 
 	bool canHaveInputs() const { return true; }
-
-	virtual void nextInput() = 0;
 };
 
 
 
-class BricWithInOut: public virtual BricWithInputs, public virtual BricWithOutputs {};
+class SyncedInputBric: public virtual BricWithInputs {
+protected:
+	bool m_announcedReadyForInput = false;
 
-
-
-class ImportBric: public virtual BricWithOutputs, public BricImpl  {
-public:
-	using BricImpl::BricImpl;
-};
-
-
-
-class ExportBric: public virtual BricWithInputs, public BricImpl {
-public:
-	using BricImpl::BricImpl;
-};
-
-
-
-class MapperBric: public virtual BricWithInOut, public BricImpl {
-public:
-	using BricImpl::BricImpl;
-};
-
-
-
-class TransformBric: public MapperBric {
-private:
-	bool m_processed = false;
-
-public:
-	void nextInput()
-		{ m_processed = false; }
-
-	bool nextOutput() {
-		if (! m_processed) {
-			process();
-			m_processed = true;
-			return true;
-		} else return false;
+	void announceReadyForInput() {
+		if (!m_announcedReadyForInput && !allSourcesFinished()) {
+			for (auto &source: m_sources) source->incNDestsReadyForInput();
+			m_announcedReadyForInput = true;
+		}
 	}
 
-	virtual void process() = 0;
+	void consumeInput() {
+		clearNSourcesAvailable();
+		m_announcedReadyForInput = false;
+	}
 
-	using MapperBric::MapperBric;
+public:
+	// User overload. Allowed to change output values.
+	virtual void processInput() = 0;
+
+	virtual void resetExec() {
+		Bric::resetExec();
+		m_announcedReadyForInput = true;
+	}
 };
 
 
 
-class ReducerBric: public virtual BricWithInOut, public BricImpl {
+class AsyncInputBric: public virtual BricWithInputs {
 public:
-	virtual void resetOutput() = 0;
-	virtual void nextInput() = 0;
+	// User overload. Allowed to change output values.
+	virtual void processInputFrom(const Bric *source) = 0;
+};
 
+
+
+class ProcessingBric: public virtual BricWithInputs, public virtual BricWithOutputs {
+public:
+};
+
+
+
+class ImportBric: public virtual BricWithOutputs, public BricImpl {
+protected:
+	bool m_importDone = false;
+
+public:
+	// User overload. Allowed to change output values.
+	virtual void import() = 0;
+
+	void resetExec(){}
+
+	bool nextExecStepImpl() {
+		if (!m_importDone) {
+			try{ import(); }
+			catch(...) {
+				dbrx_log_error("Running import failed in bric \"%s\"", absolutePath());
+				setOutputsToErrorState();
+				setExecFinished();
+			}
+
+			announceNewOutput();
+			setExecFinished();
+
+			// Import only once in the entire lifetime of the bric:
+			m_importDone = true;
+		}
+		return true;
+	}
+
+public:
+	using BricImpl::BricImpl;
+};
+
+
+
+// Is an export bric a useful concept? Maybe add later, if there is a need.
+// class ExportBric: public virtual BricWithInputs { }
+
+
+
+class TransformBric: public virtual ProcessingBric, public virtual SyncedInputBric, public BricImpl {
+protected:
+	bool nextExecStepImpl() {
+		bool producedOutput = false;
+
+		if (allDestsReadyForInput()) {
+			assert(m_announcedReadyForInput); // Sanity check
+
+			if (allSourcesAvailable()) {
+				consumeInput();
+
+				try{ processInput(); }
+				catch(...) {
+					dbrx_log_error("Processing input failed in bric \"%s\"", absolutePath());
+					setOutputsToErrorState();
+					setExecFinished();
+				}
+
+				announceNewOutput();
+				producedOutput = true;
+			} else {
+				announceReadyForInput();
+			}
+
+			if (allSourcesFinished()) setExecFinished();
+		}
+
+		return producedOutput || execFinished();
+	}
+
+public:
+	using BricImpl::BricImpl;
+};
+
+
+
+class MapperBric: public virtual ProcessingBric, public virtual SyncedInputBric, public BricImpl {
+protected:
+	bool m_readyForNextOutput = false;
+
+	bool nextExecStepImpl() {
+		bool producedOutput = false;
+
+		if (allDestsReadyForInput()) {
+			if (! m_readyForNextOutput) {
+				assert(m_announcedReadyForInput); // Sanity check
+
+				if (allSourcesAvailable()) {
+					consumeInput();
+
+					try{ processInput(); }
+					catch(...) {
+						dbrx_log_error("Processing input failed in bric \"%s\"", absolutePath());
+						setOutputsToErrorState();
+						setExecFinished();
+					}
+
+					m_readyForNextOutput = true;
+				}
+			}
+
+			if (m_readyForNextOutput) {
+				try{ producedOutput = nextOutput(); }
+				catch(...) {
+					dbrx_log_error("Producing next output failed in bric \"%s\"", absolutePath());
+					setOutputsToErrorState();
+					setExecFinished();
+				}
+
+				if (producedOutput) {
+					announceNewOutput();
+					m_readyForNextOutput = true;
+				} else {
+					announceReadyForInput();
+				}
+			} else {
+				if (allSourcesFinished()) setExecFinished();
+			}
+		}
+
+		return producedOutput || execFinished();
+	}
+
+public:
+	// User overload. Allowed to change output values.
+	virtual bool nextOutput() = 0;
+
+	using BricImpl::BricImpl;
+};
+
+
+
+class AbstractReducerBric: public virtual ProcessingBric {
+protected:
+	bool m_reductionStarted = false;
+
+	void beginReduction() {
+		try { newReduction(); }
+		catch(...) {
+			dbrx_log_error("Initialization of reduction failed in bric \"%s\"", absolutePath());
+			setOutputsToErrorState();
+			setExecFinished();
+		}
+
+		m_reductionStarted = true;
+	}
+
+	bool reductionStarted() const { return m_reductionStarted; }
+
+	void endReduction() {
+		try { finalizeReduction(); }
+		catch(...) {
+			dbrx_log_error("Finalization of reduction failed in bric \"%s\"", absolutePath());
+			setOutputsToErrorState();
+			setExecFinished();
+		}
+
+		announceNewOutput();
+		setExecFinished();
+	}
+
+public:
+	// User overload. Allowed to change output values.
+	virtual void newReduction() {}
+
+	// User overload. Allowed to change output values.
+	virtual void finalizeReduction() {}
+};
+
+
+
+class ReducerBric: public virtual AbstractReducerBric, public virtual SyncedInputBric, public BricImpl {
+protected:
+	void resetExec() {
+		SyncedInputBric::resetExec();
+		m_reductionStarted = false;
+	}
+
+	bool nextExecStepImpl() {
+		if (m_reductionStarted == true) assert(allDestsReadyForInput()); // Sanity check
+
+		if (allDestsReadyForInput()) {
+			assert(m_announcedReadyForInput); // Sanity check
+
+			if (allSourcesAvailable()) {
+				if (! m_reductionStarted) beginReduction();
+				consumeInput();
+
+				try { processInput(); }
+				catch(...) {
+					dbrx_log_error("Processing input failed in bric \"%s\"", absolutePath());
+					setOutputsToErrorState();
+					setExecFinished();
+				}
+
+				announceReadyForInput();
+			}
+
+			if (allSourcesFinished()) endReduction();
+		}
+
+		return execFinished();
+	}
+
+public:
+	using BricImpl::BricImpl;
+};
+
+
+
+class AsyncReducerBric: public virtual AbstractReducerBric, public virtual AsyncInputBric, public BricImpl {
+protected:
+	std::vector<size_t> m_inputCounter;
+
+	void resetExec() {
+		ProcessingBric::resetExec();
+		m_reductionStarted = false;
+		m_inputCounter.clear();
+		m_inputCounter.resize(m_sources.size());
+	}
+
+	bool nextExecStepImpl() {
+		if (m_reductionStarted == true) assert(allDestsReadyForInput()); // Sanity check
+
+		if (allDestsReadyForInput()) {
+			bool gotInput = false;
+			for (size_t i = 0; i < m_sources.size(); ++i) {
+				auto &source = m_sources[i];
+				if (m_inputCounter[i] < source->m_outputCounter) {
+					if (! m_reductionStarted) beginReduction();
+					decNSourcesAvailable();
+					m_inputCounter[i] = source->m_outputCounter;
+					gotInput = true;
+
+					try { processInputFrom(source); }
+					catch(...) {
+						dbrx_log_error("Processing input from source \"%s\" failed in bric \"%s\"", source->absolutePath(), absolutePath());
+						setOutputsToErrorState();
+						setExecFinished();
+					}
+
+					source->incNDestsReadyForInput();
+				}
+			}
+
+			if (allSourcesFinished()) endReduction();
+		}
+
+		return execFinished();
+	}
+public:
 	using BricImpl::BricImpl;
 };
 

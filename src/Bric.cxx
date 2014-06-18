@@ -131,7 +131,7 @@ void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragm
 			if (found != parent().m_brics.end()) {
 				Bric* sibling = found->second;
 				sibling->connectInputToInner(bric, inputName, sourcePath.tail());
-				addDependency(sibling);
+				addSource(sibling);
 			}
 		} else throw runtime_error("Reached top-level Bric \"%s\" during input lookup"_format(absolutePath()));
 	}
@@ -253,7 +253,7 @@ Bric::ParamTerminal& Bric::getParam(Name paramName, const std::type_info& typeIn
 
 
 void Bric::connectInputs() {
-	m_deps.clear();
+	m_sources.clear();
 	for (const auto& input: m_inputs)
 		connectInputToSiblingOrUp(*this, input.second->name(), input.second->source());
 	for (const auto& brics: m_brics)

@@ -27,15 +27,9 @@ namespace dbrx {
 template<typename T> class SimpleInput: public ImportBric {
 	bool m_hasNextOutput = true;
 public:
-	bool nextOutput() {
-		bool result = m_hasNextOutput;
-		m_hasNextOutput = false;
-		return result;
-	}
+	void import() {}
 
 	Output<T> output{this};
-
-	void process() {}
 
 	SimpleInput(Name n): ImportBric(n) { output = T(); }
 
@@ -54,7 +48,7 @@ public:
 
 	Output<C> result{this, "result"};
 
-	void process() {
+	void processInput() {
 		result = a + b;
 	}
 
@@ -70,7 +64,7 @@ public:
 
 	Output<C> result{this, "result"};
 
-	void process() {
+	void processInput() {
 		result = a * b;
 	}
 
