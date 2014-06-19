@@ -23,6 +23,7 @@
 #include <list>
 #include <map>
 #include <algorithm>
+#include <functional>
 #include <iosfwd>
 #include <cassert>
 
@@ -84,6 +85,13 @@ protected:
 
 public:
 	Type type() const { return m_type; }
+
+	size_t hash() const {
+		switch (m_type) {
+			case Type::INTEGER: return std::hash<Integer>()(m_content.i);
+			case Type::NAME: return std::hash<Name>()(m_content.n);
+		}
+	}
 
 	bool isInteger() const { return m_type == Type::INTEGER; }
 	bool isName() const { return m_type == Type::NAME; }
@@ -914,5 +922,18 @@ public:
 
 
 } // namespace dbrx
+
+
+
+namespace std {
+
+
+template<> struct hash<dbrx::PropKey> {
+	size_t operator()(const dbrx::PropKey key) const { return key.hash(); }
+};
+
+
+} // namespace std
+
 
 #endif // DBRX_PROPS_H

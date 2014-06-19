@@ -20,6 +20,7 @@
 
 #include <memory>
 #include <string>
+#include <functional>
 #include <iosfwd>
 
 
@@ -45,6 +46,8 @@ public:
 	};
 
 	Id id() const { return Id(m_value); }
+
+	size_t hash() const { return std::hash<Id>()(id()); }
 
 	bool empty() const { return m_value == nullptr; }
 
@@ -108,5 +111,18 @@ public:
 
 
 } // namespace dbrx
+
+
+
+namespace std {
+
+
+template<> struct hash<dbrx::Name> {
+	size_t operator()(dbrx::Name name) const { return name.hash(); }
+};
+
+
+} // namespace std
+
 
 #endif // DBRX_NAME_H
