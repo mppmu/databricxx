@@ -773,9 +773,9 @@ template<typename T, typename Alloc> void assign_from(PropVal &to, const std::li
 
 
 template<typename K, typename V, typename Compare, typename Alloc>
-void assign_from(std::map<K, V, Compare, Alloc> &to, const PropVal::Props &from) {
+void assign_from(std::map<K, V, Compare, Alloc> &to, const PropVal &from) {
 	to.clear();
-	for (const auto& x: from) {
+	for (const auto& x: from.asProps()) {
 		K tmpKey; assign_from(tmpKey, x.first);
 		V tmpVal; assign_from(tmpVal, x.second);
 		to[std::move(tmpKey)] = std::move(tmpVal);
@@ -791,11 +791,6 @@ void assign_from(PropVal::Props &to, const std::map<K, V, Compare, Alloc> &from)
 		to[std::move(tmpKey)] = std::move(tmpVal);
 	}
 }
-
-
-template<typename K, typename V, typename Compare, typename Alloc>
-void assign_from(std::map<K, V, Compare, Alloc> &to, const PropVal &from)
-	{ assign_from(to, from.asProps()); }
 
 template<typename K, typename V, typename Compare, typename Alloc>
 void assign_from(PropVal &to, const std::map<K, V, Compare, Alloc> &from) {
