@@ -60,6 +60,22 @@ protected:
 		-> decltype(os << to_string(std::forward<T>(x))) { using namespace std; return os << to_string(std::forward<T>(x)); }
 
 
+	template<typename T, typename = decltype(std::declval<std::ostream&>() << std::declval<T>())>
+	static std::string stringFromPrint(T&& x) {
+		std::stringstream tmp;
+		printAny(tmp, std::forward<T>(x));
+		return tmp.str();
+	}
+
+	static const std::string universalToString(std::string s, SelectSpecial) { return s; }
+
+	template<typename T> static auto universalToString(T&& x, SelectSpecial)
+		-> decltype(to_string(std::forward<T>(x))) { using namespace std; return to_string(std::forward<T>(x)); }
+
+	template<typename T> static auto universalToString(T&& x, SelectGeneral)
+		-> decltype(stringFromPrint(std::forward<T>(x))) { return stringFromPrint(std::forward<T>(x)); }
+
+
 	void printFormatted(std::ostream& os, ConstCharRange fmt, ...);
 
 	void printFormattedValue(std::ostream& os, ConstCharRange fmt, char x) { printFormatted(os, fmt, x); }
@@ -106,6 +122,9 @@ protected:
 public:
 	template<typename T> static std::ostream& printAny(std::ostream& os, T&& x)
 		{ return universalPrint(os, std::forward<T>(x), SelectSpecial()); }
+
+	template<typename T> static std::string anyToString(T&& x)
+		{ return universalToString(std::forward<T>(x), SelectSpecial()); }
 
 	const std::string& str() const { return m_formatStr; }
 
