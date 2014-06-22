@@ -48,16 +48,16 @@ protected:
 	std::string m_formatStr;
 
 protected:
-    struct UniPrintGeneral {};
-    struct UniPrintSpecial : UniPrintGeneral {};
+    struct SelectGeneral {};
+    struct SelectSpecial : SelectGeneral {};
 
-	static const std::ostream& universalPrint(std::ostream& os, const std::string &s, UniPrintSpecial) { return os << s; }
+	static const std::ostream& universalPrint(std::ostream& os, const std::string &s, SelectSpecial) { return os << s; }
 
-	template<typename T> static auto universalPrint(std::ostream& os, const T& x, UniPrintSpecial)
-		-> decltype(os << x) { return os << x; }
+	template<typename T> static auto universalPrint(std::ostream& os, T&& x, SelectSpecial)
+		-> decltype(os << std::forward<T>(x)) { return os << std::forward<T>(x); }
 
-	template<typename T> static auto universalPrint(std::ostream& os, const T& x, UniPrintGeneral)
-		-> decltype(os << to_string(x)) { using namespace std; return os << to_string(x); }
+	template<typename T> static auto universalPrint(std::ostream& os, T&& x, SelectGeneral)
+		-> decltype(os << to_string(std::forward<T>(x))) { using namespace std; return os << to_string(std::forward<T>(x)); }
 
 
 	void printFormatted(std::ostream& os, ConstCharRange fmt, ...);
@@ -83,17 +83,18 @@ protected:
 	void printFormattedValue(std::ostream& os, ConstCharRange fmt, int64_t* x) { printFormatted(os, fmt, x); }
 
 
-	template <typename T> void printFormattedValue(std::ostream& os, ConstCharRange fmt, T x)
+	template <typename T> void printFormattedValue(std::ostream& os, ConstCharRange fmt, T&& x)
 		{ throw std::invalid_argument("Argument type not supported for string format specifier"); }
 
 	template <typename T, typename ...Args>
-	void applyValues(std::ostream& os, ConstCharRange fmt, const T& x, Args&&... args) {
+	void applyValues(std::ostream& os, ConstCharRange fmt, T&& x, Args&&... args) {
 		using namespace std;
 		ConstCharRange fmtElem = findFmtElem(fmt);
 		if (fmtElem.empty()) throw std::invalid_argument("Less format elements in format string than arguments.");
 		for (char c: ConstCharRange(fmt.begin(), fmtElem.begin())) os << c;
-		if ((fmtElem.size() == 2) && (fmtElem[0] == '%') && (fmtElem[1] == 's')) universalPrint(os, x, UniPrintSpecial());
-		else printFormattedValue(os, fmtElem, x);
+		if ((fmtElem.size() == 2) && (fmtElem[0] == '%') && (fmtElem[1] == 's'))
+			universalPrint(os, std::forward<T>(x), SelectSpecial());
+		else printFormattedValue(os, fmtElem, std::forward<T>(x));
 		applyValues(os, {fmtElem.end(), fmt.end()}, std::forward<Args>(args)...);
 	}
 
