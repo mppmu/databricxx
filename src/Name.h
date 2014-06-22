@@ -90,23 +90,9 @@ inline std::ostream & operator<<(std::ostream &os, Name n) {
 class HasName {
 public:
 	virtual Name name() const = 0;
-	virtual void name(Name n) = 0;
+	virtual Name& name() = 0;
 
 	virtual ~HasName() {}
-};
-
-
-
-class HasNameImpl: public virtual HasName {
-protected:
-	Name m_name;
-
-public:
-	Name name() const { return m_name; }
-	void name(Name n) { m_name = n; }
-
-	HasNameImpl() = default;
-	HasNameImpl(Name n): m_name(n) {}
 };
 
 

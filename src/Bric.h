@@ -52,18 +52,22 @@ public:
 };
 
 
-class BricComponentImpl: public virtual BricComponent, public HasNameImpl {
+class BricComponentImpl: public virtual BricComponent {
 protected:
+	Name m_name;
 	Bric *m_parent = nullptr;
 
 public:
+	Name name() const { return m_name; }
+	Name& name() { return m_name; }
+
 	bool hasParent() const { return m_parent != nullptr; }
 
 	const Bric& parent() const { return *m_parent; }
 	Bric& parent() { return *m_parent; }
 
 	BricComponentImpl() {}
-	BricComponentImpl(Name componentName): HasNameImpl(componentName) {}
+	BricComponentImpl(Name componentName): m_name(componentName) {}
 	BricComponentImpl(Bric *parentBric, Name componentName);
 };
 
