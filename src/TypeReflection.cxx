@@ -26,7 +26,6 @@
 #include <TROOT.h>
 
 #include "logging.h"
-#include "RootCollection.h"
 
 #include "../config.h"
 
@@ -38,9 +37,12 @@ namespace dbrx {
 
 bool TypeReflection::isAssignableFrom(const TClass* a, const TClass* b) {
 	if (b->InheritsFrom(a)) return true;
-	const TList* bases = const_cast<TClass*>(b)->GetListOfBases();
-	for (const auto& base: stdcoll<TClass>(bases))
-		if (isAssignableFrom(a, &base)) return true;
+	TList* bases = const_cast<TClass*>(b)->GetListOfBases();
+	TIter next(bases, kIterForward);
+	const TClass *base;
+	while ( (base = dynamic_cast<const TClass*>(next())) ) {
+		if (isAssignableFrom(a, base)) return true;
+	}
 	return false;
 }
 
