@@ -93,7 +93,7 @@ protected:
 		if (fmtElem.empty()) throw std::invalid_argument("Less format elements in format string than arguments.");
 		for (char c: ConstCharRange(fmt.begin(), fmtElem.begin())) os << c;
 		if ((fmtElem.size() == 2) && (fmtElem[0] == '%') && (fmtElem[1] == 's'))
-			universalPrint(os, std::forward<T>(x), SelectSpecial());
+			printAny(os, std::forward<T>(x));
 		else printFormattedValue(os, fmtElem, std::forward<T>(x));
 		applyValues(os, {fmtElem.end(), fmt.end()}, std::forward<Args>(args)...);
 	}
@@ -104,6 +104,9 @@ protected:
 	}
 
 public:
+	template<typename T> static std::ostream& printAny(std::ostream& os, T&& x)
+		{ return universalPrint(os, std::forward<T>(x), SelectSpecial()); }
+
 	const std::string& str() const { return m_formatStr; }
 
 	template <typename ...Args> std::string operator()(Args&&... args) {
