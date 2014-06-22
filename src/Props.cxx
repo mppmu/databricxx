@@ -154,7 +154,7 @@ bool operator==(const Props &a, const Props &b) {
 
 
 void PropVal::toJSON(std::ostream &out, Real x) {
-	out.precision(17);
+	out.precision(16);
 	out << x;
 }
 
