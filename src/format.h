@@ -23,6 +23,8 @@
 #include <stdexcept>
 #include <cstdint>
 
+#include "funcprog.h"
+
 
 namespace dbrx {
 
@@ -151,6 +153,21 @@ public:
 
 inline FormatString operator"" _format (const char* str, std::size_t len) { return FormatString({str, len}); }
 inline FormatString operator"" _format (const char* str) { return FormatString(str); }
+
+
+
+template<typename Coll, typename = decltype(as_collection(std::declval<Coll&>()))>
+	std::string mkstring(const Coll &coll, const std::string &sep)
+{
+	std::stringstream tmp;
+	bool firstElem = true;
+	for (const auto& x: coll) {
+		if (!firstElem) tmp << sep;
+		else firstElem = false;
+		FormatString::printAny(tmp, x);
+	} 
+	return tmp.str();
+}
 
 
 } // namespace dbrx
