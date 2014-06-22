@@ -18,25 +18,43 @@
 #ifndef DBRX_BRICS_H
 #define DBRX_BRICS_H
 
-#include <Bric.h>
+#include "Bric.h"
+#include "format.h"
 
 
 namespace dbrx {
 
 
-template<typename T> class SimpleInput: public ImportBric {
+
+template<typename T> class ConstBric: public ImportBric {
 	bool m_hasNextOutput = true;
 public:
-	void import() {}
+	Param<T> value{this, "value"};
 
 	Output<T> output{this};
 
-	SimpleInput(Name n): ImportBric(n) { output = T(); }
+	void import() { output = value; }
 
-	SimpleInput(Name n, T v): ImportBric(n) { output = std::move(v); }
+	ConstBric() { }
 
-	SimpleInput(Bric *parentBric, Name n, T v)
-		: ImportBric(parentBric, n) { output = std::move(v); }
+	ConstBric(Name n): ImportBric(n) {  }
+
+	ConstBric(Name n, T v): ImportBric(n) { value = std::move(v); }
+
+	ConstBric(Bric *parentBric, Name n, T v)
+		: ImportBric(parentBric, n) { value = std::move(v); }
+};
+
+
+
+template<typename From, typename To> class ConvertBric: public TransformBric {
+public:
+	Input<From> input{this};
+	Output<To> output{this};
+
+	void processInput() { assign_from(output.get(), input.get()); }
+
+	using TransformBric::TransformBric;
 };
 
 
