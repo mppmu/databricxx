@@ -57,25 +57,37 @@ void Bric::registerComponent(BricComponent* component) {
 	auto r = m_components.find(component->name());
 	if (r != m_components.end()) throw invalid_argument("Can't add duplicate component with name \"%s\" to bric \"%s\""_format(component->name(), absolutePath()));
 	m_components[component->name()] = component;
+	component->setParent(this);
 }
 
 
-void Bric::registerBric(Bric* bric)
-	{ registerComponent(bric); m_brics[bric->name()] = bric; }
+void Bric::registerBric(Bric* bric) {
+	dbrx_log_trace("Registering inner bric \"%s\" in bric \"%s\""_format(bric->name(), absolutePath()));
+	registerComponent(bric);
+	m_brics[bric->name()] = bric;
+}
 
 void Bric::registerTerminal(Terminal* terminal)
 	{ registerComponent(terminal); m_terminals[terminal->name()] = terminal; }
 
-void Bric::registerParam(ParamTerminal* param)
-	{ registerTerminal(param); m_params[param->name()] = param; }
+void Bric::registerParam(ParamTerminal* param) {
+	dbrx_log_trace("Registering param terminal \"%s\" of type \"%s\" in bric \"%s\""_format(
+		param->name(), param->value().typeInfo().name(), absolutePath()));
+	registerTerminal(param);
+	m_params[param->name()] = param;
+}
 
 void Bric::registerOutput(OutputTerminal* output) {
+	dbrx_log_trace("Registering output terminal \"%s\" of type \"%s\" in bric \"%s\""_format(
+		output->name(), output->value().typeInfo().name(), absolutePath()));
 	if (!canHaveOutputs()) throw invalid_argument("Bric \"%s\" cannot have outputs"_format(absolutePath()));
 	registerTerminal(output);
 	m_outputs[output->name()] = output;
 }
 
 void Bric::registerInput(InputTerminal* input) {
+	dbrx_log_trace("Registering input terminal \"%s\" of type \"%s\" in bric \"%s\""_format(
+		input->name(), input->value().typeInfo().name(), absolutePath()));
 	if (!canHaveInputs()) throw invalid_argument("Bric \"%s\" cannot have inputs"_format(absolutePath()));
 	registerTerminal(input);
 	m_inputs[input->name()] = input;
@@ -93,11 +105,13 @@ bool Bric::isBricConfig(const PropVal& config) {
 
 void Bric::addDynBric(Name bricName, const PropVal& config) {
 	if (!isBricConfig(config)) throw invalid_argument("Invalid configuration format for dynamic sub-bric \"%s\" in bric \"%s\""_format(bricName, absolutePath()));
+	dbrx_log_debug("Creating dynamic bric \"%s\" inside bric \"%s\""_format(bricName, absolutePath()));
 	Props subBricProps = config.asProps();
 	const std::string className = config.at(s_bricTypeKey).asString();
 	unique_ptr<Bric> dynBric(TypeReflection(className).newInstance<Bric>());
+	dynBric->name() = bricName;
 	Bric* dynBricPtr = dynBric.get();
-	registerBric(dynBric.get());
+	registerBric(dynBricPtr);
 	m_dynBrics[dynBric->name()] = std::move(dynBric);
 	dynBricPtr->applyConfig(config);
 }
@@ -146,6 +160,7 @@ void Bric::connectOwnInputTo(Name inputName, const Terminal& terminal) {
 
 
 void Bric::applyConfig(const PropVal& config) {
+	dbrx_log_debug("Applying config to bric \"%s\""_format(absolutePath()));
 	for (const auto& entry: config.asProps()) {
 		Name componentName = entry.first.asName();
 		const PropVal& componentConfig = entry.second;

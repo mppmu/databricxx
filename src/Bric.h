@@ -44,6 +44,8 @@ protected:
 
 	virtual void connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath) = 0;
 
+	virtual void setParent(Bric *parentBric) = 0;
+
 public:
 	PropPath absolutePath() const;
 
@@ -65,6 +67,8 @@ class BricComponentImpl: public virtual BricComponent {
 protected:
 	Name m_name;
 	Bric *m_parent = nullptr;
+
+	virtual void setParent(Bric *parentBric) { m_parent = parentBric; }
 
 public:
 	Name name() const { return m_name; }
