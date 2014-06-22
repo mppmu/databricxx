@@ -7,6 +7,7 @@ lib_LTLIBRARIES = libdatabricxx.la
 
 libdatabricxx_la_SOURCES = \
 	format.cxx \
+	funcprog.cxx \
 	logging.cxx \
 	Bric.cxx \
 	DbrxTools.cxx \
@@ -20,6 +21,7 @@ libdatabricxx_la_SOURCES = \
 
 libdatabricxx_la_headers = \
 	format.h \
+	funcprog.h \
 	logging.h \
 	Bric.h \
 	DbrxTools.h \
