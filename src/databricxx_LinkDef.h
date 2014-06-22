@@ -21,6 +21,9 @@
 // DbrxTools.h
 #pragma link C++ class dbrx::DbrxTools-;
 
+// MRBric.h
+#pragma link C++ class dbrx::MRBric-;
+
 // Name.h, NameTable.h
 #pragma link C++ class dbrx::Name-;
 #pragma link C++ class dbrx::HasName-;

@@ -11,6 +11,7 @@ libdatabricxx_la_SOURCES = \
 	logging.cxx \
 	Bric.cxx \
 	DbrxTools.cxx \
+	MRBric.cxx \
 	Name.cxx NameTable.cxx \
 	Props.cxx \
 	RootCollection.cxx \
@@ -25,6 +26,7 @@ libdatabricxx_la_headers = \
 	logging.h \
 	Bric.h \
 	DbrxTools.h \
+	MRBric.h \
 	Name.h NameTable.h \
 	Props.h \
 	RootCollection.h \
