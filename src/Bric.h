@@ -145,6 +145,9 @@ public:
 		: public virtual TypedTerminal<T>, public virtual OutputTerminal, public virtual HasTypedWritableValue<T>
 	{
 	public:
+		virtual void applyConfig(const PropVal& config) { if (!config.isNone()) throw std::invalid_argument("Output is not configurable"); }
+		virtual PropVal getConfig() const  { return PropVal(); }
+
 		TypedOutputTerminal<T>& operator=(const T &v)
 			{ HasTypedWritableValue<T>::operator=(v); return *this; }
 
@@ -288,9 +291,6 @@ public:
 		using HasTypedPrimaryValueImpl<T>::value;
 		using HasTypedPrimaryValueImpl<T>::typeInfo;
 
-		virtual void applyConfig(const PropVal& config) { if (!config.isNone()) throw std::invalid_argument("Output is not configurable"); }
-		virtual PropVal getConfig() const  { return PropVal(); }
-
 		Output<T>& operator=(const Output<T>& v) = delete;
 
 		Output<T>& operator=(const T &v)
@@ -303,11 +303,18 @@ public:
 			{ TypedOutputTerminal<T>::operator=(std::move(v)); return *this; }
 
 
+		Output(BricWithOutputs *parentBric)
+			: BricComponentImpl(parentBric, s_defaultOutputName) { parentBric->registerOutput(this); }
+
 		Output(BricWithOutputs *parentBric, Name outputName)
 			: BricComponentImpl(parentBric, outputName) { parentBric->registerOutput(this); }
 
-		Output(BricWithOutputs *parentBric)
-			: BricComponentImpl(parentBric, s_defaultOutputName) { parentBric->registerOutput(this); }
+		template<typename U> Output(BricWithOutputs *parentBric, Name outputName, U&& defaultValue)
+			: BricComponentImpl(parentBric, outputName)
+		{
+			parentBric->registerOutput(this);
+			value() = std::forward<U>(defaultValue);
+		}
 
 		Output(const Output &other) = delete;
 	};
