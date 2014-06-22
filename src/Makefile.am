@@ -6,6 +6,8 @@ MAINTAINERCLEANFILES = Makefile.in
 lib_LTLIBRARIES = libdatabricxx.la
 
 libdatabricxx_la_SOURCES = \
+	brics.cxx \
+	collbrics.cxx \
 	format.cxx \
 	funcprog.cxx \
 	logging.cxx \
@@ -17,10 +19,11 @@ libdatabricxx_la_SOURCES = \
 	RootCollection.cxx \
 	RootIO.cxx \
 	TypeReflection.cxx \
-	Value.cxx HasValue.cxx\
-	brics.cxx
+	Value.cxx HasValue.cxx
 
 libdatabricxx_la_headers = \
+	brics.h \
+	collbrics.h \
 	format.h \
 	funcprog.h \
 	logging.h \
@@ -32,8 +35,7 @@ libdatabricxx_la_headers = \
 	RootCollection.h \
 	RootIO.h \
 	TypeReflection.h \
-	Value.h HasValue.h \
-	brics.h
+	Value.h HasValue.h
 
 pkginclude_HEADERS = $(libdatabricxx_la_headers)
 

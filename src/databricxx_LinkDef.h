@@ -3,6 +3,10 @@
 
 #ifdef __CINT__
 
+// brics.h
+
+// collbrics.h
+
 // Bric.h
 #pragma link C++ class dbrx::Bric-;
 #pragma link C++ class dbrx::Bric::Terminal-;
@@ -55,8 +59,6 @@
 #pragma link C++ class dbrx::HasPrimaryValue-;
 #pragma link C++ class dbrx::HasValueRef-;
 #pragma link C++ class dbrx::HasConstValueRef-;
-
-// brics.h
 
 #endif // __CINT__
 
