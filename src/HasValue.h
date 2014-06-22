@@ -18,7 +18,7 @@
 #ifndef DBRX_HASVALUE_H
 #define DBRX_HASVALUE_H
 
-#include <Value.h>
+#include "Value.h"
 
 
 namespace dbrx {
