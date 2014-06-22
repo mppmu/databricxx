@@ -108,7 +108,28 @@ void Bric::addDynBric(Name bricName, const PropVal& config) {
 	dbrx_log_debug("Creating dynamic bric \"%s\" inside bric \"%s\""_format(bricName, absolutePath()));
 	Props subBricProps = config.asProps();
 	const std::string className = config.at(s_bricTypeKey).asString();
-	unique_ptr<Bric> dynBric(TypeReflection(className).newInstance<Bric>());
+
+	// For some reason, objects created via "newInstance<Bric>" are unstable
+	// and produce segfaults. May be some problem with virtual tables and may
+	// be related to Bric virtual inheritance hierarchy. As a workaround,
+	// use the bottom types of the Bric hierarchy directly:
+
+	unique_ptr<Bric> dynBric;
+	TypeReflection dynBricTR(className);
+	if (TypeReflection(typeid(ImportBric)).isAssignableFrom(dynBricTR)) {
+		dynBric = dynBricTR.newInstance<ImportBric>();
+	} else if (TypeReflection(typeid(TransformBric)).isAssignableFrom(dynBricTR)) {
+		dynBric = dynBricTR.newInstance<TransformBric>();
+	} else if (TypeReflection(typeid(MapperBric)).isAssignableFrom(dynBricTR)) {
+		dynBric = dynBricTR.newInstance<MapperBric>();
+	} else if (TypeReflection(typeid(ReducerBric)).isAssignableFrom(dynBricTR)) {
+		dynBric = dynBricTR.newInstance<ReducerBric>();
+	} else if (TypeReflection(typeid(AsyncReducerBric)).isAssignableFrom(dynBricTR)) {
+		dynBric = dynBricTR.newInstance<AsyncReducerBric>();
+	} else {
+		throw runtime_error("Dynamic generation of bric of class \"%s\" not supported, does not derive from any standard bric type"_format(className.c_str()));
+	}
+
 	dynBric->name() = bricName;
 	Bric* dynBricPtr = dynBric.get();
 	registerBric(dynBricPtr);
