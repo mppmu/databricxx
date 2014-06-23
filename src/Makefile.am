@@ -11,6 +11,7 @@ libdatabricxx_la_SOURCES = \
 	format.cxx \
 	funcprog.cxx \
 	logging.cxx \
+	textbrics.cxx \
 	Bric.cxx \
 	DbrxTools.cxx \
 	MRBric.cxx \
@@ -27,6 +28,7 @@ libdatabricxx_la_headers = \
 	format.h \
 	funcprog.h \
 	logging.h \
+	textbrics.h \
 	Bric.h \
 	DbrxTools.h \
 	MRBric.h \

@@ -7,6 +7,10 @@
 
 // collbrics.h
 
+// textbrics.h
+#pragma link C++ class dbrx::TextFileReader-;
+#pragma link C++ class dbrx::TextFileWriter-;
+
 // Bric.h
 #pragma link C++ class dbrx::Bric-;
 #pragma link C++ class dbrx::Bric::Terminal-;
