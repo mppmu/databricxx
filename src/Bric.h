@@ -613,7 +613,7 @@ protected:
 		if (allDestsReadyForInput()) {
 			announceReadyForInput();
 
-			if (allSourcesAvailable()) {
+			if (anySourceAvailable()) {
 				consumeInput();
 
 				try{ processInput(); }
@@ -650,7 +650,7 @@ protected:
 			if (! m_readyForNextOutput) {
 				announceReadyForInput();
 
-				if (allSourcesAvailable()) {
+				if (anySourceAvailable()) {
 					consumeInput();
 
 					try{ processInput(); }
@@ -747,7 +747,7 @@ protected:
 		if (allDestsReadyForInput()) {
 			announceReadyForInput();
 
-			if (allSourcesAvailable()) {
+			if (anySourceAvailable()) {
 				if (! m_reductionStarted) beginReduction();
 				consumeInput();
 
