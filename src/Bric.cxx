@@ -180,6 +180,29 @@ void Bric::connectOwnInputTo(Name inputName, const Terminal& terminal) {
 }
 
 
+void Bric::connectInputs() {
+	m_sources.clear();
+	for (const auto& input: m_inputs)
+		connectInputToSiblingOrUp(*this, input.second->name(), input.second->source());
+	for (const auto& brics: m_brics)
+		brics.second->connectInputs();
+}
+
+
+void Bric::connectInputsRecursive() {
+	dbrx_log_debug("Recursively connects inputs in bric \"%s\" and all inner brics"_format(absolutePath()));
+	for (auto &entry: m_brics) entry.second->connectInputsRecursive();
+	connectInputs();
+}
+
+
+void Bric::initRecursive() {
+	dbrx_log_debug("Recursively initialize bric \"%s\" and all inner brics"_format(absolutePath()));
+	for (auto &entry: m_brics) entry.second->initRecursive();
+	init();
+}
+
+
 void Bric::applyConfig(const PropVal& config) {
 	dbrx_log_debug("Applying config to bric \"%s\""_format(absolutePath()));
 	for (const auto& entry: config.asProps()) {
@@ -288,12 +311,9 @@ Bric::ParamTerminal& Bric::getParam(Name paramName, const std::type_info& typeIn
 	{ return dynamic_cast<Bric::ParamTerminal&>(getTerminal(paramName, typeInfo)); }
 
 
-void Bric::connectInputs() {
-	m_sources.clear();
-	for (const auto& input: m_inputs)
-		connectInputToSiblingOrUp(*this, input.second->name(), input.second->source());
-	for (const auto& brics: m_brics)
-		brics.second->connectInputs();
+void Bric::initBricHierarchy() {
+	connectInputsRecursive();
+	initRecursive();
 }
 
 

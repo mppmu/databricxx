@@ -143,6 +143,11 @@ protected:
 	virtual void connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragment sourcePath);
 	virtual void connectOwnInputTo(Name inputName, const Terminal& terminal);
 
+	void connectInputs();
+
+	void connectInputsRecursive();
+	void initRecursive();
+
 public:
 	template <typename T> class TypedTerminal
 		: public virtual Terminal, public virtual HasTypedValue<T> {};
@@ -262,18 +267,22 @@ public:
 	virtual const ParamTerminal& getParam(Name outputName, const std::type_info& typeInfo) const;
 	virtual ParamTerminal& getParam(Name outputName, const std::type_info& typeInfo);
 
-	void connectInputs();
-
 	virtual std::ostream & printInfo(std::ostream &os) const;
 
-	// Undefined when run in relation to sub-bric init (possibly in parallel?):
+	// Recursively initialize this bric and all brics inside it
+	void initBricHierarchy();
+
+	// User overload, executed, undefined if executed before or after sub-bric
+	// init (possibly in parallel?):
 	virtual void init() {};
 
-	// Run before init_parentFirst for sub-brics:
-	virtual void init_parentFirst() {};
+	// Maybe later:
+	// User overload, executed before init_parentFirst for sub-brics:
+	// virtual void init_parentFirst() {};
 
-	// Run after init_childrenFirst for sub-brics:
-	virtual void init_childrenFirst() {};
+	// Maybe later:
+	// User overload, executed  after init_childrenFirst for sub-brics:
+	// virtual void init_childrenFirst() {};
 
 protected:
 	bool m_execFinished = false;
