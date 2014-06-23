@@ -576,8 +576,8 @@ public:
 protected:
 	void tryProcessInput() {
 		try{ processInput(); }
-		catch(...) {
-			dbrx_log_error("Processing input failed in bric \"%s\"", absolutePath());
+		catch(const std::exception &e) {
+			dbrx_log_error("Processing input failed in bric \"%s\": %s", absolutePath(), e.what());
 			setOutputsToErrorState();
 			setExecFinished();
 		}
@@ -643,8 +643,8 @@ public:
 			dbrx_log_trace("Importer %s, running import", absolutePath());
 
 			try{ import(); }
-			catch(...) {
-				dbrx_log_error("Running import failed in bric \"%s\"", absolutePath());
+			catch(const std::exception &e) {
+				dbrx_log_error("Running import failed in bric \"%s\": %s", absolutePath(), e.what());
 				setOutputsToErrorState();
 			}
 
@@ -715,8 +715,8 @@ protected:
 
 			if (m_readyForNextOutput) {
 				try{ producedOutput = nextOutput(); }
-				catch(...) {
-					dbrx_log_error("Producing next output failed in bric \"%s\"", absolutePath());
+				catch(const std::exception &e) {
+					dbrx_log_error("Producing next output failed in bric \"%s\": %s", absolutePath(), e.what());
 					setOutputsToErrorState();
 				}
 
@@ -752,8 +752,8 @@ protected:
 		try {
 			newReduction();
 		}
-		catch(...) {
-			dbrx_log_error("Initialization of reduction failed in bric \"%s\"", absolutePath());
+		catch(const std::exception &e) {
+			dbrx_log_error("Initialization of reduction failed in bric \"%s\": %s", absolutePath(), e.what());
 			setOutputsToErrorState();
 			setExecFinished();
 		}
@@ -765,8 +765,8 @@ protected:
 
 	void endReduction() {
 		try { finalizeReduction(); }
-		catch(...) {
-			dbrx_log_error("Finalization of reduction failed in bric \"%s\"", absolutePath());
+		catch(const std::exception &e) {
+			dbrx_log_error("Finalization of reduction failed in bric \"%s\": %s", absolutePath(), e.what());
 			setOutputsToErrorState();
 			setExecFinished();
 		}
@@ -796,7 +796,10 @@ protected:
 		if (m_reductionStarted == true) assert(allDestsReadyForInput()); // Sanity check
 
 		if (allDestsReadyForInput()) {
-			if (! m_reductionStarted) beginReduction();
+			if (! m_reductionStarted) {
+				beginReduction();
+				if (execFinished()) return true;
+			}
 
 			announceReadyForInput();
 
@@ -833,7 +836,10 @@ protected:
 		if (m_reductionStarted == true) assert(allDestsReadyForInput()); // Sanity check
 
 		if (allDestsReadyForInput()) {
-			if (! m_reductionStarted) beginReduction();
+			if (! m_reductionStarted) {
+				beginReduction();
+				if (execFinished()) return true;
+			}
 
 			bool gotInput = false;
 			if (anySourceAvailable()) {
