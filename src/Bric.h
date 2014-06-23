@@ -264,9 +264,12 @@ public:
 			{ TypedParamTerminal<T>::operator=(std::move(v)); return *this; }
 
 
-		Param(Bric *parentBric, Name paramName, std::string paramTitle = "")
+		Param(Bric *parentBric, Name paramName, std::string paramTitle = "", T defaultValue = T())
 			: BricComponentImpl(parentBric, paramName, std::move(paramTitle))
-			{ parentBric->registerParam(this); }
+		{
+			value() = std::move(defaultValue);
+			parentBric->registerParam(this);
+		}
 
 		Param(const Param &other) = delete;
 	};
