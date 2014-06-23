@@ -50,14 +50,14 @@ const Name Bric::s_defaultOutputName("output");
 const Name Bric::s_bricTypeKey("type");
 
 
-std::unique_ptr<Bric> Bric::createBricFromTypeName(const std::string &typeName) {
+std::unique_ptr<Bric> Bric::createBricFromTypeName(const std::string &className) {
 	// For some reason, objects created via "newInstance<Bric>" are unstable
 	// and produce segfaults. May be some problem with virtual tables and may
 	// be related to Bric virtual inheritance hierarchy. As a workaround,
 	// use the bottom types of the Bric hierarchy directly:
 
 	unique_ptr<Bric> bric;
-	TypeReflection bricTR(typeName);
+	TypeReflection bricTR(className);
 	if (TypeReflection(typeid(ImportBric)).isAssignableFrom(bricTR)) {
 		bric = bricTR.newInstance<ImportBric>();
 	} else if (TypeReflection(typeid(TransformBric)).isAssignableFrom(bricTR)) {
@@ -69,7 +69,7 @@ std::unique_ptr<Bric> Bric::createBricFromTypeName(const std::string &typeName) 
 	} else if (TypeReflection(typeid(AsyncReducerBric)).isAssignableFrom(bricTR)) {
 		bric = bricTR.newInstance<AsyncReducerBric>();
 	} else {
-		throw runtime_error("Dynamic generation of bric of class \"%s\" not supported, does not derive from any standard bric type"_format(typeName.c_str()));
+		throw runtime_error("Dynamic generation of bric of class \"%s\" not supported, does not derive from any standard bric type"_format(className.c_str()));
 	}
 	
 	return bric;
