@@ -50,6 +50,32 @@ const Name Bric::s_defaultOutputName("output");
 const Name Bric::s_bricTypeKey("type");
 
 
+std::unique_ptr<Bric> Bric::createBricFromTypeName(const std::string &typeName) {
+	// For some reason, objects created via "newInstance<Bric>" are unstable
+	// and produce segfaults. May be some problem with virtual tables and may
+	// be related to Bric virtual inheritance hierarchy. As a workaround,
+	// use the bottom types of the Bric hierarchy directly:
+
+	unique_ptr<Bric> bric;
+	TypeReflection bricTR(typeName);
+	if (TypeReflection(typeid(ImportBric)).isAssignableFrom(bricTR)) {
+		bric = bricTR.newInstance<ImportBric>();
+	} else if (TypeReflection(typeid(TransformBric)).isAssignableFrom(bricTR)) {
+		bric = bricTR.newInstance<TransformBric>();
+	} else if (TypeReflection(typeid(MapperBric)).isAssignableFrom(bricTR)) {
+		bric = bricTR.newInstance<MapperBric>();
+	} else if (TypeReflection(typeid(ReducerBric)).isAssignableFrom(bricTR)) {
+		bric = bricTR.newInstance<ReducerBric>();
+	} else if (TypeReflection(typeid(AsyncReducerBric)).isAssignableFrom(bricTR)) {
+		bric = bricTR.newInstance<AsyncReducerBric>();
+	} else {
+		throw runtime_error("Dynamic generation of bric of class \"%s\" not supported, does not derive from any standard bric type"_format(typeName.c_str()));
+	}
+	
+	return bric;
+}
+
+
 void Bric::registerComponent(BricComponent* component) {
 	if (component->name() == s_bricTypeKey) throw invalid_argument("Can't add component with reserved name \"%s\" to bric \"%s\""_format(component->name(), absolutePath()));
 	if (component->name().empty()) throw invalid_argument("Can't register BricComponent with empty name in bric \"%s\""_format(absolutePath()));
@@ -103,33 +129,13 @@ bool Bric::isBricConfig(const PropVal& config) {
 }
 
 
+
 void Bric::addDynBric(Name bricName, const PropVal& config) {
 	if (!isBricConfig(config)) throw invalid_argument("Invalid configuration format for dynamic sub-bric \"%s\" in bric \"%s\""_format(bricName, absolutePath()));
 	dbrx_log_debug("Creating dynamic bric \"%s\" inside bric \"%s\""_format(bricName, absolutePath()));
 	Props subBricProps = config.asProps();
-	const std::string className = config.at(s_bricTypeKey).asString();
-
-	// For some reason, objects created via "newInstance<Bric>" are unstable
-	// and produce segfaults. May be some problem with virtual tables and may
-	// be related to Bric virtual inheritance hierarchy. As a workaround,
-	// use the bottom types of the Bric hierarchy directly:
-
-	unique_ptr<Bric> dynBric;
-	TypeReflection dynBricTR(className);
-	if (TypeReflection(typeid(ImportBric)).isAssignableFrom(dynBricTR)) {
-		dynBric = dynBricTR.newInstance<ImportBric>();
-	} else if (TypeReflection(typeid(TransformBric)).isAssignableFrom(dynBricTR)) {
-		dynBric = dynBricTR.newInstance<TransformBric>();
-	} else if (TypeReflection(typeid(MapperBric)).isAssignableFrom(dynBricTR)) {
-		dynBric = dynBricTR.newInstance<MapperBric>();
-	} else if (TypeReflection(typeid(ReducerBric)).isAssignableFrom(dynBricTR)) {
-		dynBric = dynBricTR.newInstance<ReducerBric>();
-	} else if (TypeReflection(typeid(AsyncReducerBric)).isAssignableFrom(dynBricTR)) {
-		dynBric = dynBricTR.newInstance<AsyncReducerBric>();
-	} else {
-		throw runtime_error("Dynamic generation of bric of class \"%s\" not supported, does not derive from any standard bric type"_format(className.c_str()));
-	}
-
+	std::string className = config.at(s_bricTypeKey).asString();
+	unique_ptr<Bric> dynBric = createBricFromTypeName(className);
 	dynBric->name() = bricName;
 	Bric* dynBricPtr = dynBric.get();
 	registerBric(dynBricPtr);

@@ -141,6 +141,8 @@ protected:
 
 	std::map<Name, std::unique_ptr<Bric>> m_dynBrics;
 
+	static std::unique_ptr<Bric> createBricFromTypeName(const std::string &typeName);
+
 	void registerComponent(BricComponent* component);
 	void registerBric(Bric* bric);
 	void registerTerminal(Terminal* terminal);
