@@ -514,19 +514,16 @@ public:
 			{ TypedOutputTerminal<T>::operator=(std::move(v)); return *this; }
 
 
-		Output(BricWithOutputs *parentBric)
-			: BricComponentImpl(parentBric, s_defaultOutputName) { parentBric->registerOutput(this); }
-
-		Output(BricWithOutputs *parentBric, Name outputName, std::string outputTitle = "")
+		Output(BricWithOutputs *parentBric, Name outputName = Name(), std::string outputTitle = "")
 			: BricComponentImpl(parentBric, outputName, std::move(outputTitle))
-			{ parentBric->registerOutput(this); }
-
-		template<typename U> Output(BricWithOutputs *parentBric, Name outputName, U&& defaultValue)
-			: BricComponentImpl(parentBric, outputName)
 		{
+			if (name().empty()) name() = s_defaultOutputName;
 			parentBric->registerOutput(this);
-			value() = std::forward<U>(defaultValue);
 		}
+
+		template<typename U> Output(BricWithOutputs *parentBric, Name outputName,
+			std::string outputTitle, U&& defaultValue) : Output(parentBric, outputName, outputTitle)
+			{ value() = std::forward<U>(defaultValue); }
 
 		Output(const Output &other) = delete;
 	};
@@ -563,12 +560,12 @@ public:
 		void connectTo(const Bric &bric)
 			{ connectTo(bric.getOutput(s_defaultOutputName, typeInfo())); }
 
-		Input(BricWithInputs *parentBric)
-			: BricComponentImpl(parentBric, s_defaultInputName) { parentBric->registerInput(this); }
-
-		Input(BricWithInputs *parentBric, Name inputName, std::string inputTitle = "")
+		Input(BricWithInputs *parentBric, Name inputName = Name(), std::string inputTitle = "")
 			: BricComponentImpl(parentBric, inputName, std::move(inputTitle))
-			{ parentBric->registerInput(this); }
+		{
+			if (name().empty()) name() = s_defaultInputName;
+			parentBric->registerInput(this);
+		}
 
 		Input(const Input &other) = delete;
 	};
