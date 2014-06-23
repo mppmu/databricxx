@@ -745,10 +745,11 @@ protected:
 		if (m_reductionStarted == true) assert(allDestsReadyForInput()); // Sanity check
 
 		if (allDestsReadyForInput()) {
+			if (! m_reductionStarted) beginReduction();
+
 			announceReadyForInput();
 
 			if (anySourceAvailable()) {
-				if (! m_reductionStarted) beginReduction();
 				consumeInput();
 
 				try { processInput(); }
@@ -788,11 +789,12 @@ protected:
 		if (m_reductionStarted == true) assert(allDestsReadyForInput()); // Sanity check
 
 		if (allDestsReadyForInput()) {
+			if (! m_reductionStarted) beginReduction();
+
 			bool gotInput = false;
 			for (size_t i = 0; i < m_sources.size(); ++i) {
 				auto &source = m_sources[i];
 				if (m_inputCounter[i] < source->m_outputCounter) {
-					if (! m_reductionStarted) beginReduction();
 					decNSourcesAvailable();
 					m_inputCounter[i] = source->m_outputCounter;
 					gotInput = true;
