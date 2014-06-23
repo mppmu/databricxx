@@ -263,6 +263,19 @@ PropVal Bric::getConfig() const  {
 }
 
 
+const typename Bric::Bric& Bric::getBric(Name bricName) const {
+	auto r = m_brics.find(bricName);
+	if (r == m_brics.end()) throw invalid_argument("No bric \"%s\" found in bric \"%s\""_format(bricName, absolutePath()));
+	else return *r->second;
+}
+
+typename Bric::Bric& Bric::getBric(Name bricName) {
+	auto r = m_brics.find(bricName);
+	if (r == m_brics.end()) throw invalid_argument("No bric \"%s\" found in bric \"%s\""_format(bricName, absolutePath()));
+	else return *r->second;
+}
+
+
 const Bric::Terminal& Bric::getTerminal(Name terminalName) const {
 	auto r = m_terminals.find(terminalName);
 	if (r == m_terminals.end()) throw invalid_argument("No terminal \"%s\" found in bric \"%s\""_format(terminalName, absolutePath()));

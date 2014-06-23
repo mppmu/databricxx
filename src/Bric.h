@@ -241,6 +241,11 @@ public:
 
 	virtual bool canHaveDynBrics() { return false; }
 
+
+	virtual const Bric& getBric(Name bricName) const;
+	virtual Bric& getBric(Name bricName);
+
+
 	virtual const Terminal& getTerminal(Name terminalName) const;
 	virtual Terminal& getTerminal(Name terminalName);
 
