@@ -140,6 +140,7 @@ protected:
 	std::map<Name, InputTerminal*> m_inputs;
 
 	std::map<Name, std::unique_ptr<Bric>> m_dynBrics;
+	std::map<Name, std::string> m_dynBricClassNames;
 
 	static std::unique_ptr<Bric> createBricFromTypeName(const std::string &className);
 

@@ -139,7 +139,8 @@ void Bric::addDynBric(Name bricName, const PropVal& config) {
 	dynBric->name() = bricName;
 	Bric* dynBricPtr = dynBric.get();
 	registerBric(dynBricPtr);
-	m_dynBrics[dynBric->name()] = std::move(dynBric);
+	m_dynBrics[dynBricPtr->name()] = std::move(dynBric);
+	m_dynBricClassNames[dynBricPtr->name()] = className;
 	dynBricPtr->applyConfig(config);
 }
 
@@ -261,10 +262,17 @@ void Bric::applyConfig(const PropVal& config) {
 PropVal Bric::getConfig() const  {
 	Props props;
 	for (const auto& entry: m_components) {
-		PropVal componentConfig = entry.second->getConfig();
-		if (! componentConfig.isNone())	props[entry.second->name()] = std::move(componentConfig);
+		const auto& component = *entry.second;
+		PropVal componentConfig = component.getConfig();
+		if (! componentConfig.isNone())	props[component.name()] = std::move(componentConfig);
+
+		const auto& dbc = m_dynBricClassNames.find(component.name());
+		if (dbc != m_dynBricClassNames.end()) {
+			PropVal &cfg = props[component.name()];
+			if (cfg.isNone()) cfg = Props();
+			cfg[s_bricTypeKey] = dbc->second;
+		}
 	}
-	props[s_bricTypeKey] = TypeReflection(typeid(this)).name();
 	return PropVal(std::move(props));
 }
 
