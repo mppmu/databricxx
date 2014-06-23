@@ -54,6 +54,9 @@ public:
 	virtual const Bric& parent() const = 0;
 	virtual Bric& parent() = 0;
 
+	virtual const std::string& title() const = 0;
+	virtual void setTitle(std::string newTitle) = 0;
+
 	bool isInside(const Bric& other) const;
 
 	BricComponent& operator=(const BricComponent& v) = delete;
@@ -68,6 +71,8 @@ protected:
 	Name m_name;
 	Bric *m_parent = nullptr;
 
+	std::string m_title;
+
 	virtual void setParent(Bric *parentBric) { m_parent = parentBric; }
 
 public:
@@ -76,14 +81,23 @@ public:
 
 	bool hasParent() const { return m_parent != nullptr; }
 
+	const std::string& title() const { return m_title; }
+	void setTitle(std::string newTitle) { m_title = std::move(newTitle); }
+
 	const Bric& parent() const { return *m_parent; }
 	Bric& parent() { return *m_parent; }
 
 	virtual bool syncedInput() const { return false; }
 
 	BricComponentImpl() {}
+
 	BricComponentImpl(Name componentName): m_name(componentName) {}
-	BricComponentImpl(Bric *parentBric, Name componentName);
+
+	BricComponentImpl(Bric *parentBric, Name componentName)
+		: BricComponentImpl(componentName) { m_parent = parentBric; }
+
+	BricComponentImpl(Bric *parentBric, Name componentName, std::string componentTitle)
+		: BricComponentImpl(parentBric, componentName) { m_title = std::move(componentTitle); }
 };
 
 
@@ -220,8 +234,9 @@ public:
 			{ TypedParamTerminal<T>::operator=(std::move(v)); return *this; }
 
 
-		Param(Bric *parentBric, Name paramName)
-			: BricComponentImpl(parentBric, paramName) { parentBric->registerParam(this); }
+		Param(Bric *parentBric, Name paramName, std::string paramTitle = "")
+			: BricComponentImpl(parentBric, paramName, std::move(paramTitle))
+			{ parentBric->registerParam(this); }
 
 		Param(const Param &other) = delete;
 	};
@@ -441,10 +456,6 @@ inline bool BricComponent::isInside(const Bric& other) const
 	{ return hasParent() && (&parent() == &other || parent().isInside(other)); }
 
 
-inline BricComponentImpl::BricComponentImpl(Bric *parentBric, Name componentName)
-	: BricComponentImpl(componentName) { m_parent = parentBric; }
-
-
 
 class BricWithOutputs: public virtual Bric  {
 public:
@@ -470,8 +481,9 @@ public:
 		Output(BricWithOutputs *parentBric)
 			: BricComponentImpl(parentBric, s_defaultOutputName) { parentBric->registerOutput(this); }
 
-		Output(BricWithOutputs *parentBric, Name outputName)
-			: BricComponentImpl(parentBric, outputName) { parentBric->registerOutput(this); }
+		Output(BricWithOutputs *parentBric, Name outputName, std::string outputTitle = "")
+			: BricComponentImpl(parentBric, outputName, std::move(outputTitle))
+			{ parentBric->registerOutput(this); }
 
 		template<typename U> Output(BricWithOutputs *parentBric, Name outputName, U&& defaultValue)
 			: BricComponentImpl(parentBric, outputName)
@@ -515,11 +527,12 @@ public:
 		void connectTo(const Bric &bric)
 			{ connectTo(bric.getOutput(s_defaultOutputName, typeInfo())); }
 
-		Input(BricWithInputs *parentBric, Name inputName)
-			: BricComponentImpl(parentBric, inputName) { parentBric->registerInput(this); }
-
 		Input(BricWithInputs *parentBric)
 			: BricComponentImpl(parentBric, s_defaultInputName) { parentBric->registerInput(this); }
+
+		Input(BricWithInputs *parentBric, Name inputName, std::string inputTitle = "")
+			: BricComponentImpl(parentBric, inputName, std::move(inputTitle))
+			{ parentBric->registerInput(this); }
 
 		Input(const Input &other) = delete;
 	};
