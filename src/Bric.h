@@ -519,7 +519,21 @@ public:
 		Input(const Input &other) = delete;
 	};
 
+protected:
+	void tryProcessInput() {
+		try{ processInput(); }
+		catch(...) {
+			dbrx_log_error("Processing input failed in bric \"%s\"", absolutePath());
+			setOutputsToErrorState();
+			setExecFinished();
+		}
+	}
+
+public:
 	bool canHaveInputs() const { return true; }
+
+	// User overload. Allowed to change output values.
+	virtual void processInput() = 0;
 };
 
 
@@ -541,9 +555,6 @@ protected:
 	}
 
 public:
-	// User overload. Allowed to change output values.
-	virtual void processInput() = 0;
-
 	virtual void resetExec() {
 		Bric::resetExec();
 		m_announcedReadyForInput = true;
@@ -553,9 +564,6 @@ public:
 
 
 class AsyncInputBric: public virtual BricWithInputs {
-public:
-	// User overload. Allowed to change output values.
-	virtual void processInputFrom(const Bric *source) = 0;
 };
 
 
@@ -579,6 +587,7 @@ public:
 	bool nextExecStepImpl() {
 		if (!m_importDone) {
 			dbrx_log_trace("Importer %s, running import", absolutePath());
+
 			try{ import(); }
 			catch(...) {
 				dbrx_log_error("Running import failed in bric \"%s\"", absolutePath());
@@ -615,14 +624,7 @@ protected:
 
 			if (anySourceAvailable()) {
 				consumeInput();
-
-				try{ processInput(); }
-				catch(...) {
-					dbrx_log_error("Processing input failed in bric \"%s\"", absolutePath());
-					setOutputsToErrorState();
-					setExecFinished();
-				}
-
+				tryProcessInput();
 				announceNewOutput();
 				producedOutput = true;
 			}
@@ -652,14 +654,7 @@ protected:
 
 				if (anySourceAvailable()) {
 					consumeInput();
-
-					try{ processInput(); }
-					catch(...) {
-						dbrx_log_error("Processing input failed in bric \"%s\"", absolutePath());
-						setOutputsToErrorState();
-						setExecFinished();
-					}
-
+					tryProcessInput();
 					m_readyForNextOutput = true;
 				}
 			}
@@ -751,14 +746,7 @@ protected:
 
 			if (anySourceAvailable()) {
 				consumeInput();
-
-				try { processInput(); }
-				catch(...) {
-					dbrx_log_error("Processing input failed in bric \"%s\"", absolutePath());
-					setOutputsToErrorState();
-					setExecFinished();
-				}
-
+				tryProcessInput();
 				announceReadyForInput();
 			}
 
@@ -792,22 +780,18 @@ protected:
 			if (! m_reductionStarted) beginReduction();
 
 			bool gotInput = false;
-			for (size_t i = 0; i < m_sources.size(); ++i) {
-				auto &source = m_sources[i];
-				if (m_inputCounter[i] < source->m_outputCounter) {
-					decNSourcesAvailable();
-					m_inputCounter[i] = source->m_outputCounter;
-					gotInput = true;
-
-					try { processInputFrom(source); }
-					catch(...) {
-						dbrx_log_error("Processing input from source \"%s\" failed in bric \"%s\"", source->absolutePath(), absolutePath());
-						setOutputsToErrorState();
-						setExecFinished();
+			if (anySourceAvailable()) {
+				tryProcessInput();
+				for (size_t i = 0; i < m_sources.size(); ++i) {
+					auto &source = m_sources[i];
+					if (m_inputCounter[i] < source->m_outputCounter) {
+						decNSourcesAvailable();
+						m_inputCounter[i] = source->m_outputCounter;
+						source->incNDestsReadyForInput();
+						gotInput = true;
 					}
-
-					source->incNDestsReadyForInput();
 				}
+				assert(gotInput); // Sanity check
 			}
 
 			if (allSourcesFinished()) endReduction();
