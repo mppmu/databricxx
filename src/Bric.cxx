@@ -219,6 +219,11 @@ void Bric::updateDeps() {
 
 void Bric::initRecursive() {
 	dbrx_log_debug("Recursively initialize bric \"%s\" (%s srcs, %s dests) and all inner brics"_format(absolutePath(), nSources(), nDests()));
+
+	m_tDirectory = unique_ptr<TDirectory>(new TDirectory(name(), title().c_str()));
+	dbrx_log_debug("Created new TDirectory for bric \"%s\" with path \"%s\""_format(absolutePath(), localTDirectory()->GetPath()));
+	TempChangeOfTDirectory tDirChange(localTDirectory());
+
 	for (auto &entry: m_brics) entry.second->initRecursive();
 	dbrx_log_debug("Run init for bric \"%s\", sources [%s], dests [%s]"_format(
 		absolutePath(),

@@ -24,6 +24,8 @@
 #include <map>
 #include <iosfwd>
 
+#include <TDirectory.h>
+
 #include "Name.h"
 #include "HasValue.h"
 #include "logging.h"
@@ -128,6 +130,29 @@ public:
 	class ParamTerminal : public virtual Terminal, public virtual HasWritableValue {};
 
 protected:
+	class TempChangeOfTDirectory {
+	protected:
+		TDirectory* m_prev = nullptr;
+
+	public:
+		void release() {
+			if (m_prev != nullptr) {
+				gDirectory = m_prev;
+				m_prev = nullptr;
+			}
+		}
+
+		TempChangeOfTDirectory() {}
+
+		TempChangeOfTDirectory(TDirectory* newCurrentDir) {
+			m_prev = newCurrentDir;
+			if (m_prev != nullptr) { std::swap(m_prev, gDirectory); }
+		}
+
+		~TempChangeOfTDirectory() { release(); }
+	};
+
+
 	static const Name s_defaultInputName;
 	static const Name s_defaultOutputName;
 	static const Name s_bricTypeKey;
@@ -143,6 +168,8 @@ protected:
 	std::map<Name, std::string> m_dynBricClassNames;
 
 	static std::unique_ptr<Bric> createBricFromTypeName(const std::string &className);
+
+	std::unique_ptr<TDirectory> m_tDirectory;
 
 	void registerComponent(BricComponent* component);
 	void registerBric(Bric* bric);
@@ -291,6 +318,11 @@ public:
 	virtual const ParamTerminal& getParam(Name outputName, const std::type_info& typeInfo) const;
 	virtual ParamTerminal& getParam(Name outputName, const std::type_info& typeInfo);
 
+
+	TDirectory* localTDirectory() { return m_tDirectory.get(); }
+	const TDirectory* localTDirectory() const { return m_tDirectory.get(); }
+
+
 	virtual std::ostream & printInfo(std::ostream &os) const;
 
 	// Recursively initialize this bric and all brics inside it
@@ -422,6 +454,7 @@ public:
 	// true if bric execution is finished and false if not.
 	bool nextExecStep() {
 		if (!execFinished()) {
+			TempChangeOfTDirectory tDirChange(localTDirectory());
 			return nextExecStepImpl();
 		} else return true;
 	}
@@ -716,7 +749,9 @@ protected:
 	bool m_reductionStarted = false;
 
 	void beginReduction() {
-		try { newReduction(); }
+		try {
+			newReduction();
+		}
 		catch(...) {
 			dbrx_log_error("Initialization of reduction failed in bric \"%s\"", absolutePath());
 			setOutputsToErrorState();
