@@ -131,6 +131,9 @@ public:
 	virtual const T* ptr() const = 0;
 
 	PropVal toPropVal() const { PropVal p; assignToPropVal(p, get(), PropValConvSpecial()); return p; }
+
+	friend bool operator==(const TypedValue &a, const T &b) { return a.get() == b; }
+	friend bool operator==(const T &a, const TypedValue &b) { return a == b.get(); }
 };
 
 

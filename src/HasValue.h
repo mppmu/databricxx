@@ -83,6 +83,9 @@ public:
 	operator const T& () const { return value(); }
 	const T* operator->() const { return value().operator->(); }
 	const T& get() const { return value().get(); }
+
+	friend bool operator==(const HasTypedValue &a, const T &b) { return a.get() == b; }
+	friend bool operator==(const T &a, const HasTypedValue &b) { return a == b.get(); }
 };
 
 
