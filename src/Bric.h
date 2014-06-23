@@ -144,6 +144,7 @@ protected:
 	virtual void connectOwnInputTo(Name inputName, const Terminal& terminal);
 
 	void connectInputs();
+	void updateDeps();
 
 	void connectInputsRecursive();
 	void initRecursive();
@@ -307,6 +308,7 @@ protected:
 
 	void addSource(Bric* source) { m_sources.push_back(source); }
 
+	size_t nSources() const { return m_sources.size(); }
 
 	void incNSourcesAvailable() { atomic_fetch_add(&m_nSourcesAvailable, size_t(1)); }
 	void decNSourcesAvailable() { atomic_fetch_sub(&m_nSourcesAvailable, size_t(1)); }
@@ -314,12 +316,11 @@ protected:
 
 	size_t nSourcesAvailable() const {
 		size_t nAvail = atomic_load(&m_nSourcesAvailable);
-		assert(nAvail <= m_sources.size()); // Sanity check
-		if (nAvail > 0) assert(!allSourcesFinished()); // Sanity check
+		assert(nAvail <= nSources()); // Sanity check
 		return nAvail;
 	}
 
-	bool allSourcesAvailable() const { return nSourcesAvailable() == m_sources.size(); }
+	bool allSourcesAvailable() const { return nSourcesAvailable() == nSources(); }
 	bool anySourceAvailable() const { return nSourcesAvailable() > 0; }
 
 
@@ -327,11 +328,11 @@ protected:
 
 	size_t nSourcesFinished() const {
 		size_t nFinished = atomic_load(&m_nSourcesFinished);
-		assert(nFinished <= m_sources.size()); // Sanity check
+		assert(nFinished <= nSources()); // Sanity check
 		return nFinished;
 	}
 
-	bool allSourcesFinished() const { return nSourcesFinished() == m_sources.size(); }
+	bool allSourcesFinished() const { return nSourcesFinished() == nSources(); }
 
 public:
 	const std::vector<Bric*>& sources() { return m_sources; }
@@ -346,17 +347,20 @@ protected:
 
 	size_t m_outputCounter;
 
+	void addDest(Bric* dest) { m_dests.push_back(dest); }
+
+	size_t nDests() const { return m_dests.size(); }
 
 	void incNDestsReadyForInput() { atomic_fetch_add(&m_nDestsReadyForInput, size_t(1)); }
 	void clearNDestsReadyForInput() { atomic_store(&m_nDestsReadyForInput, size_t(0)); }
 
 	size_t nDestsReadyForInput() const {
 		size_t nReady = atomic_load(&m_nDestsReadyForInput);
-		assert(nReady <= m_dests.size()); // Sanity check
+		assert(nReady <= nDests()); // Sanity check
 		return nReady;
 	}
 
-	bool allDestsReadyForInput() const { return nDestsReadyForInput() == m_dests.size(); }
+	bool allDestsReadyForInput() const { return nDestsReadyForInput() == nDests(); }
 
 
 	void announceNewOutput() {
@@ -367,6 +371,7 @@ protected:
 
 	inline void setExecFinished() {
 		assert(m_execFinished == false); // Sanity check
+		dbrx_log_trace("Execution of bric %s finished", absolutePath());
 		m_execFinished = true;
 		for (auto &dest: m_dests) dest->incSourcesFinished();
 	}
@@ -381,7 +386,10 @@ public:
 
 	// Must always be called for a whole set of interdependent sibling brics
 	virtual void resetExec() {
-		atomic_store(&m_nDestsReadyForInput, m_dests.size());
+		dbrx_log_trace("Resetting execution for bric \"%s\"", absolutePath());
+		atomic_store(&m_nSourcesAvailable, size_t(0));
+		atomic_store(&m_nSourcesFinished, size_t(0));
+		atomic_store(&m_nDestsReadyForInput, nDests());
 		m_execFinished = false;
 	}
 
@@ -570,11 +578,11 @@ public:
 
 	bool nextExecStepImpl() {
 		if (!m_importDone) {
+			dbrx_log_trace("Importer %s, running import", absolutePath());
 			try{ import(); }
 			catch(...) {
 				dbrx_log_error("Running import failed in bric \"%s\"", absolutePath());
 				setOutputsToErrorState();
-				setExecFinished();
 			}
 
 			announceNewOutput();
@@ -603,7 +611,7 @@ protected:
 		bool producedOutput = false;
 
 		if (allDestsReadyForInput()) {
-			assert(m_announcedReadyForInput); // Sanity check
+			announceReadyForInput();
 
 			if (allSourcesAvailable()) {
 				consumeInput();
@@ -617,8 +625,6 @@ protected:
 
 				announceNewOutput();
 				producedOutput = true;
-			} else {
-				announceReadyForInput();
 			}
 
 			if (allSourcesFinished()) setExecFinished();
@@ -642,7 +648,7 @@ protected:
 
 		if (allDestsReadyForInput()) {
 			if (! m_readyForNextOutput) {
-				assert(m_announcedReadyForInput); // Sanity check
+				announceReadyForInput();
 
 				if (allSourcesAvailable()) {
 					consumeInput();
@@ -663,7 +669,6 @@ protected:
 				catch(...) {
 					dbrx_log_error("Producing next output failed in bric \"%s\"", absolutePath());
 					setOutputsToErrorState();
-					setExecFinished();
 				}
 
 				if (producedOutput) {
@@ -671,6 +676,7 @@ protected:
 					m_readyForNextOutput = true;
 				} else {
 					announceReadyForInput();
+					m_readyForNextOutput = false;
 				}
 			} else {
 				if (allSourcesFinished()) setExecFinished();
@@ -739,7 +745,7 @@ protected:
 		if (m_reductionStarted == true) assert(allDestsReadyForInput()); // Sanity check
 
 		if (allDestsReadyForInput()) {
-			assert(m_announcedReadyForInput); // Sanity check
+			announceReadyForInput();
 
 			if (allSourcesAvailable()) {
 				if (! m_reductionStarted) beginReduction();

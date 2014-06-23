@@ -165,6 +165,8 @@ bool MRBric::processingStep() {
 
 	if (!m_innerExecFinished) {
 		bool execResult = m_currentLayer->nextExecStep();
+		dbrx_log_trace("Exec result for current exec layer: %s", execResult);
+
 		if (m_currentLayer->execFinished()) m_topLayer = m_currentLayer;
 
 		if (m_currentLayer == m_bottomLayer) {

@@ -166,7 +166,9 @@ void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragm
 			if (found != parent().m_brics.end()) {
 				Bric* sibling = found->second;
 				sibling->connectInputToInner(bric, inputName, sourcePath.tail());
+				dbrx_log_trace("Detected dependency of bric \"%s\" on bric \"%s\"", absolutePath(), sibling->absolutePath());
 				addSource(sibling);
+				sibling->addDest(this);
 			}
 		} else throw runtime_error("Reached top-level Bric \"%s\" during input lookup"_format(absolutePath()));
 	}
@@ -181,24 +183,41 @@ void Bric::connectOwnInputTo(Name inputName, const Terminal& terminal) {
 
 
 void Bric::connectInputs() {
+	dbrx_log_trace("Connecting inputs of bric \"%s\" and all inner brics", absolutePath());
 	m_sources.clear();
 	for (const auto& input: m_inputs)
 		connectInputToSiblingOrUp(*this, input.second->name(), input.second->source());
 	for (const auto& brics: m_brics)
 		brics.second->connectInputs();
+	for (const auto& brics: m_brics)
+		brics.second->updateDeps();
 }
 
 
-void Bric::connectInputsRecursive() {
-	dbrx_log_debug("Recursively connects inputs in bric \"%s\" and all inner brics"_format(absolutePath()));
-	for (auto &entry: m_brics) entry.second->connectInputsRecursive();
-	connectInputs();
+void Bric::updateDeps() {
+	{
+		auto &v = m_sources;
+		std::sort(v.begin(), v.end());
+		auto last = std::unique(v.begin(), v.end());
+		v.erase(last, v.end());
+	}
+	{
+		auto &v = m_dests;
+		std::sort(v.begin(), v.end());
+		auto last = std::unique(v.begin(), v.end());
+		v.erase(last, v.end());
+	}
 }
 
 
 void Bric::initRecursive() {
-	dbrx_log_debug("Recursively initialize bric \"%s\" and all inner brics"_format(absolutePath()));
+	dbrx_log_debug("Recursively initialize bric \"%s\" (%s srcs, %s dests) and all inner brics"_format(absolutePath(), nSources(), nDests()));
 	for (auto &entry: m_brics) entry.second->initRecursive();
+	dbrx_log_debug("Run init for bric \"%s\", sources [%s], dests [%s]"_format(
+		absolutePath(),
+		mkstring(mapped(m_sources, [&](Bric* bric){ return bric->name(); }), ", "),
+		mkstring(mapped(m_dests, [&](Bric* bric){ return bric->name(); }), ", ")
+	));
 	init();
 }
 
@@ -312,7 +331,7 @@ Bric::ParamTerminal& Bric::getParam(Name paramName, const std::type_info& typeIn
 
 
 void Bric::initBricHierarchy() {
-	connectInputsRecursive();
+	connectInputs();
 	initRecursive();
 }
 
