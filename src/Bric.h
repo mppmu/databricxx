@@ -705,9 +705,9 @@ protected:
 				announceNewOutput();
 				producedOutput = true;
 			}
-
-			if (allSourcesFinished()) setExecFinished();
 		}
+
+		if (allSourcesFinished()) setExecFinished();
 
 		return producedOutput || execFinished();
 	}
@@ -750,9 +750,9 @@ protected:
 					announceReadyForInput();
 					m_readyForNextOutput = false;
 				}
-			} else {
-				if (allSourcesFinished()) setExecFinished();
 			}
+
+			if (!producedOutput && allSourcesFinished()) setExecFinished();
 		}
 
 		return producedOutput || execFinished();
