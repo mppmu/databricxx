@@ -152,14 +152,11 @@ void Bric::delDynBric(Name bricName) {
 
 
 void Bric::connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath) {
-	if (sourcePath.empty()) {
-		auto found = m_components.find(s_defaultOutputName);
-		if (found != m_components.end()) found->second->connectInputToInner(bric, inputName, sourcePath);
-	} else {
-		auto found = m_components.find(sourcePath.front().asName());
-		if (found != m_components.end()) found->second->connectInputToInner(bric, inputName, sourcePath.tail());
-		else throw runtime_error("Couldn't resolve source path \"%s\" for input \"%s\" of bric \"%s\", no such component in bric \"%s\""_format(sourcePath, inputName.c_str(), bric.absolutePath(), absolutePath()));
-	}
+	PropPath dfltSrc(s_defaultOutputName);
+	if (sourcePath.empty()) sourcePath = dfltSrc;
+	auto found = m_components.find(sourcePath.front().asName());
+	if (found != m_components.end()) found->second->connectInputToInner(bric, inputName, sourcePath.tail());
+	else throw runtime_error("Couldn't resolve source path \"%s\" for input \"%s\" of bric \"%s\", no such component in bric \"%s\""_format(sourcePath, inputName.c_str(), bric.absolutePath(), absolutePath()));
 }
 
 
