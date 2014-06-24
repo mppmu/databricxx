@@ -226,4 +226,16 @@ void MRBric::processInput() {
 }
 
 
+void MRBric::run() {
+	if (! hasParent()) {
+		initBricHierarchy();
+		assert(! execFinished());
+		processInput(); // Top-level bric has no sources, so force processing
+		setExecFinished();
+	} else {
+		throw invalid_argument("Can't call run on bric \"%s\", not a top bric"_format(absolutePath()));
+	}
+}
+
+
 } // namespace dbrx

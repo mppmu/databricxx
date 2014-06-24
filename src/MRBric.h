@@ -95,6 +95,7 @@ public:
 
 	void processInput();
 
+	void run();
 
 	using TransformBric::TransformBric;
 };
