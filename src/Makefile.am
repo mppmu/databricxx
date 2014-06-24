@@ -10,6 +10,7 @@ libdatabricxx_la_SOURCES = \
 	collbrics.cxx \
 	format.cxx \
 	funcprog.cxx \
+	histbrics.cxx \
 	logging.cxx \
 	textbrics.cxx \
 	Bric.cxx \
@@ -27,6 +28,7 @@ libdatabricxx_la_headers = \
 	collbrics.h \
 	format.h \
 	funcprog.h \
+	histbrics.h \
 	logging.h \
 	textbrics.h \
 	Bric.h \
