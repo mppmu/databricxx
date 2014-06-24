@@ -361,6 +361,7 @@ protected:
 
 	void addSource(Bric* source) { m_sources.push_back(source); }
 
+	bool hasSources() const { return ! m_sources.empty(); }
 	size_t nSources() const { return m_sources.size(); }
 
 	void incNSourcesAvailable() { atomic_fetch_add(&m_nSourcesAvailable, size_t(1)); }
@@ -409,6 +410,7 @@ protected:
 
 	void addDest(Bric* dest) { m_dests.push_back(dest); }
 
+	bool hasDests() const { return ! m_dests.empty(); }
 	size_t nDests() const { return m_dests.size(); }
 
 	void incNDestsReadyForInput() { atomic_fetch_add(&m_nDestsReadyForInput, size_t(1)); }
@@ -700,7 +702,8 @@ protected:
 			if (anySourceAvailable()) {
 				consumeInput();
 				tryProcessInput();
-				announceNewOutput();
+				if (hasDests()) announceNewOutput();
+				else announceReadyForInput();
 				producedOutput = true;
 			}
 		}
@@ -742,7 +745,8 @@ protected:
 				}
 
 				if (producedOutput) {
-					announceNewOutput();
+					if (hasDests()) announceNewOutput();
+					else announceReadyForInput();
 					m_readyForNextOutput = true;
 				} else {
 					announceReadyForInput();
