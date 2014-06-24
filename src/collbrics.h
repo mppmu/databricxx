@@ -40,7 +40,7 @@ public:
 	using T = typename std::remove_cv<typename std::remove_reference<QT>::type>::type;
 
 	Output<T> element{this, "element"};
-	Output<size_t> index{this, "index"};
+	Output<ssize_t> index{this, "index"};
 
 	void processInput() {
 		m_iter = input->begin();

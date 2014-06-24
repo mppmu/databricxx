@@ -13,6 +13,7 @@ libdatabricxx_la_SOURCES = \
 	funcprog.cxx \
 	histbrics.cxx \
 	logging.cxx \
+	rootiobrics.cxx \
 	textbrics.cxx \
 	Bric.cxx \
 	DbrxTools.cxx \
@@ -32,6 +33,7 @@ libdatabricxx_la_headers = \
 	funcprog.h \
 	histbrics.h \
 	logging.h \
+	rootiobrics.h \
 	textbrics.h \
 	Bric.h \
 	DbrxTools.h \

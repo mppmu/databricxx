@@ -11,6 +11,9 @@
 
 // histbrics.h
 
+// rootiobrics.h
+#pragma link C++ class dbrx::TTreeIterBric-;
+
 // textbrics.h
 #pragma link C++ class dbrx::TextFileReader-;
 #pragma link C++ class dbrx::TextFileWriter-;
