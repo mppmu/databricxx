@@ -39,16 +39,19 @@ protected:
 public:
 	using T = typename std::remove_cv<typename std::remove_reference<QT>::type>::type;
 
-	Output<T> output{this};
+	Output<T> element{this, "element"};
+	Output<size_t> index{this, "index"};
 
 	void processInput() {
 		m_iter = input->begin();
+		index = 0;
 	}
 
 	bool nextOutput() {
 		if (m_iter != input->end()) {
-			output = *m_iter;
+			element = *m_iter;
 			++m_iter;
+			++index;
 			return true;
 		} else return false;
 	}
