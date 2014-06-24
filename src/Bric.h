@@ -659,8 +659,6 @@ public:
 	// User overload. Allowed to change output values.
 	virtual void import() = 0;
 
-	void resetExec(){}
-
 	bool nextExecStepImpl() {
 		if (!m_importDone) {
 			dbrx_log_trace("Importer %s, running import", absolutePath());
