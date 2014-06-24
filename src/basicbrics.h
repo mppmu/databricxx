@@ -15,15 +15,14 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
-#ifndef DBRX_BRICS_H
-#define DBRX_BRICS_H
+#ifndef DBRX_BASICBRICS_H
+#define DBRX_BASICBRICS_H
 
 #include "Bric.h"
 #include "format.h"
 
 
 namespace dbrx {
-
 
 
 template<typename T> class ConstBric: public ImportBric {
@@ -57,38 +56,6 @@ public:
 };
 
 
-
-template<typename A, typename B, typename C> class Add: public TransformBric {
-public:
-	Input<A> a{this, "a"};
-	Input<B> b{this, "b"};
-
-	Output<C> result{this, "result"};
-
-	void processInput() {
-		result = a + b;
-	}
-
-	using TransformBric::TransformBric;
-};
-
-
-
-template<typename A, typename B, typename C> class Mult: public TransformBric {
-public:
-	Input<A> a{this, "a"};
-	Input<B> b{this, "b"};
-
-	Output<C> result{this, "result"};
-
-	void processInput() {
-		result = a * b;
-	}
-
-	using TransformBric::TransformBric;
-};
-
-
 } // namespace dbrx
 
-#endif // DBRX_BRICS_H
+#endif // DBRX_BASICBRICS_H

@@ -3,7 +3,9 @@
 
 #ifdef __CINT__
 
-// brics.h
+// basicbrics.h
+
+// funcbrics.h
 
 // collbrics.h
 

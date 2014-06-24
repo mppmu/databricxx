@@ -6,7 +6,8 @@ MAINTAINERCLEANFILES = Makefile.in
 lib_LTLIBRARIES = libdatabricxx.la
 
 libdatabricxx_la_SOURCES = \
-	brics.cxx \
+	basicbrics.cxx \
+	funcbrics.cxx \
 	collbrics.cxx \
 	format.cxx \
 	funcprog.cxx \
@@ -24,7 +25,8 @@ libdatabricxx_la_SOURCES = \
 	Value.cxx HasValue.cxx
 
 libdatabricxx_la_headers = \
-	brics.h \
+	basicbrics.h \
+	funcbrics.h \
 	collbrics.h \
 	format.h \
 	funcprog.h \
