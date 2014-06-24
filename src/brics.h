@@ -27,7 +27,6 @@ namespace dbrx {
 
 
 template<typename T> class ConstBric: public ImportBric {
-	bool m_hasNextOutput = true;
 public:
 	Param<T> value{this, "value"};
 
