@@ -187,6 +187,9 @@ protected:
 	virtual void connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragment sourcePath);
 	virtual void connectOwnInputTo(Name inputName, const Terminal& terminal);
 
+	// Must always be called for a whole set of interdependent sibling brics
+	void disconnectInputs();
+
 	void connectInputs();
 	void updateDeps();
 
@@ -328,7 +331,8 @@ public:
 
 	virtual std::ostream & printInfo(std::ostream &os) const;
 
-	// Recursively initialize this bric and all brics inside it
+	// Recursively initialize this bric and all brics inside it. Can only be
+	// called on top brics (brics without a parent).
 	void initBricHierarchy();
 
 	// User overload, executed, undefined if executed before or after sub-bric
@@ -343,22 +347,13 @@ public:
 	// User overload, executed  after init_childrenFirst for sub-brics:
 	// virtual void init_childrenFirst() {};
 
-protected:
-	bool m_execFinished = false;
-
-	// See nextExecStep for guarantees on behaviour and return value.
-	virtual bool nextExecStepImpl() = 0;
-
-	void setOutputsToErrorState() {
-		dbrx_log_info("Due to an error, setting outputs of bric \"%s\" to default values", absolutePath());
-		for (auto& output: m_outputs) output.second->value().setToDefault();
-	}
-
 
 // Sources //
 
 protected:
 	std::vector<Bric*> m_sources;
+	bool m_hasExternalSources = false;
+	bool m_inputsConnected = false;
 
 	std::atomic<size_t> m_nSourcesAvailable;
 
@@ -378,8 +373,13 @@ protected:
 		return nAvail;
 	}
 
-	bool allSourcesAvailable() const { return nSourcesAvailable() == nSources(); }
-	bool anySourceAvailable() const { return nSourcesAvailable() > 0; }
+	bool externalSourcesAvailable() const { return hasExternalSources() && execCounter() == 0; }
+
+	bool allSourcesAvailable() const
+		{ return nSourcesAvailable() == nSources() || externalSourcesAvailable(); }
+
+	bool anySourceAvailable() const
+		{ return nSourcesAvailable() > 0 || externalSourcesAvailable(); }
 
 
 	void incSourcesFinished() { atomic_fetch_add(&m_nSourcesFinished, size_t(1)); }
@@ -391,6 +391,8 @@ protected:
 	}
 
 	bool allSourcesFinished() const { return nSourcesFinished() == nSources(); }
+
+	bool hasExternalSources() const { return m_hasExternalSources; }
 
 public:
 	const std::vector<Bric*>& sources() { return m_sources; }
@@ -440,8 +442,20 @@ public:
 
 // Execution //
 
-public:
+protected:
+	bool m_execFinished = false;
+	size_t m_execCounter = 0;
 
+	// See nextExecStep for guarantees on behaviour and return value.
+	virtual bool nextExecStepImpl() = 0;
+
+	void setOutputsToErrorState() {
+		dbrx_log_info("Due to an error, setting outputs of bric \"%s\" to default values", absolutePath());
+		for (auto& output: m_outputs) output.second->value().setToDefault();
+	}
+
+
+public:
 	// Must always be called for a whole set of interdependent sibling brics
 	virtual void resetExec() {
 		dbrx_log_trace("Resetting execution for bric \"%s\"", absolutePath());
@@ -449,6 +463,7 @@ public:
 		atomic_store(&m_nSourcesFinished, size_t(0));
 		atomic_store(&m_nDestsReadyForInput, nDests());
 		m_execFinished = false;
+		m_execCounter = false;
 	}
 
 	// Returns true if execution is finished or new output was produced.
@@ -458,11 +473,16 @@ public:
 	bool nextExecStep() {
 		if (!execFinished()) {
 			TempChangeOfTDirectory tDirChange(localTDirectory());
-			return nextExecStepImpl();
+			bool result = nextExecStepImpl();
+			++m_execCounter;
+			return result;
 		} else return true;
 	}
 
 	bool execFinished() const { return m_execFinished; }
+
+	size_t execCounter() const { return m_execCounter; }
+
 
 public:
 	friend class BricImpl;
@@ -555,7 +575,10 @@ public:
 
 		//void connectTo(const TypedTerminal<T> &other) { value().referTo(other.value()); }
 
-		void connectTo(const Terminal &other) { value().referTo(other.value()); }
+		void connectTo(const Terminal &other) {
+			dbrx_log_trace("Connecting input terminal \"%s\" to terminal \"%s\"", absolutePath(), other.absolutePath());
+			value().referTo(other.value());
+		}
 
 		void connectTo(const Bric &bric, Name terminalName)
 			{ connectTo(bric.getOutput(terminalName, typeInfo())); }
@@ -841,7 +864,7 @@ protected:
 				if (execFinished()) return true;
 			}
 
-			bool gotInput = false;
+			bool gotSiblingInput = false;
 			if (anySourceAvailable()) {
 				tryProcessInput();
 				for (size_t i = 0; i < m_sources.size(); ++i) {
@@ -850,10 +873,10 @@ protected:
 						decNSourcesAvailable();
 						m_inputCounter[i] = source->m_outputCounter;
 						source->incNDestsReadyForInput();
-						gotInput = true;
+						gotSiblingInput = true;
 					}
 				}
-				assert(gotInput); // Sanity check
+				assert(gotSiblingInput || externalSourcesAvailable()); // Sanity check
 			}
 
 			if (allSourcesFinished()) endReduction();

@@ -176,6 +176,9 @@ void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragm
 				dbrx_log_trace("Detected dependency of bric \"%s\" on bric \"%s\"", absolutePath(), sibling->absolutePath());
 				addSource(sibling);
 				sibling->addDest(this);
+			} else {
+				parent().connectInputToSiblingOrUp(bric, inputName, sourcePath);
+				m_hasExternalSources = true;
 			}
 		} else throw runtime_error("Reached top-level Bric \"%s\" during input lookup"_format(absolutePath()));
 	}
@@ -189,9 +192,24 @@ void Bric::connectOwnInputTo(Name inputName, const Terminal& terminal) {
 }
 
 
+void Bric::disconnectInputs() {
+	dbrx_log_trace("Disconnecting inputs of bric \"%s\" and all inner brics", absolutePath());
+
+	for (const auto& brics: m_brics)
+		brics.second->disconnectInputs();
+
+	m_sources.clear();
+	m_hasExternalSources = false;
+	m_inputsConnected = false;
+
+	m_dests.clear();
+}
+
+
 void Bric::connectInputs() {
 	dbrx_log_trace("Connecting inputs of bric \"%s\" and all inner brics", absolutePath());
-	m_sources.clear();
+	if (m_inputsConnected) throw logic_error("Can't connect already connected inputs in bric \"%s\""_format(absolutePath()));
+
 	for (const auto& input: m_inputs)
 		connectInputToSiblingOrUp(*this, input.second->name(), input.second->source());
 	for (const auto& brics: m_brics)
@@ -363,6 +381,9 @@ Bric::ParamTerminal& Bric::getParam(Name paramName, const std::type_info& typeIn
 
 
 void Bric::initBricHierarchy() {
+	if (hasParent()) throw invalid_argument("Can't init bric hierarchy starting from bric \"%s\", not a top bric"_format(absolutePath()));
+
+	disconnectInputs();
 	connectInputs();
 	initRecursive();
 }
