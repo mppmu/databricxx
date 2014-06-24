@@ -158,13 +158,13 @@ void Bric::connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment so
 	} else {
 		auto found = m_components.find(sourcePath.front().asName());
 		if (found != m_components.end()) found->second->connectInputToInner(bric, inputName, sourcePath.tail());
-		else throw runtime_error("Couldn't resolve source path \"%s\" during input lookup, no such component in bric \"%s\""_format(sourcePath, absolutePath()));
+		else throw runtime_error("Couldn't resolve source path \"%s\" for input \"%s\" of bric \"%s\", no such component in bric \"%s\""_format(sourcePath, inputName.c_str(), bric.absolutePath(), absolutePath()));
 	}
 }
 
 
 void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragment sourcePath) {
-	if (sourcePath.empty()) throw runtime_error("Empty source path during input lookup in bric \"%s\""_format(absolutePath()));
+	if (sourcePath.empty()) throw runtime_error("Empty source path while looking up source \"%s\" for input \"%s\" of bric \"%s\" inside bric \"%s\""_format(sourcePath, inputName.c_str(), bric.absolutePath(), absolutePath()));
 	Name siblingName = sourcePath.front().asName();
 	if (siblingName == name()) connectInputToInner(bric, inputName, sourcePath.tail());
 	else {
@@ -180,7 +180,7 @@ void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragm
 				parent().connectInputToSiblingOrUp(bric, inputName, sourcePath);
 				m_hasExternalSources = true;
 			}
-		} else throw runtime_error("Reached top-level Bric \"%s\" during input lookup"_format(absolutePath()));
+		} else throw runtime_error("Reached top-level bric \"%s\" during looking up source for input \"%s\" in bric \"%s\""_format(absolutePath(), inputName.c_str(), bric.absolutePath()));
 	}
 }
 
