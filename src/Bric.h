@@ -277,12 +277,6 @@ public:
 		Param(const Param &other) = delete;
 	};
 
-	virtual bool hasSingleValueOutput() const { return false; }
-
-	virtual bool outputSyncedWith(const Bric& other) {
-		return hasSingleValueOutput() && other.hasSingleValueOutput()
-			&& isInside(other);
-	}
 
 	virtual void applyConfig(const PropVal& config);
 	virtual PropVal getConfig() const;
