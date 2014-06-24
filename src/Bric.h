@@ -896,6 +896,31 @@ public:
 };
 
 
+
+class TerminalGroup: public virtual Bric {
+protected:
+	bool nextExecStepImpl() {
+		// Terminal groups don't do anything when executed
+		setExecFinished();
+		return false;
+	}
+};
+
+
+
+class OutputTerminalGroup: public virtual TerminalGroup, public virtual BricWithOutputs, public BricImpl {
+public:
+	using BricImpl::BricImpl;
+};
+
+
+
+class InputTerminalGroup: public virtual TerminalGroup, public virtual BricWithOutputs, public BricImpl {
+public:
+	using BricImpl::BricImpl;
+};
+
+
 } // namespace dbrx
 
 
