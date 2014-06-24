@@ -41,6 +41,7 @@ std::unordered_map<Bric*, size_t> MRBric::calcBricGraphLayers(const std::vector<
 	auto deps = [&](Node node) -> const Nodes& { return node->sources(); };
 
 	dbrx_log_debug("Topological sort of %s nodes in execution graph"_format(brics.size()));
+
 	for (Node node: nodes) {
 		dbrx_log_trace("Node %s, deps: %s"_format(
 			node->name(),
@@ -139,7 +140,10 @@ void MRBric::init() {
 	auto gLayers = calcBricGraphLayers(execBrics);
 
 	using BL = decltype(*gLayers.begin());
-	size_t nLayers = 1 + max_element( gLayers.begin(), gLayers.end(),
+
+	size_t nLayers =
+		gLayers.empty() ? 0 :
+		1 + max_element( gLayers.begin(), gLayers.end(),
 		[](const BL& a, const BL&b){ return a.second < b.second; } )->second;
 
 	dbrx_log_debug("Creating %s execution layers in bric \"%s\"", nLayers, absolutePath());
