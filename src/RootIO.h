@@ -34,11 +34,11 @@ public:
 
 	// Note: Do *not* change content address for a value of primitive type
 	// while connected to an input branch!
-	static void inputValueFrom(WritableValue& value, TTree *tree, const TString& branchName);
+	static void inputValueFrom(WritableValue& value, TTree *tree, const std::string& branchName);
 
 	// Note: Do *not* change content address for a value of primitive type
 	// while connected to an output branch!
-	static void outputValueTo(Value& value, TTree *tree, const TString& branchName, Int_t bufsize = 32000, Int_t splitlevel = 99);
+	static void outputValueTo(Value& value, TTree *tree, const std::string& branchName, Int_t bufsize = 32000, Int_t splitlevel = 99);
 };
 
 

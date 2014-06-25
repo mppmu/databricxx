@@ -48,8 +48,8 @@ char RootIO::getTypeSymbol(const std::type_info& typeInfo) {
 }
 
 
-void RootIO::inputValueFrom(WritableValue& value, TTree *tree, const TString& branchName) {
-	const char* bName = branchName.Data();
+void RootIO::inputValueFrom(WritableValue& value, TTree *tree, const std::string& branchName) {
+	const char* bName = branchName.c_str();
 
 	// Result of SetBranchAddress is not a reliable check for existence of the
 	// branch (problem only with TChain?), so check with GetBranch first:
@@ -62,10 +62,10 @@ void RootIO::inputValueFrom(WritableValue& value, TTree *tree, const TString& br
 			throw invalid_argument("Cannot set branch address for kNoType_t");
 		} else if (dataType == EDataType::kOther_t) { // Object type
 			const TClass *cl = TypeReflection(value.typeInfo()).getTClass();
-			result = tree->SetBranchAddress(branchName, value.untypedPPtr(), nullptr, const_cast<TClass*>(cl), dataType, true);
+			result = tree->SetBranchAddress(branchName.c_str(), value.untypedPPtr(), nullptr, const_cast<TClass*>(cl), dataType, true);
 		} else { // Primitive type
 			if (value.empty()) value.setToDefault();
-			result = tree->SetBranchAddress(branchName, value.untypedPtr(), nullptr, nullptr, dataType, false);
+			result = tree->SetBranchAddress(branchName.c_str(), value.untypedPtr(), nullptr, nullptr, dataType, false);
 		}
 		if (result < 0) throw runtime_error("Failed to set branch address for branch \"%s\""_format(branchName));
 
@@ -75,9 +75,9 @@ void RootIO::inputValueFrom(WritableValue& value, TTree *tree, const TString& br
 }
 
 
-void RootIO::outputValueTo(Value& value, TTree *tree, const TString& branchName, Int_t bufsize, Int_t splitlevel) {
+void RootIO::outputValueTo(Value& value, TTree *tree, const std::string& branchName, Int_t bufsize, Int_t splitlevel) {
 	if (! value.valid()) throw invalid_argument("Cannot output invalid value object to branch");
-	const char* bName = branchName.Data();
+	const char* bName = branchName.c_str();
 	EDataType dataType = TDataType::GetType(value.typeInfo());
 
 	TBranch* branch = nullptr;
