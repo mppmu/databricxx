@@ -34,7 +34,7 @@ public:
 
 	// Note: Do *not* change content address for a value of primitive type
 	// while connected to an input branch!
-	static void inputValueFrom(PrimaryValue& value, TTree *tree, const TString& branchName);
+	static void inputValueFrom(WritableValue& value, TTree *tree, const TString& branchName);
 
 	// Note: Do *not* change content address for a value of primitive type
 	// while connected to an output branch!

@@ -48,7 +48,7 @@ char RootIO::getTypeSymbol(const std::type_info& typeInfo) {
 }
 
 
-void RootIO::inputValueFrom(PrimaryValue& value, TTree *tree, const TString& branchName) {
+void RootIO::inputValueFrom(WritableValue& value, TTree *tree, const TString& branchName) {
 	const char* bName = branchName.Data();
 
 	// Result of SetBranchAddress is not a reliable check for existence of the
