@@ -67,11 +67,11 @@ void RootIO::inputValueFrom(WritableValue& value, TTree *tree, const TString& br
 			if (value.empty()) value.setToDefault();
 			result = tree->SetBranchAddress(branchName, value.untypedPtr(), nullptr, nullptr, dataType, false);
 		}
-		if (result < 0) throw runtime_error("Failed to set branch address");
+		if (result < 0) throw runtime_error("Failed to set branch address for branch \"%s\""_format(branchName));
 
 		tree->AddBranchToCache(bName);
 	}
-	else throw runtime_error("Branch not found");
+	else throw runtime_error("Branch \"%s\" not found"_format(branchName));
 }
 
 
