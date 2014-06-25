@@ -53,7 +53,6 @@ protected:
     struct SelectGeneral {};
     struct SelectSpecial : SelectGeneral {};
 
-	static const std::ostream& universalPrint(std::ostream& os, const std::string &s, SelectSpecial) { return os << s; }
 
 	template<typename T> static auto universalPrint(std::ostream& os, T&& x, SelectSpecial)
 		-> decltype(os << std::forward<T>(x)) { return os << std::forward<T>(x); }
@@ -69,7 +68,6 @@ protected:
 		return tmp.str();
 	}
 
-	static const std::string universalToString(std::string s, SelectSpecial) { return s; }
 
 	template<typename T> static auto universalToString(T&& x, SelectSpecial)
 		-> decltype(to_string(std::forward<T>(x))) { using namespace std; return to_string(std::forward<T>(x)); }
