@@ -515,8 +515,8 @@ class BricImpl: public virtual Bric, public BricComponentImpl {
 public:
 	BricImpl() {}
 	BricImpl(Name bricName): BricComponentImpl(bricName) {}
-	BricImpl(Bric *parentBric, Name bricName)
-		: BricComponentImpl(bricName) { setParent(parentBric); }
+	BricImpl(Bric *parentBric, Name bricName, std::string bricTitle = "")
+		: BricComponentImpl(bricName, bricTitle) { setParent(parentBric); }
 
 	~BricImpl() { setParent(nullptr); }
 };
