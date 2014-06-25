@@ -76,50 +76,6 @@ std::unique_ptr<Bric> Bric::createBricFromTypeName(const std::string &className)
 }
 
 
-void Bric::registerComponent(BricComponent* component) {
-	if (component->name() == s_bricTypeKey) throw invalid_argument("Can't add component with reserved name \"%s\" to bric \"%s\""_format(component->name(), absolutePath()));
-	if (component->name().empty()) throw invalid_argument("Can't register BricComponent with empty name in bric \"%s\""_format(absolutePath()));
-
-	auto r = m_components.find(component->name());
-	if (r != m_components.end()) throw invalid_argument("Can't add duplicate component with name \"%s\" to bric \"%s\""_format(component->name(), absolutePath()));
-	m_components[component->name()] = component;
-	component->setParent(this);
-}
-
-
-void Bric::registerBric(Bric* bric) {
-	dbrx_log_trace("Registering inner bric \"%s\" in bric \"%s\""_format(bric->name(), absolutePath()));
-	registerComponent(bric);
-	m_brics[bric->name()] = bric;
-}
-
-void Bric::registerTerminal(Terminal* terminal)
-	{ registerComponent(terminal); m_terminals[terminal->name()] = terminal; }
-
-void Bric::registerParam(ParamTerminal* param) {
-	dbrx_log_trace("Registering param terminal \"%s\" of type \"%s\" in bric \"%s\""_format(
-		param->name(), param->value().typeInfo().name(), absolutePath()));
-	registerTerminal(param);
-	m_params[param->name()] = param;
-}
-
-void Bric::registerOutput(OutputTerminal* output) {
-	dbrx_log_trace("Registering output terminal \"%s\" of type \"%s\" in bric \"%s\""_format(
-		output->name(), output->value().typeInfo().name(), absolutePath()));
-	if (!canHaveOutputs()) throw invalid_argument("Bric \"%s\" cannot have outputs"_format(absolutePath()));
-	registerTerminal(output);
-	m_outputs[output->name()] = output;
-}
-
-void Bric::registerInput(InputTerminal* input) {
-	dbrx_log_trace("Registering input terminal \"%s\" of type \"%s\" in bric \"%s\""_format(
-		input->name(), input->value().typeInfo().name(), absolutePath()));
-	if (!canHaveInputs()) throw invalid_argument("Bric \"%s\" cannot have inputs"_format(absolutePath()));
-	registerTerminal(input);
-	m_inputs[input->name()] = input;
-}
-
-
 bool Bric::isBricConfig(const PropVal& config) {
 	if (!config.isProps()) return false;
 	Props props = config.asProps();
@@ -128,6 +84,69 @@ bool Bric::isBricConfig(const PropVal& config) {
 	return bricType->second.isString() ? true : false;
 }
 
+
+void Bric::registerComponent(BricComponent* component) {
+	if (component->name() == s_bricTypeKey) throw invalid_argument("Can't add component with reserved name \"%s\" to bric \"%s\""_format(component->name(), absolutePath()));
+	if (component->name().empty()) throw invalid_argument("Can't register BricComponent with empty name in bric \"%s\""_format(absolutePath()));
+
+	auto r = m_components.find(component->name());
+	if (r != m_components.end()) throw invalid_argument("Can't add duplicate component with name \"%s\" to bric \"%s\""_format(component->name(), absolutePath()));
+
+	if (dynamic_cast<Bric*>(component) != nullptr) {
+		Bric* bric = dynamic_cast<Bric*>(component);
+		dbrx_log_trace("Registering inner bric \"%s\" in bric \"%s\""_format(bric->name(), absolutePath()));
+		m_brics[bric->name()] = bric;
+	} else if (dynamic_cast<Terminal*>(component) != nullptr) {
+		if (dynamic_cast<ParamTerminal*>(component) != nullptr) {
+			ParamTerminal* param = dynamic_cast<ParamTerminal*>(component);
+			dbrx_log_trace("Registering param terminal \"%s\" of type \"%s\" in bric \"%s\""_format(
+				param->name(), param->value().typeInfo().name(), absolutePath()));
+			m_params[param->name()] = param;
+		} else if (dynamic_cast<OutputTerminal*>(component) != nullptr) {
+			OutputTerminal* output = dynamic_cast<OutputTerminal*>(component);
+			dbrx_log_trace("Registering output terminal \"%s\" of type \"%s\" in bric \"%s\""_format(
+				output->name(), output->value().typeInfo().name(), absolutePath()));
+			if (!canHaveOutputs()) throw invalid_argument("Bric \"%s\" cannot have outputs"_format(absolutePath()));
+			m_outputs[output->name()] = output;
+		} else if (dynamic_cast<InputTerminal*>(component) != nullptr) {
+			InputTerminal* input = dynamic_cast<InputTerminal*>(component);
+			dbrx_log_trace("Registering input terminal \"%s\" of type \"%s\" in bric \"%s\""_format(
+				input->name(), input->value().typeInfo().name(), absolutePath()));
+			if (!canHaveInputs()) throw invalid_argument("Bric \"%s\" cannot have inputs"_format(absolutePath()));
+			m_inputs[input->name()] = input;
+		} else {
+			assert(false);
+			throw logic_error("Unknown terminal type, can't register in bic");
+		}
+
+		Terminal* terminal = dynamic_cast<Terminal*>(component);
+		m_terminals[terminal->name()] = terminal;
+	} else {
+		assert(false);
+		throw logic_error("Unknown component type, can't register in bic");
+	}
+
+	m_components[component->name()] = component;
+}
+
+
+void Bric::unregisterComponent(BricComponent* component) {
+	dbrx_log_trace("Unregistering component \"%s\" from bric \"%s\""_format(component->name(), absolutePath()));
+	if (dynamic_cast<Bric*>(component) != nullptr) {
+		m_brics.erase(component->name());
+	} else if (dynamic_cast<Terminal*>(component) != nullptr) {
+		if (dynamic_cast<ParamTerminal*>(component) != nullptr) {
+			m_params.erase(component->name());
+		} else if (dynamic_cast<OutputTerminal*>(component) != nullptr) {
+			m_outputs.erase(component->name());
+		} else if (dynamic_cast<InputTerminal*>(component) != nullptr) {
+			m_inputs.erase(component->name());
+		} else { assert(false);	}
+		m_terminals.erase(component->name());
+	} else { assert(false); }
+
+	m_components.erase(component->name());
+}
 
 
 void Bric::addDynBric(Name bricName, const PropVal& config) {
@@ -138,7 +157,7 @@ void Bric::addDynBric(Name bricName, const PropVal& config) {
 	unique_ptr<Bric> dynBric = createBricFromTypeName(className);
 	dynBric->name() = bricName;
 	Bric* dynBricPtr = dynBric.get();
-	registerBric(dynBricPtr);
+	dynBricPtr->setParent(this);
 	m_dynBrics[dynBricPtr->name()] = std::move(dynBric);
 	m_dynBricClassNames[dynBricPtr->name()] = className;
 	dynBricPtr->applyConfig(config);
