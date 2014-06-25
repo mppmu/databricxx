@@ -103,9 +103,18 @@ public:
 
 class Bric: public virtual BricComponent {
 public:
+	class OutputTerminal;
+	class InputTerminal;
+	class ParamTerminal;
+
+
 	class Terminal: public virtual BricComponent, public virtual HasValue {
 	protected:
 		virtual void connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath);
+
+	public:
+		virtual OutputTerminal* createMatchingDynOutput(Bric* outputBric,
+			Name outputName, std::string outputTitle = "") = 0;
 	};
 
 
@@ -164,6 +173,8 @@ protected:
 	std::map<Name, std::unique_ptr<Bric>> m_dynBrics;
 	std::map<Name, std::string> m_dynBricClassNames;
 
+	std::map<Name, std::unique_ptr<Terminal>> m_dynTerminals;
+
 	static std::unique_ptr<Bric> createBricFromTypeName(const std::string &className);
 
 	std::unique_ptr<TDirectory> m_tDirectory;
@@ -188,8 +199,11 @@ protected:
 
 public:
 	template <typename T> class TypedTerminal
-		: public virtual Terminal, public virtual HasTypedValue<T> {};
-
+		: public virtual Terminal, public virtual HasTypedValue<T>
+	{
+		OutputTerminal* createMatchingDynOutput(Bric* outputBric,
+			Name outputName, std::string outputTitle = "");
+	};
 
 	template <typename T> class TypedOutputTerminal
 		: public virtual TypedTerminal<T>, public virtual OutputTerminal, public virtual HasTypedWritableValue<T>
@@ -312,6 +326,11 @@ public:
 
 	virtual const ParamTerminal& getParam(Name outputName, const std::type_info& typeInfo) const;
 	virtual ParamTerminal& getParam(Name outputName, const std::type_info& typeInfo);
+
+	virtual bool canHaveDynOutputs() const { return false; }
+	void addDynOutput(std::unique_ptr<OutputTerminal> terminal);
+
+	virtual bool canHaveDynInputs() const { return false; }
 
 
 	TDirectory* localTDirectory() { return m_tDirectory.get(); }
@@ -622,6 +641,20 @@ public:
 
 
 
+template <typename T> Bric::OutputTerminal* Bric::TypedTerminal<T>::createMatchingDynOutput (
+	Bric* outputBric, Name outputName, std::string outputTitle
+) {
+	std::unique_ptr<Bric::OutputTerminal> terminal (
+		new typename BricWithOutputs::Output<T>(nullptr, outputName, outputTitle)
+	);
+	OutputTerminal* termPtr = terminal.get();
+	outputBric->addDynOutput(std::move(terminal));
+	return termPtr;
+}
+
+
+
+
 class SyncedInputBric: public virtual BricWithInputs {
 protected:
 	bool m_announcedReadyForInput = false;
@@ -910,6 +943,7 @@ protected:
 
 class OutputTerminalGroup: public virtual TerminalGroup, public virtual BricWithOutputs, public BricImpl {
 public:
+	bool canHaveDynOutputs() const { return true; }
 	using BricImpl::BricImpl;
 };
 

@@ -173,8 +173,18 @@ void Bric::delDynBric(Name bricName) {
 void Bric::connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath) {
 	PropPath dfltSrc(s_defaultOutputName);
 	if (sourcePath.empty()) sourcePath = dfltSrc;
-	auto found = m_components.find(sourcePath.front().asName());
+	auto sourceName = sourcePath.front().asName();
+	auto found = m_components.find(sourceName);
 	if (found != m_components.end()) found->second->connectInputToInner(bric, inputName, sourcePath.tail());
+	else if (canHaveDynOutputs()) {
+		auto foundInput = bric.m_terminals.find(inputName);
+		if (foundInput != m_terminals.end()) {
+			Terminal *input = foundInput->second;
+			dbrx_log_trace("Creating dynamic output terminal \"%s\" for input \"%s\" in bric \"%s\"", sourceName, input->name(), absolutePath());
+			BricComponent *source = input->createMatchingDynOutput(this, sourceName);
+			source->connectInputToInner(bric, inputName, sourcePath.tail());
+		} else throw invalid_argument("No input named \"%s\" found in bric \"%s\""_format(inputName, bric.absolutePath()));
+	}
 	else throw runtime_error("Couldn't resolve source path \"%s\" for input \"%s\" of bric \"%s\", no such component in bric \"%s\""_format(sourcePath, inputName.c_str(), bric.absolutePath(), absolutePath()));
 }
 
@@ -219,6 +229,8 @@ void Bric::disconnectInputs() {
 	m_inputsConnected = false;
 
 	m_dests.clear();
+
+	m_dynTerminals.clear();
 }
 
 
@@ -394,6 +406,15 @@ const Bric::ParamTerminal& Bric::getParam(Name paramName, const std::type_info& 
 
 Bric::ParamTerminal& Bric::getParam(Name paramName, const std::type_info& typeInfo)
 	{ return dynamic_cast<Bric::ParamTerminal&>(getTerminal(paramName, typeInfo)); }
+
+
+void Bric::addDynOutput(std::unique_ptr<Bric::OutputTerminal> terminal) {
+	if (canHaveDynOutputs()) {
+		terminal->setParent(this);
+		Terminal* termPtr = terminal.get();
+		m_dynTerminals[termPtr->name()] = std::move(terminal);
+	} else throw runtime_error("Bric \"%s\" cannot have dynamic outputs"_format(absolutePath()));
+}
 
 
 void Bric::initBricHierarchy() {
