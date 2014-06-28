@@ -66,8 +66,10 @@ rootmap_DATA += .libs/libdatabricxx.rootmap
 rootmap_DATA += .libs/libdatabricxx_rdict.pcm
 
 libdatabricxx_rdict.cxx: $(libdatabricxx_la_headers) databricxx_LinkDef.h
-	$(ROOTCLING) -f $@.tmp -s libdatabricxx@SHLIBEXT@ -rml libdatabricxx@SHLIBEXT@ -rmf libdatabricxx.rootmap -c $(CPPFLAGS) $(CXXFLAGS) -I$(pkgincludedir) $+
-	$(GREP) -F -v '"'"`pwd`"'/",' $@.tmp > $@ && $(RM) $@.tmp
+	$(ROOTCLING) -f $@.tmp -s libdatabricxx@SHLIBEXT@ -rml libdatabricxx@SHLIBEXT@ -rmf libdatabricxx.rootmap -c $(CPPFLAGS) $(CXXFLAGS) -I$(includedir) $+
+	@# Some magic to prefix header names with "$(PACKAGE)/", and only that, in dictionary and rootmap:
+	$(GREP) -F -v '"'"`pwd`"'/",' $@.tmp | $(SED) 's|"\([^"]*/\)\?\([^/"]*[.]h\)",|"'$(PACKAGE)/'\2",| ; s|\\"\([^"]*/\)\?\([^/"]*[.]h\)\\"\\n"|\\"'$(PACKAGE)/'\2\\"\\n"|' > $@ && $(RM) $@.tmp
+	$(SED) 's|\(header \+\)\([^ ].*/\)\?\([^ ].*[.]h\)|\1'$(PACKAGE)/'\3|' -i libdatabricxx.rootmap
 
 .libs/libdatabricxx.rootmap: libdatabricxx.la
 	cp libdatabricxx.rootmap libdatabricxx_rdict.pcm .libs/
