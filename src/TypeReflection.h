@@ -41,7 +41,7 @@ protected:
 
 	static bool is(const TClass* a, const TClass* b);
 
-	static bool isAssignableFrom(const TClass* a, const TClass* b);
+	static bool isPtrAssignableFrom(const TClass* a, const TClass* b);
 
 	void* newInstanceImpl(const TypeReflection& ptrType);
 
@@ -53,7 +53,7 @@ public:
 
 	bool isClass() const { return m_tClass != nullptr; }
 	bool isPrimitive() const { return !isClass(); }
-	bool isAssignableFrom(const TypeReflection& other) const;
+	bool isPtrAssignableFrom(const TypeReflection& other) const;
 
 	const TClass* getTClass() const { return m_tClass; }
 

@@ -58,15 +58,15 @@ std::unique_ptr<Bric> Bric::createBricFromTypeName(const std::string &className)
 
 	unique_ptr<Bric> bric;
 	TypeReflection bricTR(className);
-	if (TypeReflection(typeid(ImportBric)).isAssignableFrom(bricTR)) {
+	if (TypeReflection(typeid(ImportBric)).isPtrAssignableFrom(bricTR)) {
 		bric = bricTR.newInstance<ImportBric>();
-	} else if (TypeReflection(typeid(TransformBric)).isAssignableFrom(bricTR)) {
+	} else if (TypeReflection(typeid(TransformBric)).isPtrAssignableFrom(bricTR)) {
 		bric = bricTR.newInstance<TransformBric>();
-	} else if (TypeReflection(typeid(MapperBric)).isAssignableFrom(bricTR)) {
+	} else if (TypeReflection(typeid(MapperBric)).isPtrAssignableFrom(bricTR)) {
 		bric = bricTR.newInstance<MapperBric>();
-	} else if (TypeReflection(typeid(ReducerBric)).isAssignableFrom(bricTR)) {
+	} else if (TypeReflection(typeid(ReducerBric)).isPtrAssignableFrom(bricTR)) {
 		bric = bricTR.newInstance<ReducerBric>();
-	} else if (TypeReflection(typeid(AsyncReducerBric)).isAssignableFrom(bricTR)) {
+	} else if (TypeReflection(typeid(AsyncReducerBric)).isPtrAssignableFrom(bricTR)) {
 		bric = bricTR.newInstance<AsyncReducerBric>();
 	} else {
 		throw runtime_error("Dynamic generation of bric of class \"%s\" not supported, does not derive from any standard bric type"_format(className.c_str()));

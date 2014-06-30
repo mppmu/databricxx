@@ -35,13 +35,13 @@ using namespace std;
 namespace dbrx {
 
 
-bool TypeReflection::isAssignableFrom(const TClass* a, const TClass* b) {
+bool TypeReflection::isPtrAssignableFrom(const TClass* a, const TClass* b) {
 	if (b->InheritsFrom(a)) return true;
 	TList* bases = const_cast<TClass*>(b)->GetListOfBases();
 	TIter next(bases, kIterForward);
 	const TClass *base;
 	while ( (base = dynamic_cast<const TClass*>(next())) ) {
-		if (isAssignableFrom(a, base)) return true;
+		if (isPtrAssignableFrom(a, base)) return true;
 	}
 	return false;
 }
@@ -53,7 +53,7 @@ const char* TypeReflection::name() const {
 
 
 void* TypeReflection::newInstanceImpl(const TypeReflection& ptrType) {
-	if (! ptrType.isAssignableFrom(*this))
+	if (! ptrType.isPtrAssignableFrom(*this))
 		throw invalid_argument("Target pointer type \"%s\" cannot be assigned from object type \"%s\""_format(ptrType.name(), name()));
 
 	if (isPrimitive()) {
@@ -86,9 +86,9 @@ void* TypeReflection::newInstanceImpl(const TypeReflection& ptrType) {
 }
 
 
-bool TypeReflection::isAssignableFrom(const TypeReflection& other) const {
+bool TypeReflection::isPtrAssignableFrom(const TypeReflection& other) const {
 	if (isPrimitive()) return *getTypeInfo() == *other.getTypeInfo();
-	else return isAssignableFrom(getTClass(), other.getTClass());
+	else return isPtrAssignableFrom(getTClass(), other.getTClass());
 }
 
 
