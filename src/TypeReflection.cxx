@@ -87,8 +87,10 @@ void* TypeReflection::newInstanceImpl(const TypeReflection& ptrType) {
 
 
 bool TypeReflection::isPtrAssignableFrom(const TypeReflection& other) const {
-	if (isPrimitive()) return *getTypeInfo() == *other.getTypeInfo();
-	else return isPtrAssignableFrom(getTClass(), other.getTClass());
+	if (getTypeInfo() != nullptr && other.getTypeInfo() != nullptr && *getTypeInfo() == *other.getTypeInfo())
+		return true;
+	else if (isClass() && other.isClass()) return isPtrAssignableFrom(getTClass(), other.getTClass());
+	else return false;
 }
 
 
