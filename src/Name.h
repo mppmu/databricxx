@@ -90,7 +90,6 @@ inline std::ostream & operator<<(std::ostream &os, Name n) {
 class HasName {
 public:
 	virtual Name name() const = 0;
-	virtual Name& name() = 0;
 
 	virtual ~HasName() {}
 };

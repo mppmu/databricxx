@@ -163,7 +163,7 @@ void Bric::addDynBric(Name bricName, const PropVal& config) {
 	Props subBricProps = config.asProps();
 	std::string className = config.at(s_bricTypeKey).asString();
 	unique_ptr<Bric> dynBric = createBricFromTypeName(className);
-	dynBric->name() = bricName;
+	dynBric->setName(bricName);
 	Bric* dynBricPtr = dynBric.get();
 	dynBricPtr->setParent(this);
 	m_dynBrics[dynBricPtr->name()] = std::move(dynBric);

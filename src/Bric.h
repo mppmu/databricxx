@@ -49,6 +49,8 @@ protected:
 	virtual void setParent(Bric *parentBric) = 0;
 
 public:
+	virtual void setName(Name componentName) = 0;
+
 	PropPath absolutePath() const;
 
 	size_t hierarchyLevel() const;
@@ -84,7 +86,11 @@ protected:
 
 public:
 	Name name() const { return m_name; }
-	Name& name() { return m_name; }
+
+	void setName(Name componentName) {
+		if (!hasParent()) m_name = componentName;
+		else throw std::logic_error("Can't change name for component \"%s\" because it already has a parent"_format(absolutePath()));
+	}
 
 	bool hasParent() const { return m_parent != nullptr; }
 
@@ -564,7 +570,7 @@ public:
 		Output(BricWithOutputs *parentBric, Name outputName = Name(), std::string outputTitle = "")
 			: BricComponentImpl(outputName, std::move(outputTitle))
 		{
-			if (name().empty()) name() = s_defaultOutputName;
+			if (name().empty()) m_name = s_defaultOutputName;
 			setParent(parentBric);
 		}
 
@@ -602,7 +608,7 @@ public:
 		Input(BricWithInputs *parentBric, Name inputName = Name(), std::string inputTitle = "")
 			: BricComponentImpl(inputName, std::move(inputTitle))
 		{
-			if (name().empty()) name() = s_defaultInputName;
+			if (name().empty()) m_name = s_defaultInputName;
 			setParent(parentBric);
 		}
 
