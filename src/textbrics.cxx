@@ -25,7 +25,7 @@ namespace dbrx {
 
 
 void TextFileReader::processInput() {
-	dbrx_log_trace("TextFileReader \"%s\", opening next input \"%s\""_format(absolutePath(), input.get().c_str()));
+	dbrx_log_trace("TextFileReader \"%s\", opening next input \"%s\""_format(absolutePath(), input.get()));
 	if (input == "stdin") m_inputStream = &std::cin;
 	else {
 		m_inputFile = unique_ptr<std::ifstream>(new ifstream(input));
@@ -47,20 +47,20 @@ bool TextFileReader::nextOutput() {
 
 
 void TextFileWriter::newReduction() {
-	dbrx_log_trace("TextFileWriter \"%s\", opening output \"%s\""_format(absolutePath(), target.get().c_str()));
+	dbrx_log_trace("TextFileWriter \"%s\", opening output \"%s\""_format(absolutePath(), target.get()));
 	if (target == "stdout") m_outputStream = &std::cout;
 	else if (target == "stderr") m_outputStream = &std::cerr;
 	else {
 		m_outputFile = unique_ptr<std::ofstream>(new ofstream(target));
 		m_outputStream = m_outputFile.get();
 	}
-	if (! *m_outputStream) throw runtime_error("Can't open \"%s\" for output in bric \"%s\""_format(target.get().c_str(), absolutePath()));
+	if (! *m_outputStream) throw runtime_error("Can't open \"%s\" for output in bric \"%s\""_format(target.get(), absolutePath()));
 }
 
 
 void TextFileWriter::processInput() {
 	*m_outputStream << input.get() << '\n' << flush;
-	if (! *m_outputStream) throw runtime_error("Output to \"%s\" failed in bric \"%s\""_format(target.get().c_str(), absolutePath()));
+	if (! *m_outputStream) throw runtime_error("Output to \"%s\" failed in bric \"%s\""_format(target.get(), absolutePath()));
 }
 
 

@@ -69,7 +69,7 @@ std::unique_ptr<Bric> Bric::createBricFromTypeName(const std::string &className)
 	} else if (TypeReflection(typeid(AsyncReducerBric)).isPtrAssignableFrom(bricTR)) {
 		bric = bricTR.newInstance<AsyncReducerBric>();
 	} else {
-		throw runtime_error("Dynamic generation of bric of class \"%s\" not supported, does not derive from any standard bric type"_format(className.c_str()));
+		throw runtime_error("Dynamic generation of bric of class \"%s\" not supported, does not derive from any standard bric type"_format(className));
 	}
 	
 	return bric;
@@ -185,12 +185,12 @@ void Bric::connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment so
 			source->connectInputToInner(bric, inputName, sourcePath.tail());
 		} else throw invalid_argument("No input named \"%s\" found in bric \"%s\""_format(inputName, bric.absolutePath()));
 	}
-	else throw runtime_error("Couldn't resolve source path \"%s\" for input \"%s\" of bric \"%s\", no such component in bric \"%s\""_format(sourcePath, inputName.c_str(), bric.absolutePath(), absolutePath()));
+	else throw runtime_error("Couldn't resolve source path \"%s\" for input \"%s\" of bric \"%s\", no such component in bric \"%s\""_format(sourcePath, inputName, bric.absolutePath(), absolutePath()));
 }
 
 
 void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragment sourcePath) {
-	if (sourcePath.empty()) throw runtime_error("Empty source path while looking up source \"%s\" for input \"%s\" of bric \"%s\" inside bric \"%s\""_format(sourcePath, inputName.c_str(), bric.absolutePath(), absolutePath()));
+	if (sourcePath.empty()) throw runtime_error("Empty source path while looking up source \"%s\" for input \"%s\" of bric \"%s\" inside bric \"%s\""_format(sourcePath, inputName, bric.absolutePath(), absolutePath()));
 	Name siblingName = sourcePath.front().asName();
 	if (siblingName == name()) connectInputToInner(bric, inputName, sourcePath.tail());
 	else {
@@ -206,7 +206,7 @@ void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragm
 				parent().connectInputToSiblingOrUp(bric, inputName, sourcePath);
 				m_hasExternalSources = true;
 			}
-		} else throw runtime_error("Reached top-level bric \"%s\" during looking up source for input \"%s\" in bric \"%s\""_format(absolutePath(), inputName.c_str(), bric.absolutePath()));
+		} else throw runtime_error("Reached top-level bric \"%s\" during looking up source for input \"%s\" in bric \"%s\""_format(absolutePath(), inputName, bric.absolutePath()));
 	}
 }
 

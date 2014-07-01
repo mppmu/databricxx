@@ -69,7 +69,7 @@ std::unordered_map<Bric*, size_t> MRBric::calcBricGraphLayers(const std::vector<
 
 	while (! nodesToVisit.empty()) {
 		// dbrx_log_trace("Nodes to visit: %s"_format(
-		//	mkstring(mapped(nodesToVisit, [&](Node node){ return "%s (%s)"_format(node->name(), int(state(node))).c_str(); }), ", ")
+		//	mkstring(mapped(nodesToVisit, [&](Node node){ return "%s (%s)"_format(node->name(), int(state(node))); }), ", ")
 		// ));
 
 		Node node = nodesToVisit.back();
