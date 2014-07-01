@@ -16,11 +16,18 @@
 
 
 #include "Value.h"
+#include "TypeReflection.h"
 
 using namespace std;
 
 
 namespace dbrx {
+
+
+bool Value::isPtrAssignableTo(const std::type_info& otherType) const {
+	if (typeInfo() == otherType) return true;
+	else return TypeReflection(otherType).isPtrAssignableFrom(TypeReflection(typeInfo()));
+}
 
 
 } // namespace dbrx

@@ -34,13 +34,16 @@ public:
 
 	virtual const std::type_info& typeInfo() const = 0;
 
+	bool isPtrAssignableTo(const std::type_info& otherType) const;
+
 	virtual const void* const * untypedPPtr() const = 0;
 
 	const void* untypedPtr() const { return *untypedPPtr(); }
 
 	template<typename T> const T* const * typedPPtr() const {
-		if (typeid(T) != typeInfo()) throw std::runtime_error("Type mismatch");
-		return (const T* const *) untypedPPtr();
+		if ( typeid(T) == typeInfo() || isPtrAssignableTo(typeid(T)) )
+			return (const T* const *) untypedPPtr();
+		else throw std::bad_cast();
 	}
 
 	template<typename T> const T* typedPtr() const { return *typedPPtr<T>(); }
@@ -66,8 +69,8 @@ public:
 	void* untypedPtr() { return *untypedPPtr(); }
 
 	template<typename T> T* * typedPPtr() {
-		if (typeid(T) != typeInfo()) throw std::runtime_error("Type mismatch");
-		return (T* *) untypedPPtr();
+		if (typeid(T) == typeInfo()) return (T* *) untypedPPtr();
+		else throw std::bad_cast();		
 	}
 
 	template<typename T> T* typedPtr() { return *typedPPtr<T>(); }
