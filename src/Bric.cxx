@@ -45,6 +45,14 @@ void Bric::Terminal::connectInputToInner(Bric &bric, Name inputName, PropPath::F
 
 
 
+void Bric::InputTerminal::connectTo(Bric::Terminal &other) {
+	dbrx_log_trace("Connecting input terminal \"%s\" to terminal \"%s\"", absolutePath(), other.absolutePath());
+	value().referTo(other.value());
+	parent().addSource(other.parent());
+}
+
+
+
 const Name Bric::s_defaultInputName("input");
 const Name Bric::s_defaultOutputName("output");
 const Name Bric::s_bricTypeKey("type");
@@ -200,8 +208,6 @@ void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragm
 				Bric* sibling = found->second;
 				sibling->connectInputToInner(bric, inputName, sourcePath.tail());
 				dbrx_log_trace("Detected dependency of bric \"%s\" on bric \"%s\"", absolutePath(), sibling->absolutePath());
-				addSource(sibling);
-				sibling->addDest(this);
 			} else {
 				parent().connectInputToSiblingOrUp(bric, inputName, sourcePath);
 				m_hasExternalSources = true;
@@ -211,7 +217,7 @@ void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragm
 }
 
 
-void Bric::connectOwnInputTo(Name inputName, const Terminal& terminal) {
+void Bric::connectOwnInputTo(Name inputName, Terminal& terminal) {
 	auto found = m_inputs.find(inputName);
 	if (found != m_inputs.end()) found->second->connectTo(terminal);
 	else throw invalid_argument("Can't connect non-existing input \"%s\" to terminal \"%s\""_format(inputName, terminal.absolutePath()));
@@ -448,6 +454,30 @@ std::ostream & Bric::printInfo(std::ostream &os) const {
 	}
 
 	return os;
+}
+
+
+void Bric::addSource(Bric &source) {
+	Bric* dstBric = this;
+	Bric* srcBric = &source;
+
+	size_t dstDepth = dstBric->hierarchyLevel();
+	size_t srcDepth = srcBric->hierarchyLevel();
+	for (size_t i = dstDepth; i > srcDepth; --i) dstBric = &dstBric->parent();
+	for (size_t i = srcDepth; i > dstDepth; --i) srcBric = &srcBric->parent();
+
+	assert(dstBric->hierarchyLevel() == srcBric->hierarchyLevel());
+
+	while (dstBric->hasParent() && !srcBric->siblingOf(*dstBric)) {
+		dstBric = &dstBric->parent();
+		srcBric = &srcBric->parent();
+	}
+
+	if (srcBric->siblingOf(*dstBric)) {
+		dbrx_log_trace("Establishing source/dest relationship between brics \"%s\" and \"%s\"", dstBric->absolutePath(), srcBric->absolutePath());
+		dstBric->m_sources.push_back(srcBric);
+		srcBric->m_dests.push_back(dstBric);
+	} else throw invalid_argument("Can't establish source/dest relationship between unrelated brics \"%s\" and \"%s\""_format(absolutePath(), source.absolutePath()));
 }
 
 

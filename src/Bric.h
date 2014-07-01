@@ -51,10 +51,15 @@ protected:
 public:
 	PropPath absolutePath() const;
 
+	size_t hierarchyLevel() const;
+
 	virtual bool hasParent() const = 0;
 
 	virtual const Bric& parent() const = 0;
 	virtual Bric& parent() = 0;
+
+	bool siblingOf(BricComponent &other) const
+		{ return hasParent() && other.hasParent() && (&parent() == &other.parent()); }
 
 	virtual const std::string& title() const = 0;
 	virtual void setTitle(std::string newTitle) = 0;
@@ -125,11 +130,7 @@ public:
 	public:
 		virtual const PropPath& source() = 0;
 
-		virtual void connectTo(const Terminal &other) = 0;
-
-		virtual void connectTo(const Bric &bric, Name terminalName) = 0;
-
-		virtual void connectTo(const Bric &bric) = 0;
+		void connectTo(Terminal &other);
 	};
 
 
@@ -186,7 +187,7 @@ protected:
 
 	virtual void connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath);
 	virtual void connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragment sourcePath);
-	virtual void connectOwnInputTo(Name inputName, const Terminal& terminal);
+	virtual void connectOwnInputTo(Name inputName, Terminal& terminal);
 
 	// Must always be called for a whole set of interdependent sibling brics
 	void disconnectInputs();
@@ -336,7 +337,6 @@ public:
 	TDirectory* localTDirectory() { return m_tDirectory.get(); }
 	const TDirectory* localTDirectory() const { return m_tDirectory.get(); }
 
-
 	virtual std::ostream & printInfo(std::ostream &os) const;
 
 	// Recursively initialize this bric and all brics inside it. Can only be
@@ -367,7 +367,7 @@ protected:
 
 	std::atomic<size_t> m_nSourcesFinished;
 
-	void addSource(Bric* source) { m_sources.push_back(source); }
+	void addSource(Bric &source);
 
 	bool hasSources() const { return ! m_sources.empty(); }
 	size_t nSources() const { return m_sources.size(); }
@@ -415,8 +415,6 @@ protected:
 	std::atomic<size_t> m_nDestsReadyForInput;
 
 	size_t m_outputCounter;
-
-	void addDest(Bric* dest) { m_dests.push_back(dest); }
 
 	bool hasDests() const { return ! m_dests.empty(); }
 	size_t nDests() const { return m_dests.size(); }
@@ -527,6 +525,10 @@ inline bool BricComponent::isInside(const Bric& other) const
 	{ return hasParent() && (&parent() == &other || parent().isInside(other)); }
 
 
+inline size_t BricComponent::hierarchyLevel() const
+	{ return hasParent() ? parent().hierarchyLevel() + 1 : 0; }
+
+
 
 inline void BricComponentImpl::setParent(Bric *parentBric) {
 	if (m_parent != nullptr) m_parent->unregisterComponent(this);
@@ -596,19 +598,6 @@ public:
 		virtual PropVal getConfig() const  { return m_source; }
 
 		virtual const PropPath& source() { return m_source; }
-
-		//void connectTo(const TypedTerminal<T> &other) { value().referTo(other.value()); }
-
-		void connectTo(const Terminal &other) {
-			dbrx_log_trace("Connecting input terminal \"%s\" to terminal \"%s\"", absolutePath(), other.absolutePath());
-			value().referTo(other.value());
-		}
-
-		void connectTo(const Bric &bric, Name terminalName)
-			{ connectTo(bric.getOutput(terminalName, typeInfo())); }
-
-		void connectTo(const Bric &bric)
-			{ connectTo(bric.getOutput(s_defaultOutputName, typeInfo())); }
 
 		Input(BricWithInputs *parentBric, Name inputName = Name(), std::string inputTitle = "")
 			: BricComponentImpl(inputName, std::move(inputTitle))
