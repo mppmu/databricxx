@@ -936,7 +936,16 @@ protected:
 
 
 
-class OutputTerminalGroup: public virtual TerminalGroup, public virtual BricWithOutputs, public BricImpl {
+class OutputTerminalGroup: public virtual TerminalGroup, public virtual BricWithOutputs {
+};
+
+
+class OutputGroup: public virtual OutputTerminalGroup, public BricImpl {
+	using BricImpl::BricImpl;
+};
+
+
+class DynOutputGroup: public virtual OutputTerminalGroup, public BricImpl {
 public:
 	bool canHaveDynOutputs() const { return true; }
 	using BricImpl::BricImpl;
@@ -944,8 +953,20 @@ public:
 
 
 
-class InputTerminalGroup: public virtual TerminalGroup, public virtual BricWithOutputs, public BricImpl {
+class InputTerminalGroup: public virtual TerminalGroup, public virtual BricWithInputs {
 public:
+	void processInput() {}
+};
+
+
+class InputGroup: public virtual InputTerminalGroup, public BricImpl {
+	using BricImpl::BricImpl;
+};
+
+
+class DynInputGroup: public virtual InputTerminalGroup, public BricImpl {
+public:
+	bool canHaveDynInputs() const { return true; }
 	using BricImpl::BricImpl;
 };
 
