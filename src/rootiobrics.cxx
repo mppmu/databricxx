@@ -34,7 +34,7 @@ void TTreeIterBric::Entry::connectBranches(Bric* contextBric, TTree* inputTree) 
 	for (auto &elem: m_outputs) {
 		OutputTerminal *terminal = elem.second;
 		dbrx_log_debug("Connecting TTree branch \"%s\" in \"%s\"", terminal->name(), absolutePath());
-		RootIO::inputValueFrom(terminal->value(), inputTree, terminal->name());
+		RootIO::inputValueFrom(terminal->value(), inputTree, terminal->name().toString());
 	}
 }
 

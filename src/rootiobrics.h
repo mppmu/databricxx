@@ -32,10 +32,10 @@ protected:
 	std::unique_ptr<TChain> m_chain;
 
 public:
-	class Entry: public OutputTerminalGroup {
+	class Entry: public DynOutputGroup {
 	public:
 		void connectBranches(Bric* contextBric, TTree* inputTree);
-		using OutputTerminalGroup::OutputTerminalGroup;
+		using DynOutputGroup::DynOutputGroup;
 	};
 
 	Input<std::string> fileName{this, "fileName"};

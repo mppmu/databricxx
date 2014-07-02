@@ -39,7 +39,7 @@ public:
 
 	void newReduction() {
 		output.value() = std::unique_ptr<Hist>(
-			new Hist(output.name(), output.title().c_str(), nBins, xlow, xup)
+			new Hist(output.name().toString().c_str(), output.title().c_str(), nBins, xlow, xup)
 		);
 	}
 

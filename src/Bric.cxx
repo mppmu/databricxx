@@ -38,7 +38,7 @@ PropPath BricComponent::absolutePath() const {
 
 
 
-void Bric::Terminal::connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath) {
+void Bric::Terminal::connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) {
 	if (!sourcePath.empty()) throw runtime_error("Couldn't resolve source path %s during input lookup, terminal \"%s\" has no inner components"_format(sourcePath, absolutePath()));
 	else bric.connectOwnInputTo(inputName, *this);
 }
@@ -53,9 +53,9 @@ void Bric::InputTerminal::connectTo(Bric::Terminal &other) {
 
 
 
-const Name Bric::s_defaultInputName("input");
-const Name Bric::s_defaultOutputName("output");
-const Name Bric::s_bricTypeKey("type");
+const PropKey Bric::s_defaultInputName("input");
+const PropKey Bric::s_defaultOutputName("output");
+const PropKey Bric::s_bricTypeKey("type");
 
 
 std::unique_ptr<Bric> Bric::createBricFromTypeName(const std::string &className) {
@@ -95,7 +95,7 @@ bool Bric::isBricConfig(const PropVal& config) {
 
 void Bric::registerComponent(BricComponent* component) {
 	if (component->name() == s_bricTypeKey) throw invalid_argument("Can't add component with reserved name \"%s\" to bric \"%s\""_format(component->name(), absolutePath()));
-	if (component->name().empty()) throw invalid_argument("Can't register BricComponent with empty name in bric \"%s\""_format(absolutePath()));
+	if (component->name() == PropKey()) throw invalid_argument("Can't register BricComponent with empty name in bric \"%s\""_format(absolutePath()));
 
 	auto r = m_components.find(component->name());
 	if (r != m_components.end()) throw invalid_argument("Can't add duplicate component with name \"%s\" to bric \"%s\""_format(component->name(), absolutePath()));
@@ -157,7 +157,7 @@ void Bric::unregisterComponent(BricComponent* component) {
 }
 
 
-void Bric::addDynBric(Name bricName, const PropVal& config) {
+void Bric::addDynBric(PropKey bricName, const PropVal& config) {
 	if (!isBricConfig(config)) throw invalid_argument("Invalid configuration format for dynamic sub-bric \"%s\" in bric \"%s\""_format(bricName, absolutePath()));
 	dbrx_log_debug("Creating dynamic bric \"%s\" inside bric \"%s\""_format(bricName, absolutePath()));
 	Props subBricProps = config.asProps();
@@ -172,16 +172,16 @@ void Bric::addDynBric(Name bricName, const PropVal& config) {
 }
 
 
-void Bric::delDynBric(Name bricName) {
+void Bric::delDynBric(PropKey bricName) {
 	m_dynBrics.erase(m_dynBrics.find(bricName));
 	m_components.erase(m_components.find(bricName));
 }
 
 
-void Bric::connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath) {
+void Bric::connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) {
 	PropPath dfltSrc(s_defaultOutputName);
 	if (sourcePath.empty()) sourcePath = dfltSrc;
-	auto sourceName = sourcePath.front().asName();
+	auto sourceName = sourcePath.front();
 	auto found = m_components.find(sourceName);
 	if (found != m_components.end()) found->second->connectInputToInner(bric, inputName, sourcePath.tail());
 	else if (canHaveDynOutputs()) {
@@ -197,9 +197,9 @@ void Bric::connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment so
 }
 
 
-void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragment sourcePath) {
+void Bric::connectInputToSiblingOrUp(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) {
 	if (sourcePath.empty()) throw runtime_error("Empty source path while looking up source \"%s\" for input \"%s\" of bric \"%s\" inside bric \"%s\""_format(sourcePath, inputName, bric.absolutePath(), absolutePath()));
-	Name siblingName = sourcePath.front().asName();
+	PropKey siblingName = sourcePath.front();
 	if (siblingName == name()) connectInputToInner(bric, inputName, sourcePath.tail());
 	else {
 		if (hasParent()) {
@@ -217,7 +217,7 @@ void Bric::connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragm
 }
 
 
-void Bric::connectOwnInputTo(Name inputName, Terminal& terminal) {
+void Bric::connectOwnInputTo(PropKey inputName, Terminal& terminal) {
 	auto found = m_inputs.find(inputName);
 	if (found != m_inputs.end()) found->second->connectTo(terminal);
 	else throw invalid_argument("Can't connect non-existing input \"%s\" to terminal \"%s\""_format(inputName, terminal.absolutePath()));
@@ -272,7 +272,7 @@ void Bric::updateDeps() {
 void Bric::initRecursive() {
 	dbrx_log_debug("Recursively initialize bric \"%s\" (%s srcs, %s dests) and all inner brics"_format(absolutePath(), nSources(), nDests()));
 
-	m_tDirectory = unique_ptr<TDirectory>(new TDirectory(name(), title().c_str()));
+	m_tDirectory = unique_ptr<TDirectory>(new TDirectory(name().toString().c_str(), title().c_str()));
 	dbrx_log_debug("Created new TDirectory for bric \"%s\" with path \"%s\""_format(absolutePath(), localTDirectory()->GetPath()));
 	TempChangeOfTDirectory tDirChange(localTDirectory());
 
@@ -289,7 +289,7 @@ void Bric::initRecursive() {
 void Bric::applyConfig(const PropVal& config) {
 	dbrx_log_debug("Applying config to bric \"%s\""_format(absolutePath()));
 	for (const auto& entry: config.asProps()) {
-		Name componentName = entry.first.asName();
+		PropKey componentName = entry.first;
 		const PropVal& componentConfig = entry.second;
 		if (componentName != s_bricTypeKey) {
 			const auto& foundDynBric = m_dynBrics.find(componentName);
@@ -334,40 +334,40 @@ PropVal Bric::getConfig() const  {
 }
 
 
-const typename Bric::Bric& Bric::getBric(Name bricName) const {
+const typename Bric::Bric& Bric::getBric(PropKey bricName) const {
 	auto r = m_brics.find(bricName);
 	if (r == m_brics.end()) throw invalid_argument("No bric \"%s\" found in bric \"%s\""_format(bricName, absolutePath()));
 	else return *r->second;
 }
 
-typename Bric::Bric& Bric::getBric(Name bricName) {
+typename Bric::Bric& Bric::getBric(PropKey bricName) {
 	auto r = m_brics.find(bricName);
 	if (r == m_brics.end()) throw invalid_argument("No bric \"%s\" found in bric \"%s\""_format(bricName, absolutePath()));
 	else return *r->second;
 }
 
 
-const Bric::Terminal& Bric::getTerminal(Name terminalName) const {
+const Bric::Terminal& Bric::getTerminal(PropKey terminalName) const {
 	auto r = m_terminals.find(terminalName);
 	if (r == m_terminals.end()) throw invalid_argument("No terminal \"%s\" found in bric \"%s\""_format(terminalName, absolutePath()));
 	else return *r->second;
 }
 
-Bric::Terminal& Bric::getTerminal(Name terminalName) {
+Bric::Terminal& Bric::getTerminal(PropKey terminalName) {
 	auto r = m_terminals.find(terminalName);
 	if (r == m_terminals.end()) throw invalid_argument("No terminal \"%s\" found in bric \"%s\""_format(terminalName, absolutePath()));
 	else return *r->second;
 }
 
 
-const Bric::Terminal& Bric::getTerminal(Name terminalName, const std::type_info& typeInfo) const {
+const Bric::Terminal& Bric::getTerminal(PropKey terminalName, const std::type_info& typeInfo) const {
 	const Bric::Terminal& terminal = getTerminal(terminalName);
 	if (terminal.value().typeInfo() != typeInfo)
 		throw runtime_error("Type of terminal \"%s\" doesn't match requested type \"%s\""_format(terminal.absolutePath(), terminal.typeInfo().name()));
 	return terminal;
 }
 
-Bric::Terminal& Bric::getTerminal(Name terminalName, const std::type_info& typeInfo) {
+Bric::Terminal& Bric::getTerminal(PropKey terminalName, const std::type_info& typeInfo) {
 	Bric::Terminal& terminal = getTerminal(terminalName);
 	if (terminal.value().typeInfo() != typeInfo)
 		throw runtime_error("Type of terminal \"%s\" doesn't match requested type \"%s\""_format(terminal.absolutePath(), terminal.typeInfo().name()));
@@ -375,42 +375,42 @@ Bric::Terminal& Bric::getTerminal(Name terminalName, const std::type_info& typeI
 }
 
 
-const Bric::OutputTerminal& Bric::getOutput(Name outputName) const
+const Bric::OutputTerminal& Bric::getOutput(PropKey outputName) const
 	{ return dynamic_cast<const Bric::OutputTerminal&>(getTerminal(outputName)); }
 
-Bric::OutputTerminal& Bric::getOutput(Name outputName)
+Bric::OutputTerminal& Bric::getOutput(PropKey outputName)
 	{ return dynamic_cast<Bric::OutputTerminal&>(getTerminal(outputName)); }
 
-const Bric::OutputTerminal& Bric::getOutput(Name outputName, const std::type_info& typeInfo) const
+const Bric::OutputTerminal& Bric::getOutput(PropKey outputName, const std::type_info& typeInfo) const
 	{ return dynamic_cast<const Bric::OutputTerminal&>(getTerminal(outputName, typeInfo)); }
 
-Bric::OutputTerminal& Bric::getOutput(Name outputName, const std::type_info& typeInfo)
+Bric::OutputTerminal& Bric::getOutput(PropKey outputName, const std::type_info& typeInfo)
 	{ return dynamic_cast<Bric::OutputTerminal&>(getTerminal(outputName, typeInfo)); }
 
 
-const Bric::InputTerminal& Bric::getInput(Name inputName) const
+const Bric::InputTerminal& Bric::getInput(PropKey inputName) const
 	{ return dynamic_cast<const Bric::InputTerminal&>(getTerminal(inputName)); }
 
-Bric::InputTerminal& Bric::getInput(Name inputName)
+Bric::InputTerminal& Bric::getInput(PropKey inputName)
 	{ return dynamic_cast<Bric::InputTerminal&>(getTerminal(inputName)); }
 
-const Bric::InputTerminal& Bric::getInput(Name inputName, const std::type_info& typeInfo) const
+const Bric::InputTerminal& Bric::getInput(PropKey inputName, const std::type_info& typeInfo) const
 	{ return dynamic_cast<const Bric::InputTerminal&>(getTerminal(inputName, typeInfo)); }
 
-Bric::InputTerminal& Bric::getInput(Name inputName, const std::type_info& typeInfo)
+Bric::InputTerminal& Bric::getInput(PropKey inputName, const std::type_info& typeInfo)
 	{ return dynamic_cast<Bric::InputTerminal&>(getTerminal(inputName, typeInfo)); }
 
 
-const Bric::ParamTerminal& Bric::getParam(Name paramName) const
+const Bric::ParamTerminal& Bric::getParam(PropKey paramName) const
 	{ return dynamic_cast<const Bric::ParamTerminal&>(getTerminal(paramName)); }
 
-Bric::ParamTerminal& Bric::getParam(Name paramName)
+Bric::ParamTerminal& Bric::getParam(PropKey paramName)
 	{ return dynamic_cast<Bric::ParamTerminal&>(getTerminal(paramName)); }
 
-const Bric::ParamTerminal& Bric::getParam(Name paramName, const std::type_info& typeInfo) const
+const Bric::ParamTerminal& Bric::getParam(PropKey paramName, const std::type_info& typeInfo) const
 	{ return dynamic_cast<const Bric::ParamTerminal&>(getTerminal(paramName, typeInfo)); }
 
-Bric::ParamTerminal& Bric::getParam(Name paramName, const std::type_info& typeInfo)
+Bric::ParamTerminal& Bric::getParam(PropKey paramName, const std::type_info& typeInfo)
 	{ return dynamic_cast<Bric::ParamTerminal&>(getTerminal(paramName, typeInfo)); }
 
 

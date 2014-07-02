@@ -26,7 +26,7 @@
 
 #include <TDirectory.h>
 
-#include "Name.h"
+#include "Props.h"
 #include "HasValue.h"
 #include "logging.h"
 
@@ -40,16 +40,18 @@ class BricWithInputs;
 
 
 
-class BricComponent: public virtual HasName, public virtual Configurable {
+class BricComponent: public virtual Configurable {
 protected:
 	struct NotReconfigurable : public std::runtime_error { using std::runtime_error::runtime_error; };
 
-	virtual void connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath) = 0;
+	virtual void connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) = 0;
 
 	virtual void setParent(Bric *parentBric) = 0;
 
 public:
-	virtual void setName(Name componentName) = 0;
+	virtual PropKey name() const = 0;
+
+	virtual void setName(PropKey componentName) = 0;
 
 	PropPath absolutePath() const;
 
@@ -77,7 +79,7 @@ public:
 
 class BricComponentImpl: public virtual BricComponent {
 protected:
-	Name m_name;
+	PropKey m_key;
 	Bric *m_parent = nullptr;
 
 	std::string m_title;
@@ -85,10 +87,10 @@ protected:
 	virtual void setParent(Bric *parentBric);
 
 public:
-	Name name() const { return m_name; }
+	PropKey name() const { return m_key; }
 
-	void setName(Name componentName) {
-		if (!hasParent()) m_name = componentName;
+	void setName(PropKey componentName) {
+		if (!hasParent()) m_key = componentName;
 		else throw std::logic_error("Can't change name for component \"%s\" because it already has a parent"_format(absolutePath()));
 	}
 
@@ -104,9 +106,9 @@ public:
 
 	BricComponentImpl() {}
 
-	BricComponentImpl(Name componentName): m_name(componentName) {}
+	BricComponentImpl(PropKey componentName): m_key(componentName) {}
 
-	BricComponentImpl(Name componentName, std::string componentTitle)
+	BricComponentImpl(PropKey componentName, std::string componentTitle)
 		: BricComponentImpl(componentName) { m_title = std::move(componentTitle); }
 };
 
@@ -121,11 +123,11 @@ public:
 
 	class Terminal: public virtual BricComponent, public virtual HasValue {
 	protected:
-		virtual void connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath);
+		virtual void connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath);
 
 	public:
 		virtual OutputTerminal* createMatchingDynOutput(Bric* outputBric,
-			Name outputName, std::string outputTitle = "") = 0;
+			PropKey outputName, std::string outputTitle = "") = 0;
 	};
 
 
@@ -166,21 +168,21 @@ protected:
 	};
 
 
-	static const Name s_defaultInputName;
-	static const Name s_defaultOutputName;
-	static const Name s_bricTypeKey;
+	static const PropKey s_defaultInputName;
+	static const PropKey s_defaultOutputName;
+	static const PropKey s_bricTypeKey;
 
-	std::map<Name, BricComponent*> m_components;
-	std::map<Name, Bric*> m_brics;
-	std::map<Name, Terminal*> m_terminals;
-	std::map<Name, ParamTerminal*> m_params;
-	std::map<Name, OutputTerminal*> m_outputs;
-	std::map<Name, InputTerminal*> m_inputs;
+	std::map<PropKey, BricComponent*> m_components;
+	std::map<PropKey, Bric*> m_brics;
+	std::map<PropKey, Terminal*> m_terminals;
+	std::map<PropKey, ParamTerminal*> m_params;
+	std::map<PropKey, OutputTerminal*> m_outputs;
+	std::map<PropKey, InputTerminal*> m_inputs;
 
-	std::map<Name, std::unique_ptr<Bric>> m_dynBrics;
-	std::map<Name, std::string> m_dynBricClassNames;
+	std::map<PropKey, std::unique_ptr<Bric>> m_dynBrics;
+	std::map<PropKey, std::string> m_dynBricClassNames;
 
-	std::map<Name, std::unique_ptr<Terminal>> m_dynTerminals;
+	std::map<PropKey, std::unique_ptr<Terminal>> m_dynTerminals;
 
 	static std::unique_ptr<Bric> createBricFromTypeName(const std::string &className);
 
@@ -188,12 +190,12 @@ protected:
 
 	bool isBricConfig(const PropVal& config);
 
-	virtual void addDynBric(Name bricName, const PropVal& config);
-	virtual void delDynBric(Name bricName);
+	virtual void addDynBric(PropKey bricName, const PropVal& config);
+	virtual void delDynBric(PropKey bricName);
 
-	virtual void connectInputToInner(Bric &bric, Name inputName, PropPath::Fragment sourcePath);
-	virtual void connectInputToSiblingOrUp(Bric &bric, Name inputName, PropPath::Fragment sourcePath);
-	virtual void connectOwnInputTo(Name inputName, Terminal& terminal);
+	virtual void connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath);
+	virtual void connectInputToSiblingOrUp(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath);
+	virtual void connectOwnInputTo(PropKey inputName, Terminal& terminal);
 
 	// Must always be called for a whole set of interdependent sibling brics
 	void disconnectInputs();
@@ -209,7 +211,7 @@ public:
 		: public virtual Terminal, public virtual HasTypedValue<T>
 	{
 		OutputTerminal* createMatchingDynOutput(Bric* outputBric,
-			Name outputName, std::string outputTitle = "");
+			PropKey outputName, std::string outputTitle = "");
 	};
 
 	template <typename T> class TypedOutputTerminal
@@ -278,7 +280,7 @@ public:
 			{ TypedParamTerminal<T>::operator=(std::move(v)); return *this; }
 
 
-		Param(Bric *parentBric, Name paramName, std::string paramTitle = "", T defaultValue = T())
+		Param(Bric *parentBric, PropKey paramName, std::string paramTitle = "", T defaultValue = T())
 			: BricComponentImpl(paramName, std::move(paramTitle))
 		{
 			value() = std::move(defaultValue);
@@ -303,36 +305,36 @@ public:
 	virtual bool canHaveDynBrics() { return false; }
 
 
-	virtual const Bric& getBric(Name bricName) const;
-	virtual Bric& getBric(Name bricName);
+	virtual const Bric& getBric(PropKey bricName) const;
+	virtual Bric& getBric(PropKey bricName);
 
 
-	virtual const Terminal& getTerminal(Name terminalName) const;
-	virtual Terminal& getTerminal(Name terminalName);
+	virtual const Terminal& getTerminal(PropKey terminalName) const;
+	virtual Terminal& getTerminal(PropKey terminalName);
 
-	virtual const Terminal& getTerminal(Name terminalName, const std::type_info& typeInfo) const;
-	virtual Terminal& getTerminal(Name terminalName, const std::type_info& typeInfo);
-
-
-	virtual const OutputTerminal& getOutput(Name outputName) const;
-	virtual OutputTerminal& getOutput(Name outputName);
-
-	virtual const OutputTerminal& getOutput(Name outputName, const std::type_info& typeInfo) const;
-	virtual OutputTerminal& getOutput(Name outputName, const std::type_info& typeInfo);
+	virtual const Terminal& getTerminal(PropKey terminalName, const std::type_info& typeInfo) const;
+	virtual Terminal& getTerminal(PropKey terminalName, const std::type_info& typeInfo);
 
 
-	virtual const InputTerminal& getInput(Name outputName) const;
-	virtual InputTerminal& getInput(Name outputName);
+	virtual const OutputTerminal& getOutput(PropKey outputName) const;
+	virtual OutputTerminal& getOutput(PropKey outputName);
 
-	virtual const InputTerminal& getInput(Name outputName, const std::type_info& typeInfo) const;
-	virtual InputTerminal& getInput(Name outputName, const std::type_info& typeInfo);
+	virtual const OutputTerminal& getOutput(PropKey outputName, const std::type_info& typeInfo) const;
+	virtual OutputTerminal& getOutput(PropKey outputName, const std::type_info& typeInfo);
 
 
-	virtual const ParamTerminal& getParam(Name outputName) const;
-	virtual ParamTerminal& getParam(Name outputName);
+	virtual const InputTerminal& getInput(PropKey outputName) const;
+	virtual InputTerminal& getInput(PropKey outputName);
 
-	virtual const ParamTerminal& getParam(Name outputName, const std::type_info& typeInfo) const;
-	virtual ParamTerminal& getParam(Name outputName, const std::type_info& typeInfo);
+	virtual const InputTerminal& getInput(PropKey outputName, const std::type_info& typeInfo) const;
+	virtual InputTerminal& getInput(PropKey outputName, const std::type_info& typeInfo);
+
+
+	virtual const ParamTerminal& getParam(PropKey outputName) const;
+	virtual ParamTerminal& getParam(PropKey outputName);
+
+	virtual const ParamTerminal& getParam(PropKey outputName, const std::type_info& typeInfo) const;
+	virtual ParamTerminal& getParam(PropKey outputName, const std::type_info& typeInfo);
 
 	virtual bool canHaveDynOutputs() const { return false; }
 	void addDynOutput(std::unique_ptr<OutputTerminal> terminal);
@@ -518,8 +520,8 @@ public:
 class BricImpl: public virtual Bric, public BricComponentImpl {
 public:
 	BricImpl() {}
-	BricImpl(Name bricName): BricComponentImpl(bricName) {}
-	BricImpl(Bric *parentBric, Name bricName, std::string bricTitle = "")
+	BricImpl(PropKey bricName): BricComponentImpl(bricName) {}
+	BricImpl(Bric *parentBric, PropKey bricName, std::string bricTitle = "")
 		: BricComponentImpl(bricName, bricTitle) { setParent(parentBric); }
 
 	~BricImpl() { setParent(nullptr); }
@@ -567,14 +569,14 @@ public:
 			{ TypedOutputTerminal<T>::operator=(std::move(v)); return *this; }
 
 
-		Output(BricWithOutputs *parentBric, Name outputName = Name(), std::string outputTitle = "")
+		Output(BricWithOutputs *parentBric, PropKey outputName = PropKey(), std::string outputTitle = "")
 			: BricComponentImpl(outputName, std::move(outputTitle))
 		{
-			if (name().empty()) m_name = s_defaultOutputName;
+			if (name() == PropKey()) m_key = s_defaultOutputName;
 			setParent(parentBric);
 		}
 
-		template<typename U> Output(BricWithOutputs *parentBric, Name outputName,
+		template<typename U> Output(BricWithOutputs *parentBric, PropKey outputName,
 			std::string outputTitle, U&& defaultValue) : Output(parentBric, outputName, outputTitle)
 			{ value() = std::forward<U>(defaultValue); }
 
@@ -605,10 +607,10 @@ public:
 
 		virtual const PropPath& source() { return m_source; }
 
-		Input(BricWithInputs *parentBric, Name inputName = Name(), std::string inputTitle = "")
+		Input(BricWithInputs *parentBric, PropKey inputName = PropKey(), std::string inputTitle = "")
 			: BricComponentImpl(inputName, std::move(inputTitle))
 		{
-			if (name().empty()) m_name = s_defaultInputName;
+			if (name() == PropKey()) m_key = s_defaultInputName;
 			setParent(parentBric);
 		}
 
@@ -637,7 +639,7 @@ public:
 
 
 template <typename T> Bric::OutputTerminal* Bric::TypedTerminal<T>::createMatchingDynOutput (
-	Bric* outputBric, Name outputName, std::string outputTitle
+	Bric* outputBric, PropKey outputName, std::string outputTitle
 ) {
 	std::unique_ptr<Bric::OutputTerminal> terminal (
 		new typename BricWithOutputs::Output<T>(nullptr, outputName, outputTitle)
