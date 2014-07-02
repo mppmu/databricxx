@@ -135,8 +135,16 @@ public:
 
 
 	class InputTerminal: public virtual Terminal, public virtual HasConstValueRef {
+	protected:
+		virtual void setSrcTerminal(const Terminal* terminal) = 0;
+		virtual void setEffSrcBric(const Bric* bric) = 0;
+
 	public:
-		virtual const PropPath& source() = 0;
+		virtual const PropPath& source() const = 0;
+
+		virtual const Terminal* srcTerminal() const = 0;
+
+		virtual const Bric* effSrcBric() const = 0;
 
 		void connectTo(Terminal &other);
 	};
@@ -375,7 +383,7 @@ protected:
 
 	std::atomic<size_t> m_nSourcesFinished;
 
-	void addSource(Bric &source);
+	Bric* addSource(Bric *source);
 
 	bool hasSources() const { return ! m_sources.empty(); }
 	size_t nSources() const { return m_sources.size(); }
@@ -597,6 +605,11 @@ public:
 	{
 	protected:
 		PropPath m_source;
+		const Bric* m_effSrcBric;
+		const Terminal *m_srcTerminal;
+
+		void setSrcTerminal(const Terminal* terminal) { m_srcTerminal = terminal; }
+		void setEffSrcBric(const Bric* bric) { m_effSrcBric = bric; }
 
 	public:
 		using HasTypedConstValueRefImpl<T>::value;
@@ -605,7 +618,11 @@ public:
 		virtual void applyConfig(const PropVal& config) { m_source = config; }
 		virtual PropVal getConfig() const  { return m_source; }
 
-		virtual const PropPath& source() { return m_source; }
+		const PropPath& source() const { return m_source; }
+
+		const Terminal* srcTerminal() const { return m_srcTerminal; }
+
+		const Bric* effSrcBric() const { return m_effSrcBric; }
 
 		Input(BricWithInputs *parentBric, PropKey inputName = PropKey(), std::string inputTitle = "")
 			: BricComponentImpl(inputName, std::move(inputTitle))

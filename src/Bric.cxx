@@ -48,7 +48,8 @@ void Bric::Terminal::connectInputToInner(Bric &bric, PropKey inputName, PropPath
 void Bric::InputTerminal::connectTo(Bric::Terminal &other) {
 	dbrx_log_trace("Connecting input terminal \"%s\" to terminal \"%s\"", absolutePath(), other.absolutePath());
 	value().referTo(other.value());
-	parent().addSource(other.parent());
+	setSrcTerminal(&other);
+	setEffSrcBric( parent().addSource(&other.parent()) );
 }
 
 
@@ -457,9 +458,9 @@ std::ostream & Bric::printInfo(std::ostream &os) const {
 }
 
 
-void Bric::addSource(Bric &source) {
+Bric* Bric::addSource(Bric *source) {
 	Bric* dstBric = this;
-	Bric* srcBric = &source;
+	Bric* srcBric = source;
 
 	size_t dstDepth = dstBric->hierarchyLevel();
 	size_t srcDepth = srcBric->hierarchyLevel();
@@ -477,7 +478,8 @@ void Bric::addSource(Bric &source) {
 		dbrx_log_trace("Establishing source/dest relationship between brics \"%s\" and \"%s\"", dstBric->absolutePath(), srcBric->absolutePath());
 		dstBric->m_sources.push_back(srcBric);
 		srcBric->m_dests.push_back(dstBric);
-	} else throw invalid_argument("Can't establish source/dest relationship between unrelated brics \"%s\" and \"%s\""_format(absolutePath(), source.absolutePath()));
+		return srcBric;
+	} else throw invalid_argument("Can't establish source/dest relationship between unrelated brics \"%s\" and \"%s\""_format(absolutePath(), source->absolutePath()));
 }
 
 
