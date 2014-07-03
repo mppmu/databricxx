@@ -30,7 +30,7 @@ namespace dbrx {
 class NameTable;
 
 
-class Name {
+class Name final {
 protected:
 	static const std::string s_emptyString;
 

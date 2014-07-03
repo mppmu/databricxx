@@ -36,7 +36,7 @@ namespace dbrx {
 class PropVal;
 
 
-class PropKey {
+class PropKey final {
 public:
 	enum class Type: int32_t {
 		INTEGER = 2,
@@ -226,7 +226,7 @@ inline void assign_from(std::string &to, const PropKey &from) { to = from.toStri
 using Prop = std::pair<const PropKey, PropVal>;
 
 
-class PropVal {
+class PropVal final {
 public:
 	enum class Type: int32_t {
 		NONE = 0,
@@ -787,7 +787,7 @@ using Props = PropVal::Props;
 
 
 
-class PropPath {
+class PropPath final {
 public:
 	using Elements = std::vector<PropKey>;
 protected:
@@ -797,7 +797,7 @@ public:
 	using iterator = Elements::iterator;
 	using const_iterator = Elements::const_iterator;
 
-	class Fragment {
+	class Fragment final {
 	public:
 		using const_iterator = typename PropPath::const_iterator;
 		using size_type = typename const_iterator::difference_type;
