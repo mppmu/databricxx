@@ -29,8 +29,8 @@ namespace dbrx {
 
 class Value {
 public:
-	virtual bool valid() = 0;
-	virtual bool empty() = 0;
+	virtual bool valid() const = 0;
+	virtual bool empty() const = 0;
 
 	virtual const std::type_info& typeInfo() const = 0;
 
@@ -88,7 +88,7 @@ public:
 
 class PrimaryValue: public virtual WritableValue {
 public:
-	bool valid() { return true; }
+	bool valid() const final override { return true; }
 
 	friend void swap(PrimaryValue &a, PrimaryValue &b)
 		{ swap(static_cast<WritableValue &>(a), static_cast<WritableValue &>(b)); }
@@ -127,13 +127,12 @@ public:
 	virtual const T* operator->() const = 0;
 	virtual const T& get() const = 0;
 
-	virtual const T* const * typedPPtr() const = 0;
-
 	virtual const T* const * pptr() const = 0;
 
 	virtual const T* ptr() const = 0;
 
-	PropVal toPropVal() const { PropVal p; assignToPropVal(p, get(), PropValConvSpecial()); return p; }
+	PropVal toPropVal() const final override
+		{ PropVal p; assignToPropVal(p, get(), PropValConvSpecial()); return p; }
 
 	friend bool operator==(const TypedValue &a, const T &b) { return a.get() == b; }
 	friend bool operator==(const T &a, const TypedValue &b) { return a == b.get(); }
@@ -154,14 +153,12 @@ public:
 	virtual T* operator->() = 0;
 	virtual T& get() = 0;
 
-	virtual T* * typedPPtr() = 0;
-
 	virtual T* * pptr() = 0;
 
 	virtual T* ptr() = 0;
 
-	void setToDefault() { operator=(std::unique_ptr<T>( new T() )); }
-	void clear() { operator=(std::unique_ptr<T>((T*)nullptr)); }
+	void setToDefault() final override { operator=(std::unique_ptr<T>( new T() )); }
+	void clear() final override { operator=(std::unique_ptr<T>((T*)nullptr)); }
 
 	TypedWritableValue<T>& operator=(const T &v) {
 		if (ptr() != nullptr) *ptr() = v;
@@ -183,7 +180,8 @@ public:
 		return *this;
 	}
 
-	void fromPropVal(const PropVal &p) { assignFromPropVal(get(), p, PropValConvSpecial()); }
+	void fromPropVal(const PropVal &p) final override
+		{ assignFromPropVal(get(), p, PropValConvSpecial()); }
 
 	friend void swap(TypedWritableValue &a, TypedWritableValue &b)
 		{ swap(static_cast<WritableValue &>(a), static_cast<WritableValue &>(b)); }
@@ -195,32 +193,32 @@ template <typename T> class TypedValueRef;
 
 
 
-template <typename T> class TypedPrimaryValue: public virtual PrimaryValue, public virtual TypedWritableValue<T> {
+template <typename T> class TypedPrimaryValue final
+	: public virtual PrimaryValue, public virtual TypedWritableValue<T>
+{
 protected:
 	T* m_value = nullptr;
 
 public:
-	bool empty() { return m_value == nullptr; }
+	bool empty() const final override { return m_value == nullptr; }
 
-	operator const T& () const { return *m_value; }
-	operator T& () { return *m_value; }
-	const T* operator->() const { return m_value; }
-	T* operator->() { return m_value; }
-	const T& get() const { return *m_value; }
-	T& get() { return *m_value; }
+	operator const T& () const final override { return *m_value; }
+	operator T& () final override { return *m_value; }
+	const T* operator->() const final override { return m_value; }
+	T* operator->() final override { return m_value; }
+	const T& get() const final override { return *m_value; }
+	T& get() final override { return *m_value; }
 
-	const std::type_info& typeInfo() const { return typeid(T); }
+	const std::type_info& typeInfo() const final override { return typeid(T); }
 
-	const void* const * untypedPPtr() const { return (const void* const *) &m_value; }
-	void* * untypedPPtr() { return (void* *)(&m_value); }
-	const T* const * typedPPtr() const { return (const T* const *) &m_value; }
-	T* * typedPPtr() { return (T* *) &m_value; }
+	const void* const * untypedPPtr() const final override { return (const void* const *) &m_value; }
+	void* * untypedPPtr() final override { return (void* *)(&m_value); }
 
-	const T* const * pptr() const { return &m_value; }
-	T* * pptr() { return &m_value; }
+	const T* const * pptr() const final override { return &m_value; }
+	T* * pptr() final override { return &m_value; }
 
-	const T* ptr() const { return m_value; }
-	T* ptr() { return m_value; }
+	const T* ptr() const final override { return m_value; }
+	T* ptr() final override { return m_value; }
 
 	TypedPrimaryValue<T>& operator=(const T &v)
 		{ TypedWritableValue<T>::operator=(v); return *this; }
@@ -248,7 +246,7 @@ public:
 
 	TypedPrimaryValue(std::unique_ptr<T> &&v) = delete;
 
-	~TypedPrimaryValue() { if (m_value != nullptr) delete m_value; }
+	~TypedPrimaryValue() override { if (m_value != nullptr) delete m_value; }
 
 	friend void swap(TypedPrimaryValue &a, TypedPrimaryValue &b)
 		{ swap(static_cast<PrimaryValue &>(a), static_cast<PrimaryValue &>(b)); }
@@ -256,36 +254,36 @@ public:
 
 
 
-template <typename T> class TypedValueRef: public virtual ValueRef, public virtual TypedWritableValue<T> {
+template <typename T> class TypedValueRef final
+	: public virtual ValueRef, public virtual TypedWritableValue<T>
+{
 protected:
 	T* * m_value = nullptr;
 
 public:
-	bool valid() { return (m_value != nullptr); }
-	bool empty() { return *m_value == nullptr; }
+	bool valid() const final override { return (m_value != nullptr); }
+	bool empty() const final override { return *m_value == nullptr; }
 
-	operator const T& () const { return **m_value; }
-	operator T& () { return **m_value; }
-	const T* operator->() const { return *m_value; }
-	T* operator->() { return *m_value; }
-	const T& get() const { return **m_value; }
-	T& get() { return **m_value; }
+	operator const T& () const final override { return **m_value; }
+	operator T& () final override { return **m_value; }
+	const T* operator->() const final override { return *m_value; }
+	T* operator->() final override { return *m_value; }
+	const T& get() const final override { return **m_value; }
+	T& get() final override { return **m_value; }
 
-	void referTo(WritableValue &source)
+	void referTo(WritableValue &source) final override
 		{ m_value = source.typedPPtr<T>(); }
 
-	const std::type_info& typeInfo() const { return typeid(T); }
+	const std::type_info& typeInfo() const final override { return typeid(T); }
 
-	const void* const * untypedPPtr() const { return (const void* const *) m_value; }
-	void* * untypedPPtr() { return (void* *)(m_value); }
-	const T* const * typedPPtr() const { return m_value; }
-	T* * typedPPtr() { return (T* *) m_value; }
+	const void* const * untypedPPtr() const final override { return (const void* const *) m_value; }
+	void* * untypedPPtr() final override { return (void* *)(m_value); }
 
-	const T* const * pptr() const { return m_value; }
-	T* * pptr() { return m_value; }
+	const T* const * pptr() const final override { return m_value; }
+	T* * pptr() final override { return m_value; }
 
-	const T* ptr() const { return *m_value; }
-	T* ptr() { return *m_value; }
+	const T* ptr() const final override { return *m_value; }
+	T* ptr() final override { return *m_value; }
 
 	TypedValueRef<T>& operator=(const T &v)
 		{ TypedWritableValue<T>::operator=(v); return *this; }
@@ -315,29 +313,30 @@ public:
 
 
 
-template <typename T> class TypedConstValueRef: public virtual ConstValueRef, public virtual TypedValue<T> {
+template <typename T> class TypedConstValueRef final
+	: public virtual ConstValueRef, public virtual TypedValue<T>
+{
 protected:
 	const T* const * m_value = nullptr;
 
 public:
-	bool valid() { return (m_value != nullptr); }
-	bool empty() { return *m_value == nullptr; }
+	bool valid() const final override { return (m_value != nullptr); }
+	bool empty() const final override { return *m_value == nullptr; }
 
-	operator const T& () const { return **m_value; }
-	const T* operator->() const { return *m_value; }
-	const T& get() const { return **m_value; }
+	operator const T& () const final override { return **m_value; }
+	const T* operator->() const final override { return *m_value; }
+	const T& get() const final override { return **m_value; }
 
-	void referTo(const Value &source)
+	void referTo(const Value &source) final override
 		{ m_value = source.typedPPtr<T>(); }
 
-	const std::type_info& typeInfo() const { return typeid(T); }
+	const std::type_info& typeInfo() const final override { return typeid(T); }
 
-	const void* const * untypedPPtr() const { return (const void* const *) m_value; }
-	const T* const * typedPPtr() const { return m_value; }
+	const void* const * untypedPPtr() const final override { return (const void* const *) m_value; }
 
-	const T* const * pptr() const { return m_value; }
+	const T* const * pptr() const final override { return m_value; }
 
-	const T* ptr() const { return *m_value; }
+	const T* ptr() const final override { return *m_value; }
 
 	TypedConstValueRef<T>& operator=(const TypedConstValueRef<T>& v) = delete;
 	TypedConstValueRef<T>& operator=(TypedConstValueRef<T> &&v) = delete;
