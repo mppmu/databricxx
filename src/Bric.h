@@ -126,6 +126,9 @@ public:
 	public:
 		virtual OutputTerminal* createMatchingDynOutput(Bric* outputBric,
 			PropKey outputName, std::string outputTitle = "") = 0;
+
+		virtual InputTerminal* createMatchingDynInput(Bric* inputBric,
+			PropKey inputName, std::string inputTitle = "") = 0;
 	};
 
 
@@ -204,7 +207,7 @@ protected:
 	void connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) override;
 
 	virtual void connectInputToSiblingOrUp(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath);
-	virtual void connectOwnInputTo(PropKey inputName, Terminal& terminal);
+	virtual void connectOwnInputTo(PropKey inputName, Terminal& source);
 
 	// Must always be called for a whole set of interdependent sibling brics
 	virtual void disconnectInputs() final;
@@ -220,6 +223,9 @@ public:
 	{
 		OutputTerminal* createMatchingDynOutput(Bric* outputBric,
 			PropKey outputName, std::string outputTitle = "") override;
+
+		InputTerminal* createMatchingDynInput(Bric* inputBric,
+			PropKey inputName, std::string inputTitle = "") override;
 	};
 
 	template <typename T> class TypedOutputTerminal
@@ -349,6 +355,7 @@ public:
 	virtual void addDynOutput(std::unique_ptr<OutputTerminal> terminal) final;
 
 	virtual bool canHaveDynInputs() const { return false; }
+	virtual void addDynInput(std::unique_ptr<InputTerminal> terminal) final;
 
 
 	virtual TDirectory* localTDirectory() final { return m_tDirectory.get(); }
@@ -670,6 +677,17 @@ template <typename T> Bric::OutputTerminal* Bric::TypedTerminal<T>::createMatchi
 	return termPtr;
 }
 
+
+template <typename T> Bric::InputTerminal* Bric::TypedTerminal<T>::createMatchingDynInput (
+	Bric* inputBric, PropKey inputName, std::string inputTitle
+) {
+	std::unique_ptr<Bric::InputTerminal> terminal (
+		new typename BricWithInputs::Input<T>(nullptr, inputName, inputTitle)
+	);
+	InputTerminal* termPtr = terminal.get();
+	inputBric->addDynInput(std::move(terminal));
+	return termPtr;
+}
 
 
 

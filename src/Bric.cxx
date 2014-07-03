@@ -218,10 +218,14 @@ void Bric::connectInputToSiblingOrUp(Bric &bric, PropKey inputName, PropPath::Fr
 }
 
 
-void Bric::connectOwnInputTo(PropKey inputName, Terminal& terminal) {
+void Bric::connectOwnInputTo(PropKey inputName, Terminal& source) {
 	auto found = m_inputs.find(inputName);
-	if (found != m_inputs.end()) found->second->connectTo(terminal);
-	else throw invalid_argument("Can't connect non-existing input \"%s\" to terminal \"%s\""_format(inputName, terminal.absolutePath()));
+	if (found != m_inputs.end()) found->second->connectTo(source);
+	else if (canHaveDynInputs()) {
+		dbrx_log_trace("Creating dynamic input terminal \"%s\" for source \"%s\" in bric \"%s\"", inputName, source.absolutePath(), absolutePath());
+		InputTerminal *input = source.createMatchingDynInput(this, inputName);
+		input->connectTo(source);
+	} else throw invalid_argument("Can't connect non-existing input \"%s\" to terminal \"%s\""_format(inputName, source.absolutePath()));
 }
 
 
@@ -421,6 +425,15 @@ void Bric::addDynOutput(std::unique_ptr<Bric::OutputTerminal> terminal) {
 		Terminal* termPtr = terminal.get();
 		m_dynTerminals[termPtr->name()] = std::move(terminal);
 	} else throw runtime_error("Bric \"%s\" cannot have dynamic outputs"_format(absolutePath()));
+}
+
+
+void Bric::addDynInput(std::unique_ptr<Bric::InputTerminal> terminal) {
+	if (canHaveDynInputs()) {
+		terminal->setParent(this);
+		Terminal* termPtr = terminal.get();
+		m_dynTerminals[termPtr->name()] = std::move(terminal);
+	} else throw runtime_error("Bric \"%s\" cannot have dynamic Inputs"_format(absolutePath()));
 }
 
 
