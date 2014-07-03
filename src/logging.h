@@ -151,8 +151,8 @@ public:
 
 	void logNothing() {}
 
-	virtual void applyConfig(const PropVal& config);
-	virtual PropVal getConfig() const;
+	void applyConfig(const PropVal& config) override;
+	PropVal getConfig() const override;
 
 	LoggingFacility();
 	virtual ~LoggingFacility() {}
