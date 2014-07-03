@@ -30,7 +30,7 @@ namespace dbrx {
 
 class MRBric: public TransformBric {
 protected:
-	struct ExecLayer {
+	struct ExecLayer final {
 		std::vector<Bric*> brics;
 		bool m_execFinished = false;
 
@@ -55,6 +55,15 @@ protected:
 		}
 	};
 
+
+	static std::unordered_map<Bric*, size_t> calcBricGraphLayers(const std::vector<Bric*> &brics);
+
+	static void sortBricsByName(std::vector<Bric*> &brics) {
+		using namespace std;
+		sort(brics.begin(), brics.end(), [](Bric *a, Bric *b) { return a->name() < b->name(); });
+	}
+
+
 	bool m_innerExecFinished = false;
 	bool m_runningDown = true;
 
@@ -65,37 +74,31 @@ protected:
 	LIter m_currentLayer;
 	LIter m_bottomLayer;
 
-	size_t currentLayerNo() { return  m_currentLayer - m_execLayers.begin(); }
+	virtual size_t currentLayerNo() final { return  m_currentLayer - m_execLayers.begin(); }
 
-	void moveUpOneLayer() {
+	virtual void moveUpOneLayer() final {
 		--m_currentLayer;
 		dbrx_log_trace("Moving up to exec layer %s in bric \"%s\"",currentLayerNo(), absolutePath());
 	}
 
-	void moveDownOneLayer() {
+	virtual void moveDownOneLayer() final {
 		++m_currentLayer;
 		dbrx_log_trace("Moving down to exec layer %s in bric \"%s\"", currentLayerNo(), absolutePath());
 	}
 
-	static std::unordered_map<Bric*, size_t> calcBricGraphLayers(const std::vector<Bric*> &brics);
 
-	static void sortBricsByName(std::vector<Bric*> &brics) {
-		using namespace std;
-		sort(brics.begin(), brics.end(), [](Bric *a, Bric *b) { return a->name() < b->name(); });
-	}
+	void init() override;
 
-	void init();
-
-	bool processingStep();
+	virtual bool processingStep() final;
 
 public:
-	void resetExec();
+	void resetExec() override;
 
-	void clear() { m_execLayers.clear(); }
+	void processInput() override;
 
-	void processInput();
+	virtual void clear() final { m_execLayers.clear(); }
 
-	void run();
+	virtual void run() final;
 
 	using TransformBric::TransformBric;
 };
