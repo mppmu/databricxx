@@ -53,22 +53,22 @@ public:
 
 	virtual void setName(PropKey componentName) = 0;
 
-	PropPath absolutePath() const;
+	virtual PropPath absolutePath() const final;
 
-	size_t hierarchyLevel() const;
+	virtual size_t hierarchyLevel() const final;
 
 	virtual bool hasParent() const = 0;
 
 	virtual const Bric& parent() const = 0;
 	virtual Bric& parent() = 0;
 
-	bool siblingOf(BricComponent &other) const
+	virtual bool siblingOf(BricComponent &other) const final
 		{ return hasParent() && other.hasParent() && (&parent() == &other.parent()); }
 
 	virtual const std::string& title() const = 0;
 	virtual void setTitle(std::string newTitle) = 0;
 
-	bool isInside(const Bric& other) const;
+	virtual bool isInside(const Bric& other) const final;
 
 	BricComponent& operator=(const BricComponent& v) = delete;
 	BricComponent& operator=(BricComponent &&v) = delete;
@@ -84,25 +84,23 @@ protected:
 
 	std::string m_title;
 
-	virtual void setParent(Bric *parentBric);
+	void setParent(Bric *parentBric) final override;
 
 public:
-	PropKey name() const { return m_key; }
+	PropKey name() const final override { return m_key; }
 
-	void setName(PropKey componentName) {
+	void setName(PropKey componentName) final override {
 		if (!hasParent()) m_key = componentName;
 		else throw std::logic_error("Can't change name for component \"%s\" because it already has a parent"_format(absolutePath()));
 	}
 
-	bool hasParent() const { return m_parent != nullptr; }
+	bool hasParent() const final override { return m_parent != nullptr; }
 
-	const std::string& title() const { return m_title; }
-	void setTitle(std::string newTitle) { m_title = std::move(newTitle); }
+	const std::string& title() const final override { return m_title; }
+	void setTitle(std::string newTitle) final override { m_title = std::move(newTitle); }
 
-	const Bric& parent() const { return *m_parent; }
-	Bric& parent() { return *m_parent; }
-
-	virtual bool syncedInput() const { return false; }
+	const Bric& parent() const final override { return *m_parent; }
+	Bric& parent() final override { return *m_parent; }
 
 	BricComponentImpl() {}
 
@@ -123,7 +121,7 @@ public:
 
 	class Terminal: public virtual BricComponent, public virtual HasValue {
 	protected:
-		virtual void connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath);
+		void connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) override;
 
 	public:
 		virtual OutputTerminal* createMatchingDynOutput(Bric* outputBric,
@@ -146,14 +144,14 @@ public:
 
 		virtual const Bric* effSrcBric() const = 0;
 
-		void connectTo(Terminal &other);
+		virtual void connectTo(Terminal &other) final;
 	};
 
 
 	class ParamTerminal : public virtual Terminal, public virtual HasWritableValue {};
 
 protected:
-	class TempChangeOfTDirectory {
+	class TempChangeOfTDirectory final {
 	protected:
 		TDirectory* m_prev = nullptr;
 
@@ -180,6 +178,9 @@ protected:
 	static const PropKey s_defaultOutputName;
 	static const PropKey s_bricTypeKey;
 
+	static std::unique_ptr<Bric> createBricFromTypeName(const std::string &className);
+
+
 	std::map<PropKey, BricComponent*> m_components;
 	std::map<PropKey, Bric*> m_brics;
 	std::map<PropKey, Terminal*> m_terminals;
@@ -192,27 +193,26 @@ protected:
 
 	std::map<PropKey, std::unique_ptr<Terminal>> m_dynTerminals;
 
-	static std::unique_ptr<Bric> createBricFromTypeName(const std::string &className);
-
 	std::unique_ptr<TDirectory> m_tDirectory;
 
-	bool isBricConfig(const PropVal& config);
+
+	virtual bool isBricConfig(const PropVal& config) final;
 
 	virtual void addDynBric(PropKey bricName, const PropVal& config);
 	virtual void delDynBric(PropKey bricName);
 
-	virtual void connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath);
+	void connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) override;
+
 	virtual void connectInputToSiblingOrUp(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath);
 	virtual void connectOwnInputTo(PropKey inputName, Terminal& terminal);
 
 	// Must always be called for a whole set of interdependent sibling brics
-	void disconnectInputs();
+	virtual void disconnectInputs() final;
 
-	void connectInputs();
-	void updateDeps();
+	virtual void connectInputs() final;
+	virtual void updateDeps() final;
 
-	void connectInputsRecursive();
-	void initRecursive();
+	virtual void initRecursive() final;
 
 public:
 	template <typename T> class TypedTerminal
@@ -226,8 +226,10 @@ public:
 		: public virtual TypedTerminal<T>, public virtual OutputTerminal, public virtual HasTypedWritableValue<T>
 	{
 	public:
-		virtual void applyConfig(const PropVal& config) { if (!config.isNone()) throw std::invalid_argument("Output is not configurable"); }
-		virtual PropVal getConfig() const  { return PropVal(); }
+		void applyConfig(const PropVal& config) final override
+			{ if (!config.isNone()) throw std::invalid_argument("Output is not configurable"); }
+
+		PropVal getConfig() const final override { return PropVal(); }
 
 		TypedOutputTerminal<T>& operator=(const T &v)
 			{ HasTypedWritableValue<T>::operator=(v); return *this; }
@@ -259,14 +261,14 @@ public:
 	};
 
 
-	template <typename T> class Param
+	template <typename T> class Param final
 		: public virtual TypedParamTerminal<T>, public BricComponentImpl, public HasTypedPrimaryValueImpl<T>
 	{
 	public:
 		using HasTypedPrimaryValueImpl<T>::value;
 		using HasTypedPrimaryValueImpl<T>::typeInfo;
 
-		virtual void applyConfig(const PropVal& config) {
+		void applyConfig(const PropVal& config) final override {
 			PropVal currCfg = getConfig();
 			if (currCfg.isProps() && config.isProps())
 				assign_from(value().get(), currCfg.asProps() + config.asProps());
@@ -274,7 +276,8 @@ public:
 				assign_from(value().get(), config);
 		}
 
-		virtual PropVal getConfig() const { PropVal config; assign_from(config, value().get()); return config; }
+		PropVal getConfig() const final override
+			{ PropVal config; assign_from(config, value().get()); return config; }
 
 		Param<T>& operator=(const Param<T>& v) = delete;
 
@@ -297,67 +300,65 @@ public:
 
 		Param(const Param &other) = delete;
 
-		~Param() { setParent(nullptr); }
+		~Param() override { setParent(nullptr); }
 	};
 
 
-	virtual void applyConfig(const PropVal& config);
-	virtual PropVal getConfig() const;
+	void applyConfig(const PropVal& config) override;
+	PropVal getConfig() const override;
 
-	void registerComponent(BricComponent* component);
-	void unregisterComponent(BricComponent* component);
+	virtual void registerComponent(BricComponent* component);
+	virtual void unregisterComponent(BricComponent* component);
 
 	virtual bool canHaveInputs() const { return false; }
 	virtual bool canHaveOutputs() const { return false; }
 
-	virtual bool canHaveDynBrics() { return false; }
+
+	virtual const Bric& getBric(PropKey bricName) const final;
+	virtual Bric& getBric(PropKey bricName) final;
 
 
-	virtual const Bric& getBric(PropKey bricName) const;
-	virtual Bric& getBric(PropKey bricName);
+	virtual const Terminal& getTerminal(PropKey terminalName) const final;
+	virtual Terminal& getTerminal(PropKey terminalName) final;
+
+	virtual const Terminal& getTerminal(PropKey terminalName, const std::type_info& typeInfo) const final;
+	virtual Terminal& getTerminal(PropKey terminalName, const std::type_info& typeInfo) final;
 
 
-	virtual const Terminal& getTerminal(PropKey terminalName) const;
-	virtual Terminal& getTerminal(PropKey terminalName);
+	virtual const OutputTerminal& getOutput(PropKey outputName) const final;
+	virtual OutputTerminal& getOutput(PropKey outputName) final;
 
-	virtual const Terminal& getTerminal(PropKey terminalName, const std::type_info& typeInfo) const;
-	virtual Terminal& getTerminal(PropKey terminalName, const std::type_info& typeInfo);
-
-
-	virtual const OutputTerminal& getOutput(PropKey outputName) const;
-	virtual OutputTerminal& getOutput(PropKey outputName);
-
-	virtual const OutputTerminal& getOutput(PropKey outputName, const std::type_info& typeInfo) const;
-	virtual OutputTerminal& getOutput(PropKey outputName, const std::type_info& typeInfo);
+	virtual const OutputTerminal& getOutput(PropKey outputName, const std::type_info& typeInfo) const final;
+	virtual OutputTerminal& getOutput(PropKey outputName, const std::type_info& typeInfo) final;
 
 
-	virtual const InputTerminal& getInput(PropKey outputName) const;
-	virtual InputTerminal& getInput(PropKey outputName);
+	virtual const InputTerminal& getInput(PropKey outputName) const final;
+	virtual InputTerminal& getInput(PropKey outputName) final;
 
-	virtual const InputTerminal& getInput(PropKey outputName, const std::type_info& typeInfo) const;
-	virtual InputTerminal& getInput(PropKey outputName, const std::type_info& typeInfo);
+	virtual const InputTerminal& getInput(PropKey outputName, const std::type_info& typeInfo) const final;
+	virtual InputTerminal& getInput(PropKey outputName, const std::type_info& typeInfo) final;
 
 
-	virtual const ParamTerminal& getParam(PropKey outputName) const;
-	virtual ParamTerminal& getParam(PropKey outputName);
+	virtual const ParamTerminal& getParam(PropKey outputName) const final;
+	virtual ParamTerminal& getParam(PropKey outputName) final;
 
-	virtual const ParamTerminal& getParam(PropKey outputName, const std::type_info& typeInfo) const;
-	virtual ParamTerminal& getParam(PropKey outputName, const std::type_info& typeInfo);
+	virtual const ParamTerminal& getParam(PropKey outputName, const std::type_info& typeInfo) const final;
+	virtual ParamTerminal& getParam(PropKey outputName, const std::type_info& typeInfo) final;
 
 	virtual bool canHaveDynOutputs() const { return false; }
-	void addDynOutput(std::unique_ptr<OutputTerminal> terminal);
+	virtual void addDynOutput(std::unique_ptr<OutputTerminal> terminal) final;
 
 	virtual bool canHaveDynInputs() const { return false; }
 
 
-	TDirectory* localTDirectory() { return m_tDirectory.get(); }
-	const TDirectory* localTDirectory() const { return m_tDirectory.get(); }
+	virtual TDirectory* localTDirectory() final { return m_tDirectory.get(); }
+	virtual const TDirectory* localTDirectory() const final { return m_tDirectory.get(); }
 
 	virtual std::ostream & printInfo(std::ostream &os) const;
 
 	// Recursively initialize this bric and all brics inside it. Can only be
 	// called on top brics (brics without a parent).
-	void initBricHierarchy();
+	virtual void initBricHierarchy() final;
 
 	// User overload, executed, undefined if executed before or after sub-bric
 	// init (possibly in parallel?):
@@ -383,44 +384,45 @@ protected:
 
 	std::atomic<size_t> m_nSourcesFinished;
 
-	Bric* addSource(Bric *source);
 
-	bool hasSources() const { return ! m_sources.empty(); }
-	size_t nSources() const { return m_sources.size(); }
+	virtual Bric* addSource(Bric *source) final;
 
-	void incNSourcesAvailable() { atomic_fetch_add(&m_nSourcesAvailable, size_t(1)); }
-	void decNSourcesAvailable() { atomic_fetch_sub(&m_nSourcesAvailable, size_t(1)); }
-	void clearNSourcesAvailable() { atomic_store(&m_nSourcesAvailable, size_t(0)); }
+	virtual bool hasSources() const final { return ! m_sources.empty(); }
+	virtual size_t nSources() const final { return m_sources.size(); }
 
-	size_t nSourcesAvailable() const {
+	virtual void incNSourcesAvailable() final { atomic_fetch_add(&m_nSourcesAvailable, size_t(1)); }
+	virtual void decNSourcesAvailable() final { atomic_fetch_sub(&m_nSourcesAvailable, size_t(1)); }
+	virtual void clearNSourcesAvailable() final { atomic_store(&m_nSourcesAvailable, size_t(0)); }
+
+	virtual size_t nSourcesAvailable() const final {
 		size_t nAvail = atomic_load(&m_nSourcesAvailable);
 		assert(nAvail <= nSources()); // Sanity check
 		return nAvail;
 	}
 
-	bool externalSourcesAvailable() const { return hasExternalSources() && execCounter() == 0; }
+	virtual bool externalSourcesAvailable() const final { return hasExternalSources() && execCounter() == 0; }
 
-	bool allSourcesAvailable() const
+	virtual bool allSourcesAvailable() const final
 		{ return nSourcesAvailable() == nSources() || externalSourcesAvailable(); }
 
-	bool anySourceAvailable() const
+	virtual bool anySourceAvailable() const final
 		{ return nSourcesAvailable() > 0 || externalSourcesAvailable(); }
 
 
-	void incSourcesFinished() { atomic_fetch_add(&m_nSourcesFinished, size_t(1)); }
+	virtual void incSourcesFinished() final { atomic_fetch_add(&m_nSourcesFinished, size_t(1)); }
 
-	size_t nSourcesFinished() const {
+	virtual size_t nSourcesFinished() const final {
 		size_t nFinished = atomic_load(&m_nSourcesFinished);
 		assert(nFinished <= nSources()); // Sanity check
 		return nFinished;
 	}
 
-	bool allSourcesFinished() const { return nSourcesFinished() == nSources(); }
+	virtual bool allSourcesFinished() const final { return nSourcesFinished() == nSources(); }
 
-	bool hasExternalSources() const { return m_hasExternalSources; }
+	virtual bool hasExternalSources() const final { return m_hasExternalSources; }
 
 public:
-	const std::vector<Bric*>& sources() { return m_sources; }
+	virtual const std::vector<Bric*>& sources() final { return m_sources; }
 
 
 // Dests //
@@ -432,28 +434,29 @@ protected:
 
 	size_t m_outputCounter;
 
-	bool hasDests() const { return ! m_dests.empty(); }
-	size_t nDests() const { return m_dests.size(); }
 
-	void incNDestsReadyForInput() { atomic_fetch_add(&m_nDestsReadyForInput, size_t(1)); }
-	void clearNDestsReadyForInput() { atomic_store(&m_nDestsReadyForInput, size_t(0)); }
+	virtual bool hasDests() const final { return ! m_dests.empty(); }
+	virtual size_t nDests() const final { return m_dests.size(); }
 
-	size_t nDestsReadyForInput() const {
+	virtual void incNDestsReadyForInput() final { atomic_fetch_add(&m_nDestsReadyForInput, size_t(1)); }
+	virtual void clearNDestsReadyForInput() final { atomic_store(&m_nDestsReadyForInput, size_t(0)); }
+
+	virtual size_t nDestsReadyForInput() const final {
 		size_t nReady = atomic_load(&m_nDestsReadyForInput);
 		assert(nReady <= nDests()); // Sanity check
 		return nReady;
 	}
 
-	bool allDestsReadyForInput() const { return nDestsReadyForInput() == nDests(); }
+	virtual bool allDestsReadyForInput() const final { return nDestsReadyForInput() == nDests(); }
 
 
-	void announceNewOutput() {
+	virtual void announceNewOutput() final {
 		for (auto &dest: m_dests) dest->incNSourcesAvailable();
 		clearNDestsReadyForInput();
 		++m_outputCounter;
 	}
 
-	inline void setExecFinished() {
+	virtual void setExecFinished() final {
 		assert(m_execFinished == false); // Sanity check
 		dbrx_log_trace("Execution of bric %s finished", absolutePath());
 		m_execFinished = true;
@@ -461,7 +464,7 @@ protected:
 	}
 
 public:
-	const std::vector<Bric*>& dests() { return m_dests; }
+	virtual const std::vector<Bric*>& dests() final { return m_dests; }
 
 
 // Execution //
@@ -470,10 +473,11 @@ protected:
 	bool m_execFinished = false;
 	size_t m_execCounter = 0;
 
+
 	// See nextExecStep for guarantees on behaviour and return value.
 	virtual bool nextExecStepImpl() = 0;
 
-	void setOutputsToErrorState() {
+	virtual void setOutputsToErrorState() final {
 		dbrx_log_info("Due to an error, setting outputs of bric \"%s\" to default values", absolutePath());
 		for (auto& output: m_outputs) output.second->value().setToDefault();
 	}
@@ -494,7 +498,7 @@ public:
 	// A repeated call, before any changes in higher/lower processing layers,
 	// is guaranteed not to change the state of the bric and to return
 	// true if bric execution is finished and false if not.
-	bool nextExecStep() {
+	virtual bool nextExecStep() final {
 		if (!execFinished()) {
 			TempChangeOfTDirectory tDirChange(localTDirectory());
 			bool result = nextExecStepImpl();
@@ -503,9 +507,9 @@ public:
 		} else return true;
 	}
 
-	bool execFinished() const { return m_execFinished; }
+	virtual bool execFinished() const final { return m_execFinished; }
 
-	size_t execCounter() const { return m_execCounter; }
+	virtual size_t execCounter() const final { return m_execCounter; }
 
 
 public:
@@ -532,7 +536,7 @@ public:
 	BricImpl(Bric *parentBric, PropKey bricName, std::string bricTitle = "")
 		: BricComponentImpl(bricName, bricTitle) { setParent(parentBric); }
 
-	~BricImpl() { setParent(nullptr); }
+	~BricImpl() override { setParent(nullptr); }
 };
 
 
@@ -590,10 +594,10 @@ public:
 
 		Output(const Output &other) = delete;
 
-		~Output() { setParent(nullptr); }
+		~Output() override { setParent(nullptr); }
 	};
 
-	bool canHaveOutputs() const { return true; }
+	bool canHaveOutputs() const override { return true; }
 };
 
 
@@ -608,21 +612,21 @@ public:
 		const Bric* m_effSrcBric;
 		const Terminal *m_srcTerminal;
 
-		void setSrcTerminal(const Terminal* terminal) { m_srcTerminal = terminal; }
-		void setEffSrcBric(const Bric* bric) { m_effSrcBric = bric; }
+		virtual void setSrcTerminal(const Terminal* terminal) final { m_srcTerminal = terminal; }
+		virtual void setEffSrcBric(const Bric* bric) final { m_effSrcBric = bric; }
 
 	public:
 		using HasTypedConstValueRefImpl<T>::value;
 		using HasTypedConstValueRefImpl<T>::typeInfo;
 
-		virtual void applyConfig(const PropVal& config) { m_source = config; }
-		virtual PropVal getConfig() const  { return m_source; }
+		void applyConfig(const PropVal& config) override { m_source = config; }
+		PropVal getConfig() const override { return m_source; }
 
-		const PropPath& source() const { return m_source; }
+		virtual const PropPath& source() const final { return m_source; }
 
-		const Terminal* srcTerminal() const { return m_srcTerminal; }
+		virtual const Terminal* srcTerminal() const final { return m_srcTerminal; }
 
-		const Bric* effSrcBric() const { return m_effSrcBric; }
+		virtual const Bric* effSrcBric() const final { return m_effSrcBric; }
 
 		Input(BricWithInputs *parentBric, PropKey inputName = PropKey(), std::string inputTitle = "")
 			: BricComponentImpl(inputName, std::move(inputTitle))
@@ -633,11 +637,11 @@ public:
 
 		Input(const Input &other) = delete;
 
-		~Input() { setParent(nullptr); }
+		~Input() override { setParent(nullptr); }
 	};
 
 protected:
-	void tryProcessInput() {
+	virtual void tryProcessInput() final {
 		try{ processInput(); }
 		catch(const std::exception &e) {
 			dbrx_log_error("Processing input failed in bric \"%s\": %s", absolutePath(), e.what());
@@ -647,7 +651,7 @@ protected:
 	}
 
 public:
-	bool canHaveInputs() const { return true; }
+	bool canHaveInputs() const final override { return true; }
 
 	// User overload. Allowed to change output values.
 	virtual void processInput() = 0;
@@ -673,20 +677,20 @@ class SyncedInputBric: public virtual BricWithInputs {
 protected:
 	bool m_announcedReadyForInput = false;
 
-	void announceReadyForInput() {
+	virtual void announceReadyForInput() final {
 		if (!m_announcedReadyForInput && !allSourcesFinished()) {
 			for (auto &source: m_sources) source->incNDestsReadyForInput();
 			m_announcedReadyForInput = true;
 		}
 	}
 
-	void consumeInput() {
+	virtual void consumeInput() final {
 		clearNSourcesAvailable();
 		m_announcedReadyForInput = false;
 	}
 
 public:
-	virtual void resetExec() {
+	void resetExec() override {
 		Bric::resetExec();
 		m_announcedReadyForInput = true;
 	}
@@ -694,14 +698,10 @@ public:
 
 
 
-class AsyncInputBric: public virtual BricWithInputs {
-};
+class AsyncInputBric: public virtual BricWithInputs {};
 
 
-
-class ProcessingBric: public virtual BricWithInputs, public virtual BricWithOutputs {
-public:
-};
+class ProcessingBric: public virtual BricWithInputs, public virtual BricWithOutputs {};
 
 
 
@@ -713,7 +713,7 @@ public:
 	// User overload. Allowed to change output values.
 	virtual void import() = 0;
 
-	bool nextExecStepImpl() {
+	bool nextExecStepImpl() override {
 		if (!m_importDone) {
 			dbrx_log_trace("Importer %s, running import", absolutePath());
 
@@ -745,7 +745,7 @@ public:
 
 class TransformBric: public virtual ProcessingBric, public virtual SyncedInputBric, public BricImpl {
 protected:
-	bool nextExecStepImpl() {
+	bool nextExecStepImpl() override {
 		bool producedOutput = false;
 
 		if (allDestsReadyForInput()) {
@@ -775,7 +775,7 @@ class MapperBric: public virtual ProcessingBric, public virtual SyncedInputBric,
 protected:
 	bool m_readyForNextOutput = false;
 
-	bool nextExecStepImpl() {
+	bool nextExecStepImpl() override {
 		bool producedOutput = false;
 
 		if (allDestsReadyForInput()) {
@@ -825,7 +825,7 @@ class AbstractReducerBric: public virtual ProcessingBric {
 protected:
 	bool m_reductionStarted = false;
 
-	void beginReduction() {
+	virtual void beginReduction() final {
 		try {
 			newReduction();
 		}
@@ -838,9 +838,9 @@ protected:
 		m_reductionStarted = true;
 	}
 
-	bool reductionStarted() const { return m_reductionStarted; }
+	virtual bool reductionStarted() const final { return m_reductionStarted; }
 
-	void endReduction() {
+	virtual void endReduction() final {
 		try { finalizeReduction(); }
 		catch(const std::exception &e) {
 			dbrx_log_error("Finalization of reduction failed in bric \"%s\": %s", absolutePath(), e.what());
@@ -864,12 +864,12 @@ public:
 
 class ReducerBric: public virtual AbstractReducerBric, public virtual SyncedInputBric, public BricImpl {
 protected:
-	void resetExec() {
+	void resetExec() override {
 		SyncedInputBric::resetExec();
 		m_reductionStarted = false;
 	}
 
-	bool nextExecStepImpl() {
+	bool nextExecStepImpl() override {
 		if (m_reductionStarted == true) assert(allDestsReadyForInput()); // Sanity check
 
 		if (allDestsReadyForInput()) {
@@ -902,14 +902,14 @@ class AsyncReducerBric: public virtual AbstractReducerBric, public virtual Async
 protected:
 	std::vector<size_t> m_inputCounter;
 
-	void resetExec() {
+	void resetExec() override {
 		ProcessingBric::resetExec();
 		m_reductionStarted = false;
 		m_inputCounter.clear();
 		m_inputCounter.resize(m_sources.size());
 	}
 
-	bool nextExecStepImpl() {
+	bool nextExecStepImpl() override {
 		if (m_reductionStarted == true) assert(allDestsReadyForInput()); // Sanity check
 
 		if (allDestsReadyForInput()) {
@@ -946,7 +946,7 @@ public:
 
 class TerminalGroup: public virtual Bric {
 protected:
-	bool nextExecStepImpl() {
+	bool nextExecStepImpl() override {
 		// Terminal groups don't do anything when executed
 		setExecFinished();
 		return false;
@@ -966,7 +966,7 @@ class OutputGroup: public virtual OutputTerminalGroup, public BricImpl {
 
 class DynOutputGroup: public virtual OutputTerminalGroup, public BricImpl {
 public:
-	bool canHaveDynOutputs() const { return true; }
+	bool canHaveDynOutputs() const final override { return true; }
 	using BricImpl::BricImpl;
 };
 
@@ -974,7 +974,7 @@ public:
 
 class InputTerminalGroup: public virtual TerminalGroup, public virtual BricWithInputs {
 public:
-	void processInput() {}
+	void processInput() override {}
 };
 
 
