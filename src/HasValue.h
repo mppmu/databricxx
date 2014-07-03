@@ -133,9 +133,10 @@ public:
 template <typename T> class HasTypedPrimaryValueImpl: public virtual HasTypedPrimaryValue<T> {
 protected:
 	TypedPrimaryValue<T> m_value;
+
 public:
-	const TypedPrimaryValue<T>& value() const { return m_value; }
-	TypedPrimaryValue<T>& value() { return m_value; }
+	const TypedPrimaryValue<T>& value() const final override { return m_value; }
+	TypedPrimaryValue<T>& value() final override { return m_value; }
 };
 
 
@@ -161,9 +162,10 @@ public:
 template <typename T> class HasTypedValueRefImpl: public virtual HasTypedValueRef<T> {
 protected:
 	TypedValueRef<T> m_value;
+
 public:
-	const TypedValueRef<T>& value() const { return m_value; }
-	TypedValueRef<T>& value() { return m_value; }
+	const TypedValueRef<T>& value() const final override { return m_value; }
+	TypedValueRef<T>& value() final override { return m_value; }
 };
 
 
@@ -180,9 +182,10 @@ public:
 template <typename T> class HasTypedConstValueRefImpl: public virtual HasTypedConstValueRef<T> {
 protected:
 	TypedConstValueRef<T> m_value;
+
 public:
-	const TypedConstValueRef<T>& value() const { return m_value; }
-	TypedConstValueRef<T>& value() { return m_value; }
+	const TypedConstValueRef<T>& value() const final override { return m_value; }
+	TypedConstValueRef<T>& value() final override { return m_value; }
 };
 
 
