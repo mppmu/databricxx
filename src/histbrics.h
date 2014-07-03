@@ -37,13 +37,13 @@ public:
 	Param<Double_t> xlow{this, "xlow", "Low edge of first bin", 0};
 	Param<Double_t> xup{this, "xup", "Upper edge of last bin (not included in last bin)", 10};
 
-	void newReduction() {
+	void newReduction() override {
 		output.value() = std::unique_ptr<Hist>(
 			new Hist(output.name().toString().c_str(), output.title().c_str(), nBins, xlow, xup)
 		);
 	}
 
-	void processInput() {
+	void processInput() override {
 		output->Fill(input);
 	}
 

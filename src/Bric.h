@@ -219,7 +219,7 @@ public:
 		: public virtual Terminal, public virtual HasTypedValue<T>
 	{
 		OutputTerminal* createMatchingDynOutput(Bric* outputBric,
-			PropKey outputName, std::string outputTitle = "");
+			PropKey outputName, std::string outputTitle = "") override;
 	};
 
 	template <typename T> class TypedOutputTerminal

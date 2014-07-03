@@ -27,12 +27,12 @@ class TChain;
 namespace dbrx {
 
 
-class TTreeIterBric: public MapperBric {
+class TTreeIterBric final: public MapperBric {
 protected:
 	std::unique_ptr<TChain> m_chain;
 
 public:
-	class Entry: public DynOutputGroup {
+	class Entry final: public DynOutputGroup {
 	public:
 		void connectBranches(Bric* contextBric, TTree* inputTree);
 		using DynOutputGroup::DynOutputGroup;
@@ -48,9 +48,9 @@ public:
 	Output<ssize_t> size{this, "size", "Number of entries"};
 	Output<ssize_t> index{this, "index", "Number of entries"};
 
-	void processInput();
+	void processInput() override;
 
-	bool nextOutput();
+	bool nextOutput() override;
 
 	using MapperBric::MapperBric;
 };

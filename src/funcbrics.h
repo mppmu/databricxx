@@ -46,26 +46,26 @@ public:
 
 
 
-template<typename R, typename A, typename B> struct Adder: public BinaryFunctionBric<R, A, B> {
-	void processInput() { this->output = this->a + this->b; }
+template<typename R, typename A, typename B> struct Adder final: public BinaryFunctionBric<R, A, B> {
+	void processInput() override { this->output = this->a + this->b; }
 	using BinaryFunctionBric<R, A, B>::BinaryFunctionBric;
 };
 
 
-template<typename R, typename A, typename B> struct Subtractor: public BinaryFunctionBric<R, A, B> {
-	void processInput() { this->output = this->a - this->b; }
+template<typename R, typename A, typename B> struct Subtractor final: public BinaryFunctionBric<R, A, B> {
+	void processInput() override { this->output = this->a - this->b; }
 	using BinaryFunctionBric<R, A, B>::BinaryFunctionBric;
 };
 
 
-template<typename R, typename A, typename B> struct Multiplier: public BinaryFunctionBric<R, A, B> {
-	void processInput() { this->output = this->a * this->b; }
+template<typename R, typename A, typename B> struct Multiplier final: public BinaryFunctionBric<R, A, B> {
+	void processInput() override { this->output = this->a * this->b; }
 	using BinaryFunctionBric<R, A, B>::BinaryFunctionBric;
 };
 
 
-template<typename R, typename A, typename B> struct Divider: public BinaryFunctionBric<R, A, B> {
-	void processInput() { this->output = this->a / this->b; }
+template<typename R, typename A, typename B> struct Divider final: public BinaryFunctionBric<R, A, B> {
+	void processInput() override { this->output = this->a / this->b; }
 	using BinaryFunctionBric<R, A, B>::BinaryFunctionBric;
 };
 

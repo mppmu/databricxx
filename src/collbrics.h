@@ -26,7 +26,7 @@
 namespace dbrx {
 
 
-template<typename Coll> class CollIterBric: public MapperBric {
+template<typename Coll> class CollIterBric final: public MapperBric {
 public:
 	Input<Coll> input{this};
 
@@ -42,12 +42,12 @@ public:
 	Output<T> element{this, "element"};
 	Output<ssize_t> index{this, "index"};
 
-	void processInput() {
+	void processInput() override {
 		m_iter = input->begin();
 		index = 0;
 	}
 
-	bool nextOutput() {
+	bool nextOutput() override {
 		if (m_iter != input->end()) {
 			element = *m_iter;
 			++m_iter;
@@ -61,7 +61,7 @@ public:
 
 
 
-template<typename Coll> class CollBuilderBric: public ReducerBric {
+template<typename Coll> class CollBuilderBric final: public ReducerBric {
 public:
 	Output<Coll> output{this};
 
@@ -74,11 +74,11 @@ public:
 
 	Input<T> input{this};
 
-	void newReduction() {
+	void newReduction() override {
 		output->clear();
 	}
 
-	void processInput() {
+	void processInput() override {
 		output->push_back(input);
 	}
 

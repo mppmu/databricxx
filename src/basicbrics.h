@@ -25,13 +25,13 @@
 namespace dbrx {
 
 
-template<typename T> class ConstBric: public ImportBric {
+template<typename T> class ConstBric final: public ImportBric {
 public:
 	Param<T> value{this, "value"};
 
 	Output<T> output{this};
 
-	void import() { output = value; }
+	void import() override { output = value; }
 
 	ConstBric() { }
 
@@ -45,12 +45,12 @@ public:
 
 
 
-template<typename From, typename To> class ConvertBric: public TransformBric {
+template<typename From, typename To> class ConvertBric final: public TransformBric {
 public:
 	Input<From> input{this};
 	Output<To> output{this};
 
-	void processInput() { assign_from(output.get(), input.get()); }
+	void processInput() override { assign_from(output.get(), input.get()); }
 
 	using TransformBric::TransformBric;
 };
