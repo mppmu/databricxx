@@ -38,13 +38,6 @@ PropPath BricComponent::absolutePath() const {
 
 
 
-void Bric::Terminal::connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) {
-	if (!sourcePath.empty()) throw runtime_error("Couldn't resolve source path %s during input lookup, terminal \"%s\" has no inner components"_format(sourcePath, absolutePath()));
-	else bric.connectOwnInputTo(inputName, *this);
-}
-
-
-
 void Bric::InputTerminal::connectTo(Bric::Terminal &other) {
 	dbrx_log_trace("Connecting input terminal \"%s\" to terminal \"%s\"", absolutePath(), other.absolutePath());
 	value().referTo(other.value());
@@ -179,52 +172,67 @@ void Bric::delDynBric(PropKey bricName) {
 }
 
 
-void Bric::connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) {
+Bric::InputTerminal* Bric::connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) {
 	PropPath dfltSrc(s_defaultOutputName);
 	if (sourcePath.empty()) sourcePath = dfltSrc;
 	auto sourceName = sourcePath.front();
 	auto found = m_components.find(sourceName);
-	if (found != m_components.end()) found->second->connectInputToInner(bric, inputName, sourcePath.tail());
-	else if (canHaveDynOutputs()) {
+	if (found != m_components.end()) {
+		BricComponent* foundComp = found->second;
+		if (dynamic_cast<Bric*>(foundComp)) {
+			return dynamic_cast<Bric*>(foundComp)-> connectInputToInner(bric, inputName, sourcePath.tail());
+		} else if (dynamic_cast<Terminal*>(foundComp)) {
+			return bric.connectOwnInputTo(inputName, *dynamic_cast<Terminal*>(foundComp));
+		} else {
+			assert(false);
+			throw logic_error("Bric component is neither a Bric nor a Terminal");
+		}
+	} else if (canHaveDynOutputs()) {
 		auto foundInput = bric.m_terminals.find(inputName);
 		if (foundInput != m_terminals.end()) {
 			Terminal *input = foundInput->second;
 			dbrx_log_trace("Creating dynamic output terminal \"%s\" for input \"%s\" in bric \"%s\"", sourceName, input->name(), absolutePath());
-			BricComponent *source = input->createMatchingDynOutput(this, sourceName);
-			source->connectInputToInner(bric, inputName, sourcePath.tail());
+			OutputTerminal *source = input->createMatchingDynOutput(this, sourceName);
+			return bric.connectOwnInputTo(inputName, *source);
 		} else throw invalid_argument("No input named \"%s\" found in bric \"%s\""_format(inputName, bric.absolutePath()));
 	}
 	else throw runtime_error("Couldn't resolve source path \"%s\" for input \"%s\" of bric \"%s\", no such component in bric \"%s\""_format(sourcePath, inputName, bric.absolutePath(), absolutePath()));
 }
 
 
-void Bric::connectInputToSiblingOrUp(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) {
+Bric::InputTerminal* Bric::connectInputToSiblingOrUp(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) {
 	if (sourcePath.empty()) throw runtime_error("Empty source path while looking up source \"%s\" for input \"%s\" of bric \"%s\" inside bric \"%s\""_format(sourcePath, inputName, bric.absolutePath(), absolutePath()));
 	PropKey siblingName = sourcePath.front();
-	if (siblingName == name()) connectInputToInner(bric, inputName, sourcePath.tail());
+	if (siblingName == name()) return connectInputToInner(bric, inputName, sourcePath.tail());
 	else {
 		if (hasParent()) {
 			auto found = parent().m_brics.find(siblingName);
 			if (found != parent().m_brics.end()) {
 				Bric* sibling = found->second;
-				sibling->connectInputToInner(bric, inputName, sourcePath.tail());
+				InputTerminal *input = sibling->connectInputToInner(bric, inputName, sourcePath.tail());
 				dbrx_log_trace("Detected dependency of bric \"%s\" on bric \"%s\"", absolutePath(), sibling->absolutePath());
+				return input;
 			} else {
-				parent().connectInputToSiblingOrUp(bric, inputName, sourcePath);
+				InputTerminal *input = parent().connectInputToSiblingOrUp(bric, inputName, sourcePath);
 				m_hasExternalSources = true;
+				return input;
 			}
 		} else throw runtime_error("Reached top-level bric \"%s\" during looking up source for input \"%s\" in bric \"%s\""_format(absolutePath(), inputName, bric.absolutePath()));
 	}
 }
 
 
-void Bric::connectOwnInputTo(PropKey inputName, Terminal& source) {
+Bric::InputTerminal* Bric::connectOwnInputTo(PropKey inputName, Terminal& source) {
 	auto found = m_inputs.find(inputName);
-	if (found != m_inputs.end()) found->second->connectTo(source);
-	else if (canHaveDynInputs()) {
+	if (found != m_inputs.end()) {
+		InputTerminal* input = found->second;
+		input->connectTo(source);
+		return input;
+	} else if (canHaveDynInputs()) {
 		dbrx_log_trace("Creating dynamic input terminal \"%s\" for source \"%s\" in bric \"%s\"", inputName, source.absolutePath(), absolutePath());
 		InputTerminal *input = source.createMatchingDynInput(this, inputName);
 		input->connectTo(source);
+		return input;
 	} else throw invalid_argument("Can't connect non-existing input \"%s\" to terminal \"%s\""_format(inputName, source.absolutePath()));
 }
 

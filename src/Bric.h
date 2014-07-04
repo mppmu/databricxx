@@ -44,8 +44,6 @@ class BricComponent: public virtual Configurable {
 protected:
 	struct NotReconfigurable : public std::runtime_error { using std::runtime_error::runtime_error; };
 
-	virtual void connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) = 0;
-
 	virtual void setParent(Bric *parentBric) = 0;
 
 public:
@@ -120,9 +118,6 @@ public:
 
 
 	class Terminal: public virtual BricComponent, public virtual HasValue {
-	protected:
-		void connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) override;
-
 	public:
 		virtual OutputTerminal* createMatchingDynOutput(Bric* outputBric,
 			PropKey outputName, std::string outputTitle = "") = 0;
@@ -204,10 +199,10 @@ protected:
 	virtual void addDynBric(PropKey bricName, const PropVal& config);
 	virtual void delDynBric(PropKey bricName);
 
-	void connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) override;
+	virtual InputTerminal* connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) final;
 
-	virtual void connectInputToSiblingOrUp(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath);
-	virtual void connectOwnInputTo(PropKey inputName, Terminal& source);
+	virtual InputTerminal* connectInputToSiblingOrUp(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath);
+	virtual InputTerminal* connectOwnInputTo(PropKey inputName, Terminal& source);
 
 	// Must always be called for a whole set of interdependent sibling brics
 	virtual void disconnectInputs() final;
