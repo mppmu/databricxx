@@ -354,13 +354,13 @@ const bool Bric::hasComponent(PropKey componentName) const {
 
 const BricComponent& Bric::getComponent(PropKey componentName) const {
 	auto r = m_components.find(componentName);
-	if (r == m_components.end()) throw invalid_argument("No component \"%s\" found in component \"%s\""_format(componentName, absolutePath()));
+	if (r == m_components.end()) throw out_of_range("No component \"%s\" found in component \"%s\""_format(componentName, absolutePath()));
 	else return *r->second;
 }
 
 BricComponent& Bric::getComponent(PropKey componentName) {
 	auto r = m_components.find(componentName);
-	if (r == m_components.end()) throw invalid_argument("No component \"%s\" found in component \"%s\""_format(componentName, absolutePath()));
+	if (r == m_components.end()) throw out_of_range("No component \"%s\" found in component \"%s\""_format(componentName, absolutePath()));
 	else return *r->second;
 }
 
@@ -429,26 +429,26 @@ BricComponent& Bric::getComponentRelToSiblings(PropPath::Fragment componentPath)
 
 const Bric& Bric::getBric(PropKey bricName) const {
 	auto r = m_brics.find(bricName);
-	if (r == m_brics.end()) throw invalid_argument("No bric \"%s\" found in bric \"%s\""_format(bricName, absolutePath()));
+	if (r == m_brics.end()) throw out_of_range("No bric \"%s\" found in bric \"%s\""_format(bricName, absolutePath()));
 	else return *r->second;
 }
 
 Bric& Bric::getBric(PropKey bricName) {
 	auto r = m_brics.find(bricName);
-	if (r == m_brics.end()) throw invalid_argument("No bric \"%s\" found in bric \"%s\""_format(bricName, absolutePath()));
+	if (r == m_brics.end()) throw out_of_range("No bric \"%s\" found in bric \"%s\""_format(bricName, absolutePath()));
 	else return *r->second;
 }
 
 
 const Bric::Terminal& Bric::getTerminal(PropKey terminalName) const {
 	auto r = m_terminals.find(terminalName);
-	if (r == m_terminals.end()) throw invalid_argument("No terminal \"%s\" found in bric \"%s\""_format(terminalName, absolutePath()));
+	if (r == m_terminals.end()) throw out_of_range("No terminal \"%s\" found in bric \"%s\""_format(terminalName, absolutePath()));
 	else return *r->second;
 }
 
 Bric::Terminal& Bric::getTerminal(PropKey terminalName) {
 	auto r = m_terminals.find(terminalName);
-	if (r == m_terminals.end()) throw invalid_argument("No terminal \"%s\" found in bric \"%s\""_format(terminalName, absolutePath()));
+	if (r == m_terminals.end()) throw out_of_range("No terminal \"%s\" found in bric \"%s\""_format(terminalName, absolutePath()));
 	else return *r->second;
 }
 
