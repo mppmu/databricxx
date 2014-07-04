@@ -315,6 +315,17 @@ public:
 	virtual bool canHaveOutputs() const { return false; }
 
 
+	virtual const bool hasComponent(PropKey componentName) const final;
+
+	virtual const BricComponent& getComponent(PropKey componentName) const final;
+	virtual BricComponent& getComponent(PropKey componentName) final;
+
+	virtual const BricComponent& getComponent(PropPath::Fragment componentPath) const final;
+	virtual BricComponent& getComponent(PropPath::Fragment componentPath) final;
+
+	virtual BricComponent& getComponentRelToSiblings(PropPath::Fragment componentPath) final;
+
+
 	virtual const Bric& getBric(PropKey bricName) const final;
 	virtual Bric& getBric(PropKey bricName) final;
 

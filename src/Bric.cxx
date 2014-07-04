@@ -347,13 +347,93 @@ PropVal Bric::getConfig() const  {
 }
 
 
-const typename Bric::Bric& Bric::getBric(PropKey bricName) const {
+const bool Bric::hasComponent(PropKey componentName) const {
+	return m_components.find(componentName) != m_components.end();
+}
+
+
+const BricComponent& Bric::getComponent(PropKey componentName) const {
+	auto r = m_components.find(componentName);
+	if (r == m_components.end()) throw invalid_argument("No component \"%s\" found in component \"%s\""_format(componentName, absolutePath()));
+	else return *r->second;
+}
+
+BricComponent& Bric::getComponent(PropKey componentName) {
+	auto r = m_components.find(componentName);
+	if (r == m_components.end()) throw invalid_argument("No component \"%s\" found in component \"%s\""_format(componentName, absolutePath()));
+	else return *r->second;
+}
+
+
+
+const BricComponent& Bric::getComponent(PropPath::Fragment componentPath) const {
+	if (componentPath.empty()) throw runtime_error("Can't resolve empty component path inside bric \"%s\""_format(absolutePath()));
+	const Bric* current = this;
+	PropKey pathHead = componentPath.front();
+	PropPath::Fragment pathTail = componentPath.tail();
+	while (current != nullptr) {
+		if (current->hasComponent(pathHead)) {
+			const BricComponent *foundComp = &current->getComponent(pathHead);
+			if (pathTail.empty()) {
+				return *foundComp;
+			} else {
+				current = dynamic_cast<const Bric*>(foundComp);
+				pathHead = pathTail.front();
+				pathTail = pathTail.tail();
+			}
+		} else current = nullptr;
+	}
+	throw runtime_error("Couldn't resolve component path \"%s\" inside bric \"%s\""_format(componentPath, absolutePath()));
+}
+
+BricComponent& Bric::getComponent(PropPath::Fragment componentPath) {
+	if (componentPath.empty()) throw runtime_error("Can't resolve empty component path inside bric \"%s\""_format(absolutePath()));
+	Bric* current = this;
+	PropKey pathHead = componentPath.front();
+	PropPath::Fragment pathTail = componentPath.tail();
+	while (current != nullptr) {
+		if (current->hasComponent(pathHead)) {
+			BricComponent *foundComp = &current->getComponent(pathHead);
+			if (pathTail.empty()) {
+				return *foundComp;
+			} else {
+				current = dynamic_cast<Bric*>(foundComp);
+				pathHead = pathTail.front();
+				pathTail = pathTail.tail();
+			}
+		} else current = nullptr;
+	}
+	throw runtime_error("Couldn't resolve component path \"%s\" inside bric \"%s\""_format(componentPath, absolutePath()));
+}
+
+
+BricComponent& Bric::getComponentRelToSiblings(PropPath::Fragment componentPath) {
+	if (componentPath.empty()) throw runtime_error("Can't resolve empty path to component relative to siblings of bric \"%s\""_format(absolutePath()));
+	PropKey pathHead = componentPath.front();
+	PropPath::Fragment pathTail = componentPath.tail();
+	Bric* current = this;
+	while (current != nullptr) {
+		if (pathHead == current->name()) {
+			if (pathTail.empty()) return *current;
+			else return current->getComponent(pathTail);
+		} else if (current->hasParent()) {
+			current = &current->parent();
+			if (current->hasComponent(pathHead)) {
+				return current->getComponent(componentPath);
+			}
+		} else current = nullptr;
+	}
+	throw out_of_range("Can't resolve component \"%s\" in siblings or upwards of \"%s\""_format(componentPath, absolutePath()));
+}
+
+
+const Bric& Bric::getBric(PropKey bricName) const {
 	auto r = m_brics.find(bricName);
 	if (r == m_brics.end()) throw invalid_argument("No bric \"%s\" found in bric \"%s\""_format(bricName, absolutePath()));
 	else return *r->second;
 }
 
-typename Bric::Bric& Bric::getBric(PropKey bricName) {
+Bric& Bric::getBric(PropKey bricName) {
 	auto r = m_brics.find(bricName);
 	if (r == m_brics.end()) throw invalid_argument("No bric \"%s\" found in bric \"%s\""_format(bricName, absolutePath()));
 	else return *r->second;
