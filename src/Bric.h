@@ -333,29 +333,14 @@ public:
 	virtual const Terminal& getTerminal(PropKey terminalName) const final;
 	virtual Terminal& getTerminal(PropKey terminalName) final;
 
-	virtual const Terminal& getTerminal(PropKey terminalName, const std::type_info& typeInfo) const final;
-	virtual Terminal& getTerminal(PropKey terminalName, const std::type_info& typeInfo) final;
-
-
 	virtual const OutputTerminal& getOutput(PropKey outputName) const final;
 	virtual OutputTerminal& getOutput(PropKey outputName) final;
-
-	virtual const OutputTerminal& getOutput(PropKey outputName, const std::type_info& typeInfo) const final;
-	virtual OutputTerminal& getOutput(PropKey outputName, const std::type_info& typeInfo) final;
-
 
 	virtual const InputTerminal& getInput(PropKey outputName) const final;
 	virtual InputTerminal& getInput(PropKey outputName) final;
 
-	virtual const InputTerminal& getInput(PropKey outputName, const std::type_info& typeInfo) const final;
-	virtual InputTerminal& getInput(PropKey outputName, const std::type_info& typeInfo) final;
-
-
 	virtual const ParamTerminal& getParam(PropKey outputName) const final;
 	virtual ParamTerminal& getParam(PropKey outputName) final;
-
-	virtual const ParamTerminal& getParam(PropKey outputName, const std::type_info& typeInfo) const final;
-	virtual ParamTerminal& getParam(PropKey outputName, const std::type_info& typeInfo) final;
 
 	virtual bool canHaveDynOutputs() const { return false; }
 	virtual void addDynOutput(std::unique_ptr<OutputTerminal> terminal) final;
