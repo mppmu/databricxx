@@ -47,7 +47,6 @@
 #pragma link C++ class dbrx::NameTable-;
 
 // Props.h
-#pragma link C++ typedef dbrx::Props;
 #pragma link C++ class dbrx::PropVal-;
 
 // RootCollection.h
