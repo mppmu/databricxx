@@ -18,7 +18,6 @@
 #ifndef DBRX_NAME_H
 #define DBRX_NAME_H
 
-#include <memory>
 #include <string>
 #include <functional>
 #include <iosfwd>
