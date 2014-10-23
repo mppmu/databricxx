@@ -18,11 +18,6 @@
 #ifndef DBRX_NAMETABLE_H
 #define DBRX_NAMETABLE_H
 
-#include <memory>
-#include <vector>
-#include <unordered_map>
-#include <mutex>
-
 #include "Name.h"
 
 
@@ -30,36 +25,9 @@ namespace dbrx {
 
 
 class NameTable {
-protected:
-	using Mutex = std::mutex;
-	using LockGuard = std::lock_guard<Mutex>;
-
-	Mutex m_mutex;
-
-	class ConstStringRef {
-	protected:
-		const std::string *m_ptr = nullptr;
-
-	public:
-		struct Hash {
-		protected:
-			std::hash<std::string> m_hash;
-		public:
-			size_t operator()(const ConstStringRef& sr) const { return m_hash(sr.value()); }
-		};
-
-		const std::string& value() const { return *m_ptr; }
-		const std::string* ptr() const { return m_ptr; }
-
-		bool operator==(ConstStringRef other) const { return value() == other.value(); }
-
-		ConstStringRef() = default;
-		ConstStringRef(const std::string *p): m_ptr(p) {}
-	};
-
-
-	std::vector< std::unique_ptr<std::string> > m_strings;
-	std::unordered_map<ConstStringRef, Name, ConstStringRef::Hash> m_stringMap;
+private:
+	struct Internals;
+	Internals *m_internals;
 
 public:
 	static NameTable& global();
@@ -68,7 +36,8 @@ public:
 
 	using StringContent = std::string;
 
-	virtual ~NameTable() {}
+	NameTable();
+	virtual ~NameTable();
 };
 
 

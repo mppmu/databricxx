@@ -17,10 +17,46 @@
 
 #include "NameTable.h"
 
+#include <memory>
+#include <vector>
+#include <unordered_map>
+#include <mutex>
+
 using namespace std;
 
 
 namespace dbrx {
+
+struct NameTable::Internals {
+	using Mutex = std::mutex;
+	using LockGuard = std::lock_guard<Mutex>;
+
+	class ConstStringRef {
+	protected:
+		const std::string *m_ptr = nullptr;
+
+	public:
+		struct Hash {
+		protected:
+			std::hash<std::string> m_hash;
+		public:
+			size_t operator()(const ConstStringRef& sr) const { return m_hash(sr.value()); }
+		};
+
+		const std::string& value() const { return *m_ptr; }
+		const std::string* ptr() const { return m_ptr; }
+
+		bool operator==(ConstStringRef other) const { return value() == other.value(); }
+
+		ConstStringRef() = default;
+		ConstStringRef(const std::string *p): m_ptr(p) {}
+	};
+
+
+	Mutex mutex;
+	std::vector< std::unique_ptr<std::string> > strings;
+	std::unordered_map<ConstStringRef, Name, ConstStringRef::Hash> stringMap;
+};
 
 
 NameTable& NameTable::global() {
@@ -32,21 +68,35 @@ NameTable& NameTable::global() {
 Name NameTable::resolve(const std::string &s) {
 	if (s.empty()) return Name();
 	else {
-		LockGuard lock(m_mutex);
-		auto found = m_stringMap.find(ConstStringRef(&s));
-		if (found != m_stringMap.end()) return found->second;
+		auto &strings = m_internals->strings;
+		auto &stringMap = m_internals->stringMap;
+		using ConstStringRef = Internals::ConstStringRef;
+
+		Internals::LockGuard lock(m_internals->mutex);
+		auto found = stringMap.find(ConstStringRef(&s));
+		if (found != stringMap.end()) return found->second;
 		else {
 			std::unique_ptr<std::string> stringPtr(new std::string(s));
 			ConstStringRef sr(&*stringPtr);
 			Name name(&*stringPtr);
 
-			if (m_strings.size() == m_strings.capacity())
-				m_strings.reserve(std::max(size_t(16), m_strings.size() * 2));
-			m_strings.push_back(std::move(stringPtr));
+			if (strings.size() == strings.capacity())
+				strings.reserve(std::max(size_t(16), strings.size() * 2));
+			strings.push_back(std::move(stringPtr));
 
-			return m_stringMap[sr] = name;
+			return stringMap[sr] = name;
 		}
 	}
+}
+
+
+NameTable::NameTable()
+	: m_internals(new NameTable::Internals)
+{}
+
+
+NameTable::~NameTable() {
+	delete m_internals;
 }
 
 
