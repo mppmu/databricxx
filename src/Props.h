@@ -65,7 +65,7 @@ protected:
 		Integer i;
 		Name n;
 
-		Content() : i() { }
+		Content() : n() { }
 		Content(Integer value) : i(std::move(value)) { }
 		Content(Name value) : n(std::move(value)) { }
 
@@ -178,7 +178,7 @@ public:
 	std::string toString() const;
 
 
-	PropKey() {}
+	PropKey() : m_type(Type::NAME), m_content(Name()) {}
 
 	PropKey(const PropKey &other)
 		: m_type(other.m_type), m_content(other.m_type, other.m_content) {}
