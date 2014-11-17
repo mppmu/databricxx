@@ -428,9 +428,9 @@ public:
 	iterator begin() noexcept { return m_type == Type::ARRAY ? &*m_content.a->begin() : this; }
 	const_iterator begin() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->begin() : this; }
 	const_iterator cbegin() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->cbegin() : this; }
-	iterator end() noexcept { return m_type == Type::ARRAY ? &*m_content.a->end() : this; }
-	const_iterator end() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->end() : this; }
-	const_iterator cend() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->cend() : this; }
+	iterator end() noexcept { return m_type == Type::ARRAY ? &*m_content.a->end() : this + 1; }
+	const_iterator end() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->end() : this + 1; }
+	const_iterator cend() const noexcept { return m_type == Type::ARRAY ? &*m_content.a->cend() : this + 1; }
 
 
 	PropVal& operator[](PropKey key) {
@@ -829,6 +829,7 @@ public:
 		friend std::string to_string(const Fragment &fragment) { return fragment.toString(); }
 	};
 
+	bool empty() { return m_elements.empty(); }
 
 	Elements& elements() noexcept { return m_elements; }
 	const Elements& elements() const noexcept { return m_elements; }
