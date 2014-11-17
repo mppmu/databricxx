@@ -866,6 +866,7 @@ public:
 
 	PropPath& operator=(PropKey key) { m_elements.clear(); m_elements.push_back(key); return *this; }
 	PropPath& operator=(Name name) { return *this = PropKey(name); }
+	PropPath& operator=(PropVal::Integer i) { return *this = PropKey(i); }
 
 	PropPath& operator=(const std::string& path);
 	PropPath& operator=(const char *path) { return *this = std::string(path); }
@@ -883,6 +884,7 @@ public:
 
 	PropPath(PropKey key) { *this = key; }
 	PropPath(Name name) { *this = name; }
+	PropPath(PropVal::Integer i) { *this = i; }
 
 	PropPath(const std::string& path) { *this = path; }
 	PropPath(const char *path) { *this = path; }

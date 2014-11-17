@@ -461,6 +461,7 @@ PropPath& PropPath::operator=(const std::string& path) {
 
 PropPath& PropPath::operator=(const PropVal& propVal) {
 	if (propVal.isName()) *this = propVal.asName();
+	else if (propVal.isInteger()) *this = propVal.asInteger();
 	else if (propVal.isString()) *this = propVal.asString();
 	else if (propVal.isArray()) {
 		const auto& a = propVal.asArray();
