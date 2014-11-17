@@ -33,13 +33,15 @@ public:
 	Input<T> input{this};
 	Output<Hist> output{this};
 
+	Param<std::string> histName{this, "histName", "Histogram Name", "hist"};
+	Param<std::string> histTitle{this, "histTitle", "Histogram Title", ""};
 	Param<Int_t> nBins{this, "nBins", "Number of bins", 8};
 	Param<Double_t> xlow{this, "xlow", "Low edge of first bin", 0};
 	Param<Double_t> xup{this, "xup", "Upper edge of last bin (not included in last bin)", 10};
 
 	void newReduction() override {
 		output.value() = std::unique_ptr<Hist>(
-			new Hist(output.name().toString().c_str(), output.title().c_str(), nBins, xlow, xup)
+			new Hist(histName.get().c_str(), histTitle.get().c_str(), nBins, xlow, xup)
 		);
 	}
 
