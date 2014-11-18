@@ -151,7 +151,15 @@ void Bric::unregisterComponent(BricComponent* component) {
 }
 
 
-void Bric::addDynBric(PropKey bricName, const PropVal& config) {
+Bric* Bric::addDynBric(std::unique_ptr<Bric> dynBric) {
+	Bric* dynBricPtr = dynBric.get();
+	dynBricPtr->setParent(this);
+	m_dynBrics[dynBricPtr->name()] = std::move(dynBric);
+	return dynBricPtr;
+}
+
+
+Bric* Bric::addDynBric(PropKey bricName, const PropVal& config) {
 	if (!isBricConfig(config)) throw invalid_argument("Invalid configuration format for dynamic sub-bric \"%s\" in bric \"%s\""_format(bricName, absolutePath()));
 	dbrx_log_debug("Creating dynamic bric \"%s\" inside bric \"%s\""_format(bricName, absolutePath()));
 	Props subBricProps = config.asProps();
@@ -163,6 +171,7 @@ void Bric::addDynBric(PropKey bricName, const PropVal& config) {
 	m_dynBrics[dynBricPtr->name()] = std::move(dynBric);
 	m_dynBricClassNames[dynBricPtr->name()] = className;
 	dynBricPtr->applyConfig(config);
+	return dynBricPtr;
 }
 
 

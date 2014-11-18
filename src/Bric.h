@@ -196,8 +196,9 @@ protected:
 
 	virtual bool isBricConfig(const PropVal& config) final;
 
-	virtual void addDynBric(PropKey bricName, const PropVal& config);
-	virtual void delDynBric(PropKey bricName);
+	virtual Bric* addDynBric(std::unique_ptr<Bric> dynBric) final;
+	virtual Bric* addDynBric(PropKey bricName, const PropVal& config) final;
+	virtual void delDynBric(PropKey bricName) final;
 
 	virtual InputTerminal* connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) final;
 
