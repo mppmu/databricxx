@@ -312,6 +312,11 @@ public:
 	};
 
 
+	const std::map<PropKey, ParamTerminal*>& params() const { return m_params; }
+	const std::map<PropKey, OutputTerminal*>& outputs() const { return m_outputs; }
+	const std::map<PropKey, InputTerminal*>& inputs() const { return m_inputs; }
+
+
 	void applyConfig(const PropVal& config) override;
 	PropVal getConfig() const override;
 
