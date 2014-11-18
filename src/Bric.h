@@ -206,12 +206,18 @@ protected:
 	virtual InputTerminal* connectOwnInputTo(PropKey inputName, Terminal& source);
 
 	// Must always be called for a whole set of interdependent sibling brics
-	virtual void disconnectInputs() final;
+	virtual void disconnectInputs();
+	static void disconnectInputsOn(Bric &other) { other.disconnectInputs(); }
 
-	virtual void connectInputs() final;
-	virtual void updateDeps() final;
+	virtual void connectInputs();
+	static void connectInputsOn(Bric &other) { other.connectInputs(); }
 
-	virtual void initRecursive() final;
+	virtual void updateDeps();
+	static void updateDepsOn(Bric &other) { other.updateDeps(); }
+
+	virtual void initRecursive();
+
+	virtual void initTDirectory();
 
 public:
 	template <typename T> class TypedTerminal
@@ -432,6 +438,8 @@ protected:
 	std::atomic<size_t> m_nDestsReadyForInput;
 
 	size_t m_outputCounter;
+
+	static size_t outputCounterOn(const Bric &other) { return other.m_outputCounter; }
 
 
 	virtual bool hasDests() const final { return ! m_dests.empty(); }
@@ -982,13 +990,11 @@ public:
 
 
 
-class InputTerminalGroup: public virtual TerminalGroup, public virtual BricWithInputs {
-public:
-	void processInput() override {}
-};
+class InputTerminalGroup: public virtual TerminalGroup, public virtual BricWithInputs {};
 
 
 class InputGroup: public virtual InputTerminalGroup, public BricImpl {
+	void processInput() override {}
 	using BricImpl::BricImpl;
 };
 

@@ -294,8 +294,7 @@ void Bric::updateDeps() {
 void Bric::initRecursive() {
 	dbrx_log_debug("Recursively initialize bric \"%s\" (%s srcs, %s dests) and all inner brics"_format(absolutePath(), nSources(), nDests()));
 
-	m_tDirectory = unique_ptr<TDirectory>(new TDirectory(name().toString().c_str(), title().c_str()));
-	dbrx_log_debug("Created new TDirectory for bric \"%s\" with path \"%s\""_format(absolutePath(), localTDirectory()->GetPath()));
+	initTDirectory();
 	TempChangeOfTDirectory tDirChange(localTDirectory());
 
 	for (auto &entry: m_brics) entry.second->initRecursive();
@@ -305,6 +304,12 @@ void Bric::initRecursive() {
 		mkstring(mapped(m_dests, [&](Bric* bric){ return bric->name(); }), ", ")
 	));
 	init();
+}
+
+
+void Bric::initTDirectory() {
+	m_tDirectory = unique_ptr<TDirectory>(new TDirectory(name().toString().c_str(), title().c_str()));
+	dbrx_log_debug("Created new TDirectory for bric \"%s\" with path \"%s\""_format(absolutePath(), localTDirectory()->GetPath()));
 }
 
 
