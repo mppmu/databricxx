@@ -20,9 +20,10 @@
 
 #include "Bric.h"
 
-class TTree;
-class TChain;
-#include<TChain.h>
+#include <TNamed.h>
+#include <TFile.h>
+#include <TTree.h>
+#include <TChain.h>
 
 namespace dbrx {
 
@@ -53,6 +54,66 @@ public:
 	bool nextOutput() override;
 
 	using MapperBric::MapperBric;
+};
+
+
+
+class RootFileWriter: public AsyncReducerBric {
+protected:
+	static const PropKey s_thisDirName;
+
+	static void writeObject(TNamed *obj);
+
+	void connectInputs() override;
+
+public:
+	class ContentGroup final: public DynInputGroup {
+	protected:
+		struct SourceInfo {
+			size_t inputCounter;
+			std::vector<const Terminal*> inputs;
+		};
+
+		RootFileWriter* m_writer;
+		std::map<const Bric*, SourceInfo> m_sourceInfos;
+		std::vector<PropPath> m_content;
+
+		void connectInputs() override;
+
+		void initTDirectory() override;
+
+		ContentGroup& subGroup(PropKey name);
+
+	public:
+		void processInput() override;
+
+		bool isTopGroup() const { return &parent() == m_writer; }
+
+		void addContent(const PropVal &content);
+		void addContent(const PropPath &sourcePath);
+
+		void openOutput();
+		void closeOutput();
+
+		ContentGroup() {}
+		ContentGroup(RootFileWriter *writer, Bric *parentBric, PropKey groupName);
+	};
+
+	ContentGroup inputs{this, this, "inputs"};
+
+	Param<std::string> fileName{this, "fileName", "File Name"};
+	Param<std::string> title{this, "title", "Title"};
+	Param<PropVal> content{this, "content", "Content"};
+
+	Output<std::string> output{this};
+
+	void newReduction() override;
+
+	void processInput() override;
+
+	void finalizeReduction() override;
+
+	using AsyncReducerBric::AsyncReducerBric;
 };
 
 
