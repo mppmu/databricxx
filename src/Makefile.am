@@ -66,11 +66,11 @@ rootmap_DATA += .libs/libdatabricxx.rootmap
 rootmap_DATA += .libs/libdatabricxx_rdict.pcm
 
 libdatabricxx_rdict.cxx: $(libdatabricxx_la_headers) databricxx_LinkDef.h
-	$(ROOTCLING) -f $@.tmp -s libdatabricxx@SHLIBEXT@ -rml libdatabricxx@SHLIBEXT@ -rmf libdatabricxx.rootmap -c $(CPPFLAGS) $(CXXFLAGS) -I$(includedir) $+
+	$(ROOTCLING) -f $@.tmp -s libdatabricxx@SHLIBEXT@ -rml libdatabricxx@SHLIBEXT@ -rmf libdatabricxx.rootmap.tmp -c $(CPPFLAGS) $(CXXFLAGS) -I$(includedir) $+
 	@# Some magic to prefix header names with "$(PACKAGE)/", and only that, in dictionary and rootmap:
-	$(GREP) -F -v '"'"`pwd`"'/",' $@.tmp | $(SED) 's|"\([^"]*/\)\?\([^/"]*[.]h\)",|"'$(PACKAGE)/'\2",| ; s|\\"\([^"]*/\)\?\([^/"]*[.]h\)\\"\\n"|\\"'$(PACKAGE)/'\2\\"\\n"|' > $@ && $(RM) $@.tmp
-	$(SED) 's|\$$clingAutoload\$$\([^/""]\+/\)*|$$clingAutoload$$'$(PACKAGE)'/|; /.*DICTPAYLOAD(.*/,/.*)DICTPAYLOAD.*/ s|#include "\([^/"]\+/\)*\(.*\)"|#include <'$(PACKAGE)'/\2>|' -i $@
-	$(SED) 's|\(header \+\)\([^ ].*/\)\?\([^ ].*[.]h\)|\1'$(PACKAGE)/'\3|' -i libdatabricxx.rootmap
+	$(GREP) -F -v '"'"`pwd`"'/",' $@.tmp | $(SED) 's|"\([^"]*/\)\?\([^/"]*[.]h\)",|"'$(PACKAGE)/'\2",| ; s|\\"\([^"]*/\)\?\([^/"]*[.]h\)\\"\\n"|\\"'$(PACKAGE)/'\2\\"\\n"|' > $@.tmp2
+	$(SED) 's|\$$clingAutoload\$$\([^/""]\+/\)*|$$clingAutoload$$'$(PACKAGE)'/|; /.*DICTPAYLOAD(.*/,/.*)DICTPAYLOAD.*/ s|#include "\([^/"]\+/\)*\(.*\)"|#include <'$(PACKAGE)'/\2>|' $@.tmp2 > $@ && $(RM) $@.tmp $@.tmp2
+	$(SED) 's|\(header \+\)\([^ ].*/\)\?\([^ ].*[.]h\)|\1'$(PACKAGE)/'\3|' libdatabricxx.rootmap.tmp > libdatabricxx.rootmap && $(RM) libdatabricxx.rootmap.tmp
 
 .libs/libdatabricxx.rootmap: libdatabricxx.la
 	cp libdatabricxx.rootmap libdatabricxx_rdict.pcm .libs/
