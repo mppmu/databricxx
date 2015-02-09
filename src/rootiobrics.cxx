@@ -59,13 +59,14 @@ void TTreeIterBric::processInput() {
 
 	entry.connectBranches(this, m_chain.get());
 
-	index = -1;
-	size = m_chain->GetEntries();
+	index = firstEntry - 1;
+	size = m_chain->GetEntries() - firstEntry.get();
+	if (ssize_t(nEntries) > 0) size = std::min(ssize_t(nEntries), size.get());
 }
 
 
 bool TTreeIterBric::nextOutput() {
-	if (index.get() < size.get()) {
+	if (index.get() < firstEntry.get() + size.get()) {
 		m_chain->GetEntry(index++);
 		return true;
 	} else return false;

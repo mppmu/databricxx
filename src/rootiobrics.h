@@ -45,6 +45,8 @@ public:
 
 	Param<std::string> treeName{this, "treeName"};
 	Param<int64_t> cacheSize{this, "cacheSize", "Input read-ahead cache size (-1 for default)", -1};
+	Param<int64_t> nEntries{this, "nEntries", "Number of entries to read (-1 for all)", -1};
+	Param<int64_t> firstEntry{this, "firstEntry", "First entry to read", 0};
 
 	Entry entry{this, "entry"};
 
