@@ -160,6 +160,12 @@ public:
 	void setToDefault() final override { operator=(std::unique_ptr<T>( new T() )); }
 	void clear() final override { operator=(std::unique_ptr<T>((T*)nullptr)); }
 
+	virtual T* release() final {
+		T* result = nullptr;
+		std::swap(result, *pptr());
+		return result;
+	}
+
 	TypedWritableValue<T>& operator=(const T &v) {
 		if (ptr() != nullptr) *ptr() = v;
 		else *pptr() = new T(v);
