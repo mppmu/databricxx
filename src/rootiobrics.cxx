@@ -74,31 +74,9 @@ bool RootTreeReader::nextOutput() {
 
 
 
-TTree* RootTreeWriter::addOutputTree(TDirectory *directory) {
+TTree* RootTreeWriter::newTree(TDirectory *directory) {
 	TempChangeOfTDirectory outTDir(directory);
-
-	bool isPrimary = output.value().empty();
-
-	dbrx_log_debug("Creating new TTree \"%s\" as %s output of bric \"%s\" in TDirectory \"%s\" ", treeName.get(), (isPrimary ? "primary" : "seconday"), absolutePath(), directory->GetPath());
-	TTree* tree = new TTree(treeName.get().c_str(), treeTitle.get().c_str());
-	entry.createOutputBranches(tree);
-	m_trees.push_back(tree);
-
-	if (isPrimary) output.value() = unique_ptr<TTree>(tree);
-
-	return tree;
-}
-
-
-void RootTreeWriter::releaseOutputTrees() {
-	if (!output.value().empty() && (output.value().get().GetDirectory() != localTDirectory())) {
-		// Don't own the output tree, so release it:
-		output.value().release();
-	} else {
-		// We own the output tree, so delete it:
-		output.value().clear();
-	}
-	m_trees.clear();
+	return new TTree(treeName.get().c_str(), treeTitle.get().c_str());
 }
 
 
@@ -148,9 +126,18 @@ RootTreeWriter::Entry::Entry(RootTreeWriter *writer, PropKey entryName)
 
 
 void RootTreeWriter::newReduction() {
-	releaseOutputTrees();
-	if (m_outputDirProviders.empty()) addOutputTree(localTDirectory());
-	else for (auto &getDir: m_outputDirProviders) addOutputTree(getDir());
+	// Dummy output tree:
+	output.value() = unique_ptr<TTree>(newTree(localTDirectory()));
+
+	// Actual output trees, created directly inside TDirectories of consumers:
+	m_trees.clear();
+	for (auto &getDir: m_outputDirProviders) {
+		TDirectory* targetDirectory = getDir();
+		dbrx_log_debug("Creating new TTree \"%s\" as output of bric \"%s\" in TDirectory \"%s\" ", treeName.get(), absolutePath(), targetDirectory->GetPath());
+		TTree* tree = newTree(targetDirectory);
+		entry.createOutputBranches(tree);
+		m_trees.push_back(tree);
+	}
 }
 
 
@@ -163,11 +150,6 @@ void RootTreeWriter::processInput() {
 
 
 void RootTreeWriter::finalizeReduction() {
-}
-
-
-RootTreeWriter::~RootTreeWriter() {
-	releaseOutputTrees();
 }
 
 
@@ -240,8 +222,8 @@ void RootFileWriter::ContentGroup::processInput() {
 					dbrx_log_trace("No further action necessary for output of TTree \"%s\" to content group \"%s\"", inputObject->GetName(), absolutePath());
 				} else {
 					// Need to clone inputObject to own it:
+					dbrx_log_trace("Cloning object \"%s\" to content group \"%s\"", inputObject->GetName(), absolutePath());
 					TNamed *outputObject = (TNamed*) inputObject->Clone();
-					dbrx_log_trace("Writing object \"%s\" to content group \"%s\"", outputObject->GetName(), absolutePath());
 					writeObject(outputObject);
 				}
 			}

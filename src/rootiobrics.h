@@ -67,8 +67,7 @@ protected:
 	std::vector< std::function<TDirectory*()> > m_outputDirProviders;
 	std::vector< TTree* > m_trees;
 
-	TTree* addOutputTree(TDirectory *directory);
-	virtual void releaseOutputTrees();
+	TTree* newTree(TDirectory *directory);
 
 public:
 	class Entry final: public DynInputGroup {
@@ -108,8 +107,6 @@ public:
 	void finalizeReduction() override;
 
 	using ReducerBric::ReducerBric;
-
-	~RootTreeWriter() override;
 };
 
 
