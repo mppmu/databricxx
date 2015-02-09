@@ -73,6 +73,104 @@ bool TTreeIterBric::nextOutput() {
 
 
 
+TTree* RootTreeWriter::addOutputTree(TDirectory *directory) {
+	TempChangeOfTDirectory outTDir(directory);
+
+	bool isPrimary = output.value().empty();
+
+	dbrx_log_debug("Creating new TTree \"%s\" as %s output of bric \"%s\" in TDirectory \"%s\" ", treeName.get(), (isPrimary ? "primary" : "seconday"), absolutePath(), directory->GetPath());
+	TTree* tree = new TTree(treeName.get().c_str(), treeTitle.get().c_str());
+	entry.createOutputBranches(tree);
+	m_trees.push_back(tree);
+
+	if (isPrimary) output.value() = unique_ptr<TTree>(tree);
+
+	return tree;
+}
+
+
+void RootTreeWriter::releaseOutputTrees() {
+	if (!output.value().empty() && (output.value().get().GetDirectory() != localTDirectory())) {
+		// Don't own the output tree, so release it:
+		output.value().release();
+	} else {
+		// We own the output tree, so delete it:
+		output.value().clear();
+	}
+	m_trees.clear();
+}
+
+
+void RootTreeWriter::Entry::applyConfig(const PropVal& config) {
+	Props configProps = config.asProps();
+	m_inputSources.clear(); m_inputSources.reserve(configProps.size());
+	for (const auto &e: config.asProps())
+		m_inputSources.push_back({e.first, PropPath(e.second)});
+}
+
+
+PropVal RootTreeWriter::Entry::getConfig() const {
+	Props configProps;
+	for (const auto &br: m_inputSources) configProps[br.first] = br.second;
+	return PropVal(std::move(configProps));
+}
+
+
+void RootTreeWriter::Entry::connectInputs() {
+	dbrx_log_trace("Creating and connecting dynamic inputs of bric \"%s\"", absolutePath());
+	if (m_inputsConnected) throw logic_error("Can't connect already connected inputs in bric \"%s\""_format(absolutePath()));
+
+	for (const auto &br: m_inputSources)
+		InputTerminal *input = connectInputToSiblingOrUp(*this, br.first, br.second);
+}
+
+
+void RootTreeWriter::Entry::disconnectInputs() {
+	m_dynBrics.clear();
+}
+
+
+void RootTreeWriter::Entry::createOutputBranches(TTree *tree) {
+	std::map<std::string, const InputTerminal*> sortedInputs;
+	for (const auto &in: inputs()) sortedInputs[in.first.toString()] = in.second;
+	for (const auto &in: sortedInputs) {
+		const string& branchName = in.first;
+		const InputTerminal* branchInput = in.second;
+		dbrx_log_trace("Creating output branch \"%s\" for input \"%s\" of \"%s\"", branchName, branchInput->name(), absolutePath());
+		RootIO::outputValueTo(branchInput->value(), tree, branchName);
+	}
+}
+
+
+RootTreeWriter::Entry::Entry(RootTreeWriter *writer, PropKey entryName)
+	: DynInputGroup(writer, entryName), m_writer(writer) {}
+
+
+void RootTreeWriter::newReduction() {
+	releaseOutputTrees();
+	if (m_outputDirProviders.empty()) addOutputTree(localTDirectory());
+	else for (auto &getDir: m_outputDirProviders) addOutputTree(getDir());
+}
+
+
+void RootTreeWriter::processInput() {
+	for (auto tree: m_trees) {
+		dbrx_log_trace("Filling output tree \"%s/%s\" of \"%s\"", tree->GetDirectory()->GetPath(), tree->GetName(), absolutePath());
+		tree->Fill();
+	}
+}
+
+
+void RootTreeWriter::finalizeReduction() {
+}
+
+
+RootTreeWriter::~RootTreeWriter() {
+	releaseOutputTrees();
+}
+
+
+
 const PropKey RootFileWriter::s_thisDirName(".");
 
 
@@ -85,11 +183,23 @@ void RootFileWriter::ContentGroup::connectInputs() {
 
 	for (const PropPath &sourcePath: m_content) {
 		InputTerminal *input = connectInputToSiblingOrUp(*this, nextInputIdx++, sourcePath);
+		dbrx_log_trace("Triggering input from terminal \"%s\" on output of bric \"%s\" in \"%s\"", input->srcTerminal()->absolutePath(), input->effSrcBric()->absolutePath(), absolutePath());
+
+		auto constTDirOutBric = dynamic_cast<const RootTreeWriter*>(&input->srcTerminal()->parent());
+		if (constTDirOutBric) {
+			// TODO: Find a way to eliminate this const_cast:
+			auto tdirOutBric = const_cast<RootTreeWriter*>(constTDirOutBric);
+
+			dbrx_log_trace("trigger Adding TDirectory of bric \"%s\" to output directories of bric \"%s\"", absolutePath(), tdirOutBric->absolutePath());
+			tdirOutBric->addOutputDirProvider([&]() {
+				m_writer->inputs.openOutput();
+				return localTDirectory();
+			} );
+		}
 
 		if (! TypeReflection(typeid(TNamed)).isPtrAssignableFrom(input->value().typeInfo()) )
 			throw logic_error("Source terminal \"%s\" used for input in \"%s\" is not of type TNamed"_format(input->srcTerminal()->absolutePath(), absolutePath()));
 
-		dbrx_log_trace("Triggering input from terminal \"%s\" on output of bric \"%s\" in \"%s\"", input->srcTerminal()->absolutePath(), input->effSrcBric()->absolutePath(), absolutePath());
 		m_sourceInfos[input->effSrcBric()].inputs.push_back(input);
 	}
 
@@ -123,9 +233,16 @@ void RootFileWriter::ContentGroup::processInput() {
 			info.inputCounter = outputCounterOn(*source);
 			for (const Terminal* input: info.inputs) {
 				const TNamed *inputObject = (const TNamed*)input->value().untypedPtr();
-				TNamed *outputObject = (TNamed*) inputObject->Clone();
-				dbrx_log_trace("Writing object \"%s\" to content group \"%s\"", outputObject->GetName(), absolutePath());
-				writeObject(outputObject);
+
+				if (typeid(*inputObject) == typeid(TTree)) {
+					// TTree is special - it or a clone of it should already be inside m_tDirectoy:
+					dbrx_log_trace("No further action necessary for output of TTree \"%s\" to content group \"%s\"", inputObject->GetName(), absolutePath());
+				} else {
+					// Need to clone inputObject to own it:
+					TNamed *outputObject = (TNamed*) inputObject->Clone();
+					dbrx_log_trace("Writing object \"%s\" to content group \"%s\"", outputObject->GetName(), absolutePath());
+					writeObject(outputObject);
+				}
 			}
 		}
 	}
@@ -173,6 +290,9 @@ void RootFileWriter::ContentGroup::addContent(const PropPath &sourcePath) {
 
 
 void RootFileWriter::ContentGroup::openOutput() {
+	// Legal to call when already open:
+	if (m_outputIsOpen) return;
+
 	for (auto &entry: m_sourceInfos) { entry.second.inputCounter = 0; }
 
 	if (isTopGroup()) {
@@ -191,10 +311,17 @@ void RootFileWriter::ContentGroup::openOutput() {
 	}
 
 	for (auto &entry: m_brics) dynamic_cast<ContentGroup*>(entry.second)->openOutput();
+
+	m_outputIsOpen = true;
 }
 
 
 void RootFileWriter::ContentGroup::closeOutput() {
+	// Legal to call when already closed:
+	if (! m_outputIsOpen) return;
+
+	m_outputIsOpen = false;
+
 	for (auto &entry: m_brics) dynamic_cast<ContentGroup*>(entry.second)->closeOutput();
 
 	if (isTopGroup()) {

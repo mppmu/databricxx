@@ -18,6 +18,8 @@
 #ifndef DBRX_ROOTIOBRICS_H
 #define DBRX_ROOTIOBRICS_H
 
+#include <functional>
+
 #include "Bric.h"
 
 #include <TNamed.h>
@@ -58,6 +60,58 @@ public:
 
 
 
+class RootTreeWriter: public ReducerBric {
+protected:
+	std::vector< std::function<TDirectory*()> > m_outputDirProviders;
+	std::vector< TTree* > m_trees;
+
+	TTree* addOutputTree(TDirectory *directory);
+	virtual void releaseOutputTrees();
+
+public:
+	class Entry final: public DynInputGroup {
+	protected:
+		RootTreeWriter* m_writer;
+		std::vector< std::pair<PropKey, PropPath> > m_inputSources;
+
+		void connectInputs() override;
+		void disconnectInputs() override;
+
+	public:
+		void applyConfig(const PropVal& config) override;
+		PropVal getConfig() const override;
+
+		void processInput() override {}
+
+		void createOutputBranches(TTree *tree);
+
+		Entry() {}
+		Entry(RootTreeWriter *writer, PropKey entryName);
+	};
+
+	virtual void addOutputDirProvider(std::function<TDirectory*()> provider)
+		{ m_outputDirProviders.push_back(std::move(provider)); }
+
+	Entry entry{this, "entry"};
+
+	Param<std::string> treeName{this, "treeName", "Tree Name", "tree"};
+	Param<std::string> treeTitle{this, "treeTitle", "Tree Title", ""};
+
+	Output<TTree> output{this, "", "Output Tree"};
+
+	void newReduction() override;
+
+	void processInput() override;
+
+	void finalizeReduction() override;
+
+	using ReducerBric::ReducerBric;
+
+	~RootTreeWriter() override;
+};
+
+
+
 class RootFileWriter: public AsyncReducerBric {
 protected:
 	static const PropKey s_thisDirName;
@@ -73,6 +127,8 @@ public:
 			size_t inputCounter;
 			std::vector<const Terminal*> inputs;
 		};
+
+		bool m_outputIsOpen = false;
 
 		RootFileWriter* m_writer;
 		std::map<const Bric*, SourceInfo> m_sourceInfos;
@@ -92,6 +148,7 @@ public:
 		void addContent(const PropVal &content);
 		void addContent(const PropPath &sourcePath);
 
+		bool outputIsOpen() { return m_outputIsOpen; }
 		void openOutput();
 		void closeOutput();
 
