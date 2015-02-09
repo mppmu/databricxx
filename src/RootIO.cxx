@@ -20,6 +20,8 @@
 #include <stdexcept>
 
 #include <TDataType.h>
+#include <TString.h>
+#include <TUUID.h>
 
 #include "format.h"
 #include "TypeReflection.h"
@@ -75,7 +77,9 @@ void RootIO::inputValueFrom(WritableValue& value, TTree *tree, const std::string
 }
 
 
-void RootIO::outputValueTo(Value& value, TTree *tree, const std::string& branchName, Int_t bufsize, Int_t splitlevel) {
+void RootIO::outputValueTo(const Value& value, TTree *tree, const std::string& branchName, Int_t bufsize, Int_t defaultSplitlevel, bool adaptSplitlevel) {
+	Int_t splitlevel = defaultSplitlevel;
+
 	if (! value.valid()) throw invalid_argument("Cannot output invalid value object to branch");
 	const char* bName = branchName.c_str();
 	EDataType dataType = TDataType::GetType(value.typeInfo());
@@ -84,7 +88,17 @@ void RootIO::outputValueTo(Value& value, TTree *tree, const std::string& branchN
 	if (dataType == kNoType_t) { // Unknown type
 		throw invalid_argument("Cannot create branch for kNoType_t");
 	} else if (dataType == EDataType::kOther_t) { // Object type
-		const TClass *cl = TypeReflection(value.typeInfo()).getTClass();
+		TypeReflection trefl(value.typeInfo());
+		const TClass *cl = trefl.getTClass();
+		if (adaptSplitlevel) {
+			// Must set splitlevel to -1 for classes with custom streamers
+			// (see documenatation of TTree:Branch):
+			if (cl->TestBit(TClass::kHasCustomStreamerMember)) splitlevel = -1;
+
+			// Do not split branches for certain classes:
+			if (TypeReflection(typeid(TString)).isPtrAssignableFrom(trefl)) splitlevel = 0;
+			if (TypeReflection(typeid(TUUID)).isPtrAssignableFrom(trefl)) splitlevel = 0;
+		}
 		branch = tree->Branch(bName, cl->GetName(), const_cast<void**>(value.untypedPPtr()), bufsize, splitlevel);
 	} else { // Primitive type
 		char typeSymbol = getTypeSymbol(value.typeInfo());
