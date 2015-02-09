@@ -34,7 +34,7 @@ public:
 
 	virtual const std::type_info& typeInfo() const = 0;
 
-	bool isPtrAssignableTo(const std::type_info& otherType) const;
+	virtual bool isPtrAssignableTo(const std::type_info& otherType) const final;
 
 	virtual const void* const * untypedPPtr() const = 0;
 
@@ -66,7 +66,7 @@ class WritableValue: public virtual Value {
 public:
 	virtual void* * untypedPPtr() = 0;
 
-	void* untypedPtr() { return *untypedPPtr(); }
+	virtual void* untypedPtr() final { return *untypedPPtr(); }
 
 	template<typename T> T* * typedPPtr() {
 		if (typeid(T) == typeInfo()) return (T* *) untypedPPtr();
