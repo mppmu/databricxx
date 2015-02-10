@@ -49,6 +49,9 @@
 // Props.h
 #pragma link C++ class dbrx::PropVal-;
 
+// Printable.h
+#pragma link C++ class dbrx::Printable-;
+
 // RootCollection.h
 
 // RootIO.h

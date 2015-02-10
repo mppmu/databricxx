@@ -19,6 +19,7 @@ libdatabricxx_la_SOURCES = \
 	DbrxTools.cxx \
 	MRBric.cxx \
 	Name.cxx NameTable.cxx \
+	Printable.cxx \
 	Props.cxx \
 	RootCollection.cxx \
 	RootIO.cxx \
@@ -39,6 +40,7 @@ libdatabricxx_la_headers = \
 	DbrxTools.h \
 	MRBric.h \
 	Name.h NameTable.h \
+	Printable.h \
 	Props.h \
 	RootCollection.h \
 	RootIO.h \
