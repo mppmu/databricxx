@@ -99,6 +99,7 @@ public:
 class ValueRef: public virtual WritableValue {
 public:
 	virtual void referTo(WritableValue &source) = 0;
+	virtual bool isReferringTo(const WritableValue &source) const = 0;
 
 	friend void swap(ValueRef &a, ValueRef &b)
 		{ swap(static_cast<WritableValue &>(a), static_cast<WritableValue &>(b)); }
@@ -109,6 +110,7 @@ public:
 class ConstValueRef: public virtual Value {
 public:
 	virtual void referTo(const Value &source) = 0;
+	virtual bool isReferringTo(const Value &source) const = 0;
 };
 
 
@@ -280,6 +282,9 @@ public:
 	void referTo(WritableValue &source) final override
 		{ m_value = source.typedPPtr<T>(); }
 
+	bool isReferringTo(const WritableValue &source) const final override
+		{ return m_value == source.typedPPtr<T>(); }
+
 	const std::type_info& typeInfo() const final override { return typeid(T); }
 
 	const void* const * untypedPPtr() const final override { return (const void* const *) m_value; }
@@ -335,6 +340,9 @@ public:
 
 	void referTo(const Value &source) final override
 		{ m_value = source.typedPPtr<T>(); }
+
+	bool isReferringTo(const Value &source) const final override
+		{ return m_value == source.typedPPtr<T>(); }
 
 	const std::type_info& typeInfo() const final override { return typeid(T); }
 
