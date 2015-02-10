@@ -28,6 +28,7 @@
 #include <cassert>
 
 #include "Name.h"
+#include "Printable.h"
 
 
 namespace dbrx {
@@ -36,7 +37,7 @@ namespace dbrx {
 class PropVal;
 
 
-class PropKey final {
+class PropKey final: public virtual Printable {
 public:
 	enum class Type: int32_t {
 		INTEGER = 2,
@@ -174,8 +175,7 @@ public:
 	void toJSON(std::ostream &out) const;
 	std::string toJSON() const;
 
-	std::ostream& print(std::ostream &os) const;
-	std::string toString() const;
+	std::ostream& print(std::ostream &os) const override;
 
 
 	PropKey() : m_type(Type::NAME), m_content(Name()) {}
@@ -203,8 +203,6 @@ public:
 	PropKey(const std::string &value);
 
 	PropKey(const char* value) : PropKey(std::string(value)) {}
-
-	friend std::string to_string(PropKey propKey) { return propKey.toString(); }
 };
 
 
@@ -226,7 +224,7 @@ inline void assign_from(std::string &to, const PropKey &from) { to = from.toStri
 using Prop = std::pair<const PropKey, PropVal>;
 
 
-class PropVal final {
+class PropVal final: public virtual Printable {
 public:
 	enum class Type: int32_t {
 		NONE = 0,
@@ -578,8 +576,7 @@ public:
 	static PropVal fromFile(const std::string &inFileName);
 
 
-	std::ostream& print(std::ostream &os) const;
-	std::string toString() const;
+	std::ostream& print(std::ostream &os) const override;
 
 
 	PropVal() {}
@@ -683,6 +680,7 @@ protected:
 	static Props& patchMerge(Props &a, Props b, bool merge);
 
 public:
+	// Necessary for Props, etc., despite inheriting from Printable:
 	friend std::string to_string(const PropVal &propVal) { return propVal.toString(); }
 
 	friend Props operator-(const Props &a, const Props &b) { return diff(a, b); }
@@ -786,8 +784,13 @@ void assign_from(PropVal &to, const std::map<K, V, Compare, Alloc> &from) {
 using Props = PropVal::Props;
 
 
+// Necessary for Props, etc., despite inheriting from Printable:
+inline std::ostream& operator<<(std::ostream &os, const PropVal &value)
+	{ return value.print(os); }
 
-class PropPath final {
+
+
+class PropPath final: public virtual Printable {
 public:
 	using Elements = std::vector<PropKey>;
 protected:
@@ -797,7 +800,7 @@ public:
 	using iterator = Elements::iterator;
 	using const_iterator = Elements::const_iterator;
 
-	class Fragment final {
+	class Fragment final: public virtual Printable {
 	public:
 		using const_iterator = typename PropPath::const_iterator;
 		using size_type = typename const_iterator::difference_type;
@@ -818,15 +821,11 @@ public:
 		PropKey front() const { return *begin(); }
 		Fragment tail() const { const_iterator from = begin(); return Fragment(++from, end()); }
 
-		std::string toString() const;
-
-		std::ostream& print(std::ostream &os) const;
+		std::ostream& print(std::ostream &os) const override;
 
 		Fragment() {}
 		Fragment(const_iterator from, const_iterator until): m_begin(from), m_end(until){}
 		Fragment(const PropPath &path): m_begin(path.begin()), m_end(path.end()) {}
-
-		friend std::string to_string(const Fragment &fragment) { return fragment.toString(); }
 	};
 
 	bool empty() const { return m_elements.empty(); }
@@ -852,9 +851,7 @@ public:
 		return *this;
 	}
 
-	std::string toString() const { return Fragment(*this).toString(); }
-
-	std::ostream& print(std::ostream &os) const { return Fragment(*this).print(os); }
+	std::ostream& print(std::ostream &os) const override { return Fragment(*this).print(os); }
 
 	operator PropVal () const { return PropVal(toString()); }
 
@@ -893,25 +890,7 @@ public:
 
 	friend PropPath operator%(PropPath a, PropKey b) { a %= b; return a; }
 	friend PropPath operator+(PropPath a, const PropPath& b) { a += b; return a; }
-
-	friend std::string to_string(const PropPath &propPath) { return Fragment(propPath).toString(); }
 };
-
-
-
-inline std::ostream& operator<<(std::ostream &os, const PropKey &value)
-	{ return value.print(os); }
-
-
-inline std::ostream& operator<<(std::ostream &os, const PropVal &value)
-	{ return value.print(os); }
-
-
-inline std::ostream& operator<<(std::ostream &os, const PropPath &value)
-	{ return value.print(os); }
-
-inline std::ostream& operator<<(std::ostream &os, const PropPath::Fragment &value)
-	{ return value.print(os); }
 
 
 

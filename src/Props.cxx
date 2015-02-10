@@ -75,13 +75,6 @@ std::ostream& PropKey::print(std::ostream &os) const {
 }
 
 
-std::string PropKey::toString() const {
-	stringstream out;
-	print(out);
-	return out.str();
-}
-
-
 PropKey::PropKey(const std::string &value) {
 	try {
 		long long i = stoll(value);
@@ -338,13 +331,6 @@ std::ostream& PropVal::print(std::ostream &os) const {
 }
 
 
-std::string PropVal::toString() const {
-	stringstream out;
-	print(out);
-	return out.str();
-}
-
-
 Props PropVal::diff(const Props &a, const Props &b) {
 	auto itA = a.begin(), itB = b.begin();
 
@@ -425,13 +411,6 @@ Props& PropVal::patchMerge(Props &a, Props b, bool merge) {
 	return a;
 }
 
-
-
-std::string PropPath::Fragment::toString() const {
-	stringstream out;
-	print(out);
-	return out.str();
-}
 
 
 std::ostream& PropPath::Fragment::print(std::ostream &os) const {
