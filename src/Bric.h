@@ -27,6 +27,7 @@
 #include <TDirectory.h>
 
 #include "Props.h"
+#include "Printable.h"
 #include "HasValue.h"
 #include "logging.h"
 
@@ -47,6 +48,35 @@ protected:
 	virtual void setParent(Bric *parentBric) = 0;
 
 public:
+	class BCReference final: public virtual Printable {
+	protected:
+		PropPath m_path;
+
+	public:
+		static bool isReference(const PropVal& propVal);
+
+		const PropPath & path() const { return m_path; }
+
+		std::ostream& print(std::ostream &os) const override;
+
+		operator PropVal() const { return PropVal(toString()); }
+
+		BCReference& operator=(PropPath path) { m_path = std::move(path); return *this;}
+
+		BCReference& operator=(const std::string& ref);
+		BCReference& operator=(const char *ref) { return *this = std::string(ref); }
+		BCReference& operator=(const PropVal& ref);
+
+		BCReference() { }
+
+		BCReference(PropPath path) { *this = std::move(path); }
+
+		BCReference(const std::string& ref) { *this = ref; }
+		BCReference(const char *ref) { *this = ref; }
+		BCReference(const PropVal& ref) { *this = ref; }
+	};
+
+
 	virtual PropKey name() const = 0;
 
 	virtual void setName(PropKey componentName) = 0;
@@ -73,6 +103,7 @@ public:
 
 	friend class Bric;
 };
+
 
 
 class BricComponentImpl: public virtual BricComponent {
@@ -136,6 +167,8 @@ public:
 		virtual void setEffSrcBric(const Bric* bric) = 0;
 
 	public:
+		virtual bool hasFixedValue() const = 0;
+
 		virtual const PropPath& source() const = 0;
 
 		virtual const Terminal* srcTerminal() const = 0;
@@ -410,13 +443,14 @@ protected:
 		return nAvail;
 	}
 
-	virtual bool externalSourcesAvailable() const final { return hasExternalSources() && execCounter() == 0; }
+	virtual bool otherSourcesAvailable() const final
+		{ return (execCounter() == 0) && ( hasExternalSources() || (nSources() == 0) );	}
 
 	virtual bool allSourcesAvailable() const final
-		{ return nSourcesAvailable() == nSources() || externalSourcesAvailable(); }
+		{ return nSourcesAvailable() == nSources() || otherSourcesAvailable(); }
 
 	virtual bool anySourceAvailable() const final
-		{ return nSourcesAvailable() > 0 || externalSourcesAvailable(); }
+		{ return nSourcesAvailable() > 0 || otherSourcesAvailable(); }
 
 
 	virtual void incSourcesFinished() final { atomic_fetch_add(&m_nSourcesFinished, size_t(1)); }
@@ -623,6 +657,7 @@ public:
 		PropPath m_source;
 		const Bric* m_effSrcBric;
 		const Terminal *m_srcTerminal;
+		TypedPrimaryValue<T> m_fixedValue;
 
 		virtual void setSrcTerminal(const Terminal* terminal) final { m_srcTerminal = terminal; }
 		virtual void setEffSrcBric(const Bric* bric) final { m_effSrcBric = bric; }
@@ -631,17 +666,34 @@ public:
 		using HasTypedConstValueRefImpl<T>::value;
 		using HasTypedConstValueRefImpl<T>::typeInfo;
 
-		void applyConfig(const PropVal& config) override { m_source = config; }
-		PropVal getConfig() const override { return m_source; }
+		void applyConfig(const PropVal& config) override {
+			if (BCReference::isReference(config)) {
+				m_source = BCReference(config).path();
+			} else {
+				dbrx_log_trace("Assigning fixed value %s to input %s"_format(config, absolutePath()));
+				m_fixedValue.setToDefault();
+				m_fixedValue.fromPropVal(config);
+				value().referTo(m_fixedValue);
+			}
+		}
 
-		virtual const PropPath& source() const final { return m_source; }
+		PropVal getConfig() const override {
+			if (hasFixedValue()) return m_fixedValue.toPropVal();
+			else return PropVal(BCReference(source()));
+		}
 
-		virtual const Terminal* srcTerminal() const final { return m_srcTerminal; }
+		bool hasFixedValue() const override { return value().isReferringTo(m_fixedValue); }
 
-		virtual const Bric* effSrcBric() const final { return m_effSrcBric; }
+		const PropPath& source() const final override { return m_source; }
+
+		const Terminal* srcTerminal() const final override { return m_srcTerminal; }
+
+		const Bric* effSrcBric() const final override { return m_effSrcBric; }
+
+		Input() : m_fixedValue(nullptr) {}
 
 		Input(BricWithInputs *parentBric, PropKey inputName = PropKey(), std::string inputTitle = "")
-			: BricComponentImpl(inputName, std::move(inputTitle))
+			: BricComponentImpl(inputName, std::move(inputTitle)), m_fixedValue(nullptr)
 		{
 			if (name() == PropKey()) m_key = s_defaultInputName;
 			setParent(parentBric);
@@ -953,7 +1005,7 @@ protected:
 						gotSiblingInput = true;
 					}
 				}
-				assert(gotSiblingInput || externalSourcesAvailable()); // Sanity check
+				assert(gotSiblingInput || otherSourcesAvailable()); // Sanity check
 			}
 
 			if (allSourcesFinished()) endReduction();

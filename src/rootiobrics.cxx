@@ -84,13 +84,13 @@ void RootTreeWriter::Entry::applyConfig(const PropVal& config) {
 	Props configProps = config.asProps();
 	m_inputSources.clear(); m_inputSources.reserve(configProps.size());
 	for (const auto &e: config.asProps())
-		m_inputSources.push_back({e.first, PropPath(e.second)});
+		m_inputSources.push_back({e.first, BCReference(e.second).path()});
 }
 
 
 PropVal RootTreeWriter::Entry::getConfig() const {
 	Props configProps;
-	for (const auto &br: m_inputSources) configProps[br.first] = br.second;
+	for (const auto &br: m_inputSources) configProps[br.first] = BCReference(br.second);
 	return PropVal(std::move(configProps));
 }
 
@@ -241,7 +241,7 @@ void RootFileWriter::ContentGroup::addContent(const PropVal &content) {
 		else subGroup(dirName).addContent(dirContent);
 	} else {
 		for (const auto pv: content) {
-			PropPath sourcePath(pv);
+			PropPath sourcePath(BCReference(pv).path());
 			if (sourcePath.empty()) throw invalid_argument("Invalid empty source in configuration for \"%s\""_format(absolutePath()));
 			addContent(sourcePath);
 		}

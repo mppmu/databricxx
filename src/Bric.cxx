@@ -19,6 +19,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <sstream>
 
 #include "TypeReflection.h"
 
@@ -34,6 +35,37 @@ namespace dbrx {
 
 PropPath BricComponent::absolutePath() const {
 	return hasParent() ? parent().absolutePath() % name() : name();
+}
+
+
+
+bool BricComponent::BCReference::isReference(const PropVal& propVal) {
+	if (! propVal.isString()) {
+		return false;
+	} else {
+		const string &s = propVal.asString();
+		if (!s.empty() && (s.front() == '&')) return true;
+		else return false;
+	}
+}
+
+
+BricComponent::BCReference& BricComponent::BCReference::operator=(const std::string& ref) {
+	if (ref.empty() || (ref.front() != '&')) throw std::invalid_argument("Can't initialize BricComponent::BCReference from string \"%s\""_format(ref));
+	auto pathBegin = find_if(ref.begin() + 1, ref.end(), [](char c){ return !iswspace(c); } );
+
+	return *this = PropPath(ref.substr(pathBegin - ref.begin(), ref.npos));
+}
+
+
+BricComponent::BCReference& BricComponent::BCReference::operator=(const PropVal& ref) {
+	if (! ref.isString()) throw std::invalid_argument("Can't initialize BricComponent::BCReference from non string-valued PropVal %s"_format(ref));
+	else return *this = ref.asString();
+}
+
+
+std::ostream& BricComponent::BCReference::print(std::ostream &os) const {
+	return path().print(os << "&");
 }
 
 
@@ -267,11 +299,11 @@ void Bric::connectInputs() {
 	if (m_inputsConnected) throw logic_error("Can't connect already connected inputs in bric \"%s\""_format(absolutePath()));
 
 	for (const auto& input: m_inputs)
-		connectInputToSiblingOrUp(*this, input.second->name(), input.second->source());
-	for (const auto& brics: m_brics)
-		brics.second->connectInputs();
-	for (const auto& brics: m_brics)
-		brics.second->updateDeps();
+		if (! input.second->hasFixedValue())
+			connectInputToSiblingOrUp(*this, input.second->name(), input.second->source());
+
+	for (const auto& brics: m_brics) brics.second->connectInputs();
+	for (const auto& brics: m_brics) brics.second->updateDeps();
 }
 
 
