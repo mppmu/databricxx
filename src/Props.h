@@ -807,8 +807,8 @@ public:
 		const_iterator m_end{};
 
 	public:
-		bool empty() { return m_begin == m_end; }
-		size_type size() { return m_end - m_begin; }
+		bool empty() const { return m_begin == m_end; }
+		size_type size() const { return m_end - m_begin; }
 
 		const_iterator begin() const noexcept { return m_begin; }
 		const_iterator cbegin() const noexcept { return m_begin; }
@@ -829,7 +829,7 @@ public:
 		friend std::string to_string(const Fragment &fragment) { return fragment.toString(); }
 	};
 
-	bool empty() { return m_elements.empty(); }
+	bool empty() const { return m_elements.empty(); }
 
 	Elements& elements() noexcept { return m_elements; }
 	const Elements& elements() const noexcept { return m_elements; }
