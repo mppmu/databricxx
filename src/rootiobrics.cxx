@@ -175,8 +175,8 @@ void RootFileWriter::ContentGroup::connectInputs() {
 
 			dbrx_log_trace("trigger Adding TDirectory of bric \"%s\" to output directories of bric \"%s\"", absolutePath(), tdirOutBric->absolutePath());
 			tdirOutBric->addOutputDirProvider([&]() {
-				m_writer->inputs.openOutput();
-				return localTDirectory();
+				m_writer->openOutputForWrite();
+				return m_outputDir;
 			} );
 		}
 
@@ -207,7 +207,7 @@ RootFileWriter::ContentGroup& RootFileWriter::ContentGroup::subGroup(PropKey nam
 
 
 void RootFileWriter::ContentGroup::processInput() {
-	TempChangeOfTDirectory tDirChange(localTDirectory());
+	TempChangeOfTDirectory tDirChange(m_outputDir);
 
 	for (auto &si: m_sourceInfos) {
 		const Bric* source = si.first;
@@ -218,7 +218,7 @@ void RootFileWriter::ContentGroup::processInput() {
 				const TNamed *inputObject = (const TNamed*)input->value().untypedPtr();
 
 				if (typeid(*inputObject) == typeid(TTree)) {
-					// TTree is special - it or a clone of it should already be inside m_tDirectoy:
+					// TTree is special - it or a clone of it should already be inside m_outputDir:
 					dbrx_log_trace("No further action necessary for output of TTree \"%s\" to content group \"%s\"", inputObject->GetName(), absolutePath());
 				} else {
 					// Need to clone inputObject to own it:
@@ -272,51 +272,22 @@ void RootFileWriter::ContentGroup::addContent(const PropPath &sourcePath) {
 }
 
 
-void RootFileWriter::ContentGroup::openOutput() {
-	// Legal to call when already open:
-	if (m_outputIsOpen) return;
-
+void RootFileWriter::ContentGroup::newOutput() {
 	for (auto &entry: m_sourceInfos) { entry.second.inputCounter = 0; }
 
 	if (isTopGroup()) {
-		const char *fileName = m_writer->fileName->c_str();
-		const char *fileTitle = m_writer->title->c_str();
-		dbrx_log_debug("Creating TFile \"%s\" with title \"%s\" in top content group \"%s\""_format(fileName, fileTitle, absolutePath()));
-		TFile *tfile = TFile::Open(fileName, "recreate", fileTitle);
-		if (tfile == nullptr) throw runtime_error("Could not create TFile \"%s\""_format(fileName));
-		m_tDirectory = unique_ptr<TFile>(tfile);
+		m_outputDir = m_writer->outputFile.value().ptr();
 	} else {
+		TDirectory* parentOutputDir = dynamic_cast<ContentGroup&>(parent()).m_outputDir;
+
 		const char *subDirName = name().toString().c_str();
-		dbrx_log_trace("Creating new sub-directory \"%s/%s\" in output file in content group \"%s\""_format(parent().localTDirectory()->GetPath(), subDirName, absolutePath()));
+		dbrx_log_trace("Creating new sub-directory \"%s/%s\" in output file in content group \"%s\""_format(parentOutputDir->GetPath(), subDirName, absolutePath()));
 
 		// Note: Have to use TDirectory::mkdir to create subdirs inside TFiles, "new TDirectory" doesn't work:
-		m_tDirectory = unique_ptr<TDirectory>(parent().localTDirectory()->mkdir(subDirName, subDirName));
+		m_outputDir = parentOutputDir->mkdir(subDirName, subDirName);
 	}
 
-	for (auto &entry: m_brics) dynamic_cast<ContentGroup*>(entry.second)->openOutput();
-
-	m_outputIsOpen = true;
-}
-
-
-void RootFileWriter::ContentGroup::closeOutput() {
-	// Legal to call when already closed:
-	if (! m_outputIsOpen) return;
-
-	m_outputIsOpen = false;
-
-	for (auto &entry: m_brics) dynamic_cast<ContentGroup*>(entry.second)->closeOutput();
-
-	if (isTopGroup()) {
-		// Top group owns TFile - write, close and delete it:
-		dbrx_log_debug("Closing TFile \"%s\" in top content group \"%s\""_format(localTDirectory()->GetName(), absolutePath()));
-		m_tDirectory->Write();
-		m_tDirectory->Close();
-		m_tDirectory.reset();
-	} else {
-		// Sub-directory belongs to output file in top group, so just release it:
-		m_tDirectory.release();
-	}
+	for (auto &entry: m_brics) dynamic_cast<ContentGroup*>(entry.second)->newOutput();
 }
 
 
@@ -361,7 +332,7 @@ void RootFileWriter::connectInputs() {
 
 
 void RootFileWriter::newReduction() {
-	inputs.openOutput();
+	openOutputForWrite();
 }
 
 
@@ -371,7 +342,43 @@ void RootFileWriter::processInput() {
 
 
 void RootFileWriter::finalizeReduction() {
-	inputs.closeOutput();
+	finalizeOutput();
+	output = outputFile->GetName();
+}
+
+
+void RootFileWriter::openOutputForWrite() {
+	// Legal to call when already open:
+	if (m_outputReadyForWrite) return;
+
+	const char *outFileName = fileName->c_str();
+	const char *outFileTitle = title->c_str();
+	dbrx_log_debug("Creating TFile \"%s\" with title \"%s\" in bric \"%s\""_format(outFileName, outFileTitle, absolutePath()));
+	TFile *tfile = TFile::Open(outFileName, "RECREATE", outFileTitle);
+	if (tfile == nullptr) throw runtime_error("Could not create TFile \"%s\""_format(outFileName));
+	outputFile.value() = unique_ptr<TFile>(tfile);
+
+	inputs.newOutput();
+
+	m_outputReadyForWrite = true;
+}
+
+
+void RootFileWriter::finalizeOutput() {
+	// Legal to call when already closed:
+	if (! m_outputReadyForWrite) return;
+
+	dbrx_log_debug("Writing TFile \"%s\" in bric \"%s\""_format(outputFile->GetName(), absolutePath()));
+	outputFile->Write();
+
+	outputFile->ReOpen("READ");
+
+	m_outputReadyForWrite = false;
+}
+
+
+RootFileWriter::~RootFileWriter() {
+	finalizeOutput();
 }
 
 

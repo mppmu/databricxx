@@ -117,6 +117,8 @@ protected:
 
 	static void writeObject(TNamed *obj);
 
+	bool m_outputReadyForWrite = false;
+
 	void connectInputs() override;
 
 public:
@@ -127,9 +129,10 @@ public:
 			std::vector<const Terminal*> inputs;
 		};
 
-		bool m_outputIsOpen = false;
-
 		RootFileWriter* m_writer;
+
+		TDirectory* m_outputDir = nullptr;
+
 		std::map<const Bric*, SourceInfo> m_sourceInfos;
 		std::vector<PropPath> m_content;
 
@@ -147,9 +150,7 @@ public:
 		void addContent(const PropVal &content);
 		void addContent(const PropPath &sourcePath);
 
-		bool outputIsOpen() { return m_outputIsOpen; }
-		void openOutput();
-		void closeOutput();
+		void newOutput();
 
 		ContentGroup() {}
 		ContentGroup(RootFileWriter *writer, Bric *parentBric, PropKey groupName);
@@ -161,13 +162,20 @@ public:
 	Param<std::string> title{this, "title", "Title"};
 	Param<PropVal> content{this, "content", "Content"};
 
-	Output<std::string> output{this};
+	Output<std::string> output{this, "output", "Output File Name"};
+	Output<TFile> outputFile{this, "outputFile", "Output TFile"};
 
 	void newReduction() override;
 
 	void processInput() override;
 
 	void finalizeReduction() override;
+
+	//!! bool outputIsOpenForWrite() { return m_outputReadyForWrite; }
+	virtual void openOutputForWrite();
+	virtual void finalizeOutput();
+
+	~RootFileWriter() override;
 
 	using AsyncReducerBric::AsyncReducerBric;
 };
