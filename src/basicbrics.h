@@ -56,6 +56,18 @@ public:
 };
 
 
+
+template<typename T> class CopyBric final: public TransformBric {
+public:
+	Input<T> input{this};
+	Output<T> output{this};
+
+	void processInput() override { output.value() = input.value(); }
+
+	using TransformBric::TransformBric;
+};
+
+
 } // namespace dbrx
 
 #endif // DBRX_BASICBRICS_H
