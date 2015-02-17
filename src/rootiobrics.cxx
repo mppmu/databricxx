@@ -154,6 +154,92 @@ void RootTreeWriter::finalizeReduction() {
 
 
 
+Bric::InputTerminal* RootFileReader::ContentGroup::connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) {
+	if (sourcePath.size() >= 2) subGroup(sourcePath.front());
+	return Bric::connectInputToInner(bric, inputName, sourcePath);
+}
+
+
+RootFileReader::ContentGroup& RootFileReader::ContentGroup::subGroup(PropKey name) {
+	if (hasComponent(name)) {
+		return dynamic_cast<ContentGroup&>(getBric(name));
+	} else {
+		dbrx_log_trace("Creating new sub-group \"%s\" in content group \"%s\""_format(name, absolutePath()));
+		return dynamic_cast<ContentGroup&>(*addDynBric(unique_ptr<ContentGroup>(new ContentGroup(m_reader, this, name))));
+	}
+}
+
+
+void RootFileReader::ContentGroup::releaseOutputValues() {
+	for (auto &elem: m_outputs) {
+		OutputTerminal &output = *elem.second;
+		output.value().untypedRelease();
+	}
+}
+
+
+void RootFileReader::ContentGroup::addDynOutput(std::unique_ptr<Bric::OutputTerminal> terminal) {
+	// Ensure output is empty - values will be owned by the input TFile, so
+	// must be able to release output at any time.
+	terminal->value().clear();
+
+	Bric::addDynOutput(std::move(terminal));
+}
+
+
+void RootFileReader::ContentGroup::readObjects() {
+	// Release output values, they're either empty or we don't really own them:
+	releaseOutputValues();
+
+	if (isTopGroup()) {
+		m_inputDir = m_reader->m_inputFile.get();
+	} else {
+		TDirectory *parentInputDir = dynamic_cast<ContentGroup&>(parent()).m_inputDir;
+		dbrx_log_trace("Looking up sub-directory \"%s\" inside \"%s\" for content group \"%s\" "_format(name(), parentInputDir->GetPath(), absolutePath()));
+		m_inputDir = parentInputDir->GetDirectory(name().toString().c_str());
+		if (m_inputDir == nullptr) throw runtime_error("Could not find sub-directory \"%s\" in TDirectory \"%s\""_format(name(), parentInputDir->GetPath()));
+	}
+
+	for (auto &elem: m_outputs) {
+		OutputTerminal &output = *elem.second;
+		dbrx_log_trace("Reading object \"%s\" from \"%s\" in content group \"%s\"", output.name(), m_inputDir->GetPath(), absolutePath());
+		TObject *obj = m_inputDir->Get(output.name().toString().c_str());
+		if (obj == nullptr) throw runtime_error("Could not read object \"%s\" from TDirectory \"%s\""_format(output.name(), m_inputDir->GetPath()));
+
+		TypeReflection outputType(output.value().typeInfo());
+		TypeReflection objectType(obj->IsA());
+		if (! outputType.isPtrAssignableFrom(objectType) )
+			throw logic_error("Type %s of output terminal \"%s\" is incompatible with type %s of object \"%s\" read from \"%s\""_format(outputType.name(), output.absolutePath(), objectType.name(), output.name(), m_inputDir->GetPath()));
+
+		// Point output value to obj - obj is really owned by input TFile, not
+		// by us, so we'll have to release it again later:
+		output.value().untypedOwn(obj);
+	}
+
+	for (auto &entry: m_brics) dynamic_cast<ContentGroup*>(entry.second)->readObjects();
+}
+
+
+RootFileReader::ContentGroup::ContentGroup(RootFileReader *reader, Bric *parentBric, PropKey groupName)
+	: DynOutputGroup(parentBric, groupName), m_reader(reader) {}
+
+
+RootFileReader::ContentGroup::~ContentGroup() {
+	// Release output values, they're either empty or we don't really own them:
+	releaseOutputValues();
+}
+
+
+void RootFileReader::processInput() {
+	dbrx_log_debug("Opening TFile \"%s\" for read in bric \"%s\""_format(input->c_str(), absolutePath()));
+	m_inputFile = unique_ptr<TFile>(new TFile(input->c_str(), "read"));
+	content.readObjects();
+}
+
+
+
+
+
 const PropKey RootFileWriter::s_thisDirName(".");
 
 

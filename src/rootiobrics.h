@@ -111,6 +111,49 @@ public:
 
 
 
+class RootFileReader: public TransformBric {
+protected:
+	static const PropKey s_thisDirName;
+
+	std::unique_ptr<TFile> m_inputFile;
+
+public:
+	class ContentGroup final: public DynOutputGroup {
+	protected:
+		RootFileReader* m_reader = nullptr;
+
+		TDirectory* m_inputDir = nullptr;
+
+		InputTerminal* connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) override;
+
+		ContentGroup& subGroup(PropKey name);
+
+		void releaseOutputValues();
+
+	public:
+		void addDynOutput(std::unique_ptr<Bric::OutputTerminal> terminal);
+
+		virtual void readObjects() final;
+
+		bool isTopGroup() const { return &parent() == m_reader; }
+
+		ContentGroup() {}
+		ContentGroup(RootFileReader *writer, Bric *parentBric, PropKey groupName);
+
+		~ContentGroup();
+	};
+
+	Input<std::string> input{this};
+
+	ContentGroup content{this, this, "content"};
+
+	void processInput() override;
+
+	using TransformBric::TransformBric;
+};
+
+
+
 class RootFileWriter: public AsyncReducerBric {
 protected:
 	static const PropKey s_thisDirName;
