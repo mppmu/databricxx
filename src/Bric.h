@@ -233,7 +233,7 @@ protected:
 	virtual Bric* addDynBric(PropKey bricName, const PropVal& config) final;
 	virtual void delDynBric(PropKey bricName) final;
 
-	virtual InputTerminal* connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath) final;
+	virtual InputTerminal* connectInputToInner(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath);
 
 	virtual InputTerminal* connectInputToSiblingOrUp(Bric &bric, PropKey inputName, PropPath::Fragment sourcePath);
 	virtual InputTerminal* connectOwnInputTo(PropKey inputName, Terminal& source);
@@ -388,10 +388,10 @@ public:
 	virtual ParamTerminal& getParam(PropKey outputName) final;
 
 	virtual bool canHaveDynOutputs() const { return false; }
-	virtual void addDynOutput(std::unique_ptr<OutputTerminal> terminal) final;
+	virtual void addDynOutput(std::unique_ptr<OutputTerminal> terminal);
 
 	virtual bool canHaveDynInputs() const { return false; }
-	virtual void addDynInput(std::unique_ptr<InputTerminal> terminal) final;
+	virtual void addDynInput(std::unique_ptr<InputTerminal> terminal);
 
 
 	virtual TDirectory* localTDirectory() final { return m_tDirectory.get(); }
