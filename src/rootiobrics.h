@@ -41,9 +41,8 @@ public:
 		using DynOutputGroup::DynOutputGroup;
 	};
 
-	Input<std::string> fileName{this, "fileName"};
+	Input<TTree> input{this};
 
-	Param<std::string> treeName{this, "treeName"};
 	Param<int64_t> cacheSize{this, "cacheSize", "Input read-ahead cache size (-1 for default)", -1};
 	Param<int64_t> nEntries{this, "nEntries", "Number of entries to read (-1 for all)", -1};
 	Param<int64_t> firstEntry{this, "firstEntry", "First entry to read", 0};
@@ -143,7 +142,7 @@ public:
 		~ContentGroup();
 	};
 
-	Input<std::string> input{this};
+	Input<std::string> input{this, "", "File Name"};
 
 	ContentGroup content{this, this, "content"};
 

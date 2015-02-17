@@ -50,9 +50,23 @@ void RootTreeReader::Entry::connectBranches(Bric* contextBric, TTree* inputTree)
 
 
 void RootTreeReader::processInput() {
-	dbrx_log_debug("Bric \"%s\" opens TTree \"%s\" from file \"%s\"", absolutePath(), treeName.get(), fileName.get());
-	m_chain = std::unique_ptr<TChain>(new TChain(treeName->c_str()));
-	m_chain->Add(fileName->c_str());
+	auto inputTChain = dynamic_cast<const TChain*>(input.value().ptr());
+	if (inputTChain != nullptr) {
+		// If input is a TChain, we can simply clone it
+		m_chain = std::unique_ptr<TChain>(dynamic_cast<TChain*>(inputTChain->Clone()));
+	} else {
+		// If input is a "real" TTree, we have to reopen it as the input is
+		// read-only and as there may even be multiple readers:
+		string inputPath = "%s/%s"_format(input->GetDirectory()->GetPath(), input->GetName());
+		size_t colonPos = inputPath.find_first_of(':');
+		if (colonPos == inputPath.npos) throw runtime_error("Can't reopen TTree with path \"%s\", unknown path format"_format(inputPath));
+		string fileName = inputPath.substr(0, colonPos);
+		string treeName = inputPath.substr(colonPos+1, inputPath.npos);
+		dbrx_log_debug("Creating input TChain with file \"%s\" for tree \"%s\" in bric \"%s\""_format(fileName, treeName, absolutePath()));
+
+		m_chain = std::unique_ptr<TChain>(new TChain(treeName.c_str()));
+		m_chain->Add(fileName.c_str());
+	}
 
 	m_chain->SetCacheSize(cacheSize);
 	m_chain->SetBranchStatus("*", false);
