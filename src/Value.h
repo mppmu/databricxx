@@ -78,6 +78,9 @@ public:
 	virtual void setToDefault() = 0;
 	virtual void clear() = 0;
 
+	virtual void untypedOwn(void *p) = 0;
+	virtual void* untypedRelease() = 0;
+
 	virtual void fromPropVal(const PropVal &p) = 0;
 
 	friend void swap(WritableValue &a, WritableValue &b)
@@ -161,6 +164,10 @@ public:
 
 	void setToDefault() final override { operator=(std::unique_ptr<T>( new T() )); }
 	void clear() final override { operator=(std::unique_ptr<T>((T*)nullptr)); }
+
+	void untypedOwn(void *p) final override { *this = std::unique_ptr<T>((T*)(p)); }
+
+	void* untypedRelease() final override { return (void*)(release()); }
 
 	virtual T* release() final {
 		T* result = nullptr;
