@@ -40,7 +40,7 @@ using namespace std;
 namespace dbrx {
 
 
-void TTreeIterBric::Entry::connectBranches(Bric* contextBric, TTree* inputTree) {
+void RootTreeReader::Entry::connectBranches(Bric* contextBric, TTree* inputTree) {
 	for (auto &elem: m_outputs) {
 		OutputTerminal *terminal = elem.second;
 		dbrx_log_debug("Connecting TTree branch \"%s\" in \"%s\"", terminal->name(), absolutePath());
@@ -49,7 +49,7 @@ void TTreeIterBric::Entry::connectBranches(Bric* contextBric, TTree* inputTree) 
 }
 
 
-void TTreeIterBric::processInput() {
+void RootTreeReader::processInput() {
 	dbrx_log_debug("Bric \"%s\" opens TTree \"%s\" from file \"%s\"", absolutePath(), treeName.get(), fileName.get());
 	m_chain = std::unique_ptr<TChain>(new TChain(treeName->c_str()));
 	m_chain->Add(fileName->c_str());
@@ -65,7 +65,7 @@ void TTreeIterBric::processInput() {
 }
 
 
-bool TTreeIterBric::nextOutput() {
+bool RootTreeReader::nextOutput() {
 	if (index.get() < firstEntry.get() + size.get()) {
 		m_chain->GetEntry(index++);
 		return true;

@@ -30,7 +30,7 @@
 namespace dbrx {
 
 
-class TTreeIterBric final: public MapperBric {
+class RootTreeReader: public MapperBric {
 protected:
 	std::unique_ptr<TChain> m_chain;
 
