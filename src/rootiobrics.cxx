@@ -265,7 +265,7 @@ void RootFileWriter::ContentGroup::connectInputs() {
 	m_sourceInfos.clear();
 
 	for (const PropPath &sourcePath: m_content) {
-		InputTerminal *input = connectInputToSiblingOrUp(*this, nextInputIdx++, sourcePath);
+		InputTerminal *input = connectInputToSiblingOrUp(*this, int64_t(nextInputIdx++), sourcePath);
 		dbrx_log_trace("Triggering input from terminal \"%s\" on output of bric \"%s\" in \"%s\"", input->srcTerminal()->absolutePath(), input->effSrcBric()->absolutePath(), absolutePath());
 
 		auto constTDirOutBric = dynamic_cast<const RootTreeWriter*>(&input->srcTerminal()->parent());
