@@ -346,6 +346,8 @@ void Bric::initTDirectory() {
 
 
 void Bric::applyConfig(const PropVal& config) {
+	preConfig();
+
 	dbrx_log_debug("Applying config to bric \"%s\""_format(absolutePath()));
 	for (const auto& entry: config.asProps()) {
 		PropKey componentName = entry.first;
@@ -372,6 +374,8 @@ void Bric::applyConfig(const PropVal& config) {
 			}
 		}
 	}
+
+	postConfig();
 }
 
 

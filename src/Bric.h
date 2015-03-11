@@ -229,6 +229,11 @@ protected:
 
 	std::unique_ptr<TDirectory> m_tDirectory;
 
+	// Pre-config execution hook, override when necessary
+	virtual void preConfig() {};
+
+	// Post-config execution hook, override when necessary
+	virtual void postConfig() {};
 
 	virtual bool isBricConfig(const PropVal& config) final;
 
