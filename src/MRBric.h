@@ -87,6 +87,8 @@ protected:
 	}
 
 
+	bool canHaveDynBrics() const override { return true; }
+
 	void init() override;
 
 	virtual bool processingStep() final;

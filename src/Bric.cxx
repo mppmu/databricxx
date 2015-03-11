@@ -366,7 +366,7 @@ void Bric::applyConfig(const PropVal& config) {
 				const auto& foundComponent = m_components.find(componentName);
 				if (foundComponent != m_components.end()) {
 					foundComponent->second->applyConfig(componentConfig);
-				} else if (isBricConfig(componentConfig)) {
+				} else if (canHaveDynBrics() && isBricConfig(componentConfig)) {
 					addDynBric(componentName, componentConfig);
 				} else throw runtime_error("Invalid configuration, bric \"%s\" doesn't have a component named \"%s\""_format(absolutePath(), componentName));
 			}

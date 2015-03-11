@@ -232,6 +232,7 @@ protected:
 
 	virtual bool isBricConfig(const PropVal& config) final;
 
+	virtual bool canHaveDynBrics() const { return false; }
 	virtual Bric* addDynBric(std::unique_ptr<Bric> dynBric) final;
 	virtual Bric* addDynBric(PropKey bricName, const PropVal& config) final;
 	virtual void delDynBric(PropKey bricName) final;
