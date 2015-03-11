@@ -12,7 +12,10 @@
 // histbrics.h
 
 // rootiobrics.h
-#pragma link C++ class dbrx::TTreeIterBric-;
+#pragma link C++ class dbrx::RootTreeReader-;
+#pragma link C++ class dbrx::RootTreeWriter-;
+#pragma link C++ class dbrx::RootFileReader-;
+#pragma link C++ class dbrx::RootFileWriter-;
 
 // textbrics.h
 #pragma link C++ class dbrx::TextFileReader-;
