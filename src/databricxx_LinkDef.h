@@ -9,8 +9,6 @@
 
 // collbrics.h
 
-// histbrics.h
-
 // rootiobrics.h
 #pragma link C++ class dbrx::RootTreeReader-;
 #pragma link C++ class dbrx::RootTreeWriter-;
@@ -56,6 +54,8 @@
 #pragma link C++ class dbrx::Printable-;
 
 // RootCollection.h
+
+// RootHistBuilder.h
 
 // RootIO.h
 #pragma link C++ class dbrx::RootIO-;

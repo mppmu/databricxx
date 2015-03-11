@@ -15,8 +15,8 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 
-#ifndef DBRX_HISTBRICS_H
-#define DBRX_HISTBRICS_H
+#ifndef DBRX_ROOTHISTBUILDER_H
+#define DBRX_ROOTHISTBUILDER_H
 
 #include <TH1F.h>
 
@@ -26,9 +26,17 @@
 namespace dbrx {
 
 
-template<typename T> class Hist1Builder: public ReducerBric {
+template<typename T> class RootHistBuilder: public ReducerBric {
 public:
-	using Hist = TH1F;
+	using Hist = typename std::conditional<
+		std::is_same<T, Int_t>::value,
+		TH1I,
+		typename std::conditional<
+			std::is_same<T, Float_t>::value,
+			TH1F,
+			TH1D
+		>::type
+	>::type;
 
 	Input<T> input{this};
 	Output<Hist> output{this};
@@ -55,11 +63,4 @@ public:
 
 } // namespace dbrx
 
-/* Add to ...LinkDef.h:
-
-// histbrics.h
-#pragma link C++ class dbrx::histbrics+;
-
-*/
-
-#endif // DBRX_HISTBRICS_H
+#endif // DBRX_ROOTHISTBUILDER_H

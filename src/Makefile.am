@@ -11,7 +11,6 @@ libdatabricxx_la_SOURCES = \
 	collbrics.cxx \
 	format.cxx \
 	funcprog.cxx \
-	histbrics.cxx \
 	logging.cxx \
 	rootiobrics.cxx \
 	textbrics.cxx \
@@ -22,6 +21,7 @@ libdatabricxx_la_SOURCES = \
 	Printable.cxx \
 	Props.cxx \
 	RootCollection.cxx \
+	RootHistBuilder.cxx \
 	RootIO.cxx \
 	TypeReflection.cxx \
 	Value.cxx HasValue.cxx
@@ -32,7 +32,6 @@ libdatabricxx_la_headers = \
 	collbrics.h \
 	format.h \
 	funcprog.h \
-	histbrics.h \
 	logging.h \
 	rootiobrics.h \
 	textbrics.h \
@@ -43,6 +42,7 @@ libdatabricxx_la_headers = \
 	Printable.h \
 	Props.h \
 	RootCollection.h \
+	RootHistBuilder.h \
 	RootIO.h \
 	TypeReflection.h \
 	Value.h HasValue.h
