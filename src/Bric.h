@@ -98,9 +98,6 @@ public:
 
 	virtual bool isInside(const Bric& other) const final;
 
-	BricComponent& operator=(const BricComponent& v) = delete;
-	BricComponent& operator=(BricComponent &&v) = delete;
-
 	friend class Bric;
 };
 
@@ -132,6 +129,12 @@ public:
 	Bric& parent() final override { return *m_parent; }
 
 	BricComponentImpl() {}
+
+	BricComponentImpl(const BricComponentImpl &that)
+		: m_key(that.m_key), m_parent(nullptr), m_title(that.m_title)
+	{
+		if (that.m_parent != nullptr) throw std::invalid_argument("BricComponent that have a parent cannot be copied");
+	}
 
 	BricComponentImpl(PropKey componentName): m_key(componentName) {}
 
@@ -332,14 +335,14 @@ public:
 			{ TypedParamTerminal<T>::operator=(std::move(v)); return *this; }
 
 
+		Param() = default;
+
 		Param(Bric *parentBric, PropKey paramName, std::string paramTitle = "", T defaultValue = T())
 			: BricComponentImpl(paramName, std::move(paramTitle))
 		{
 			value() = std::move(defaultValue);
 			setParent(parentBric);
 		}
-
-		Param(const Param &other) = delete;
 
 		~Param() override { setParent(nullptr); }
 	};
@@ -627,6 +630,8 @@ public:
 			{ TypedOutputTerminal<T>::operator=(std::move(v)); return *this; }
 
 
+		Output() = default;
+
 		Output(BricWithOutputs *parentBric, PropKey outputName = PropKey(), std::string outputTitle = "")
 			: BricComponentImpl(outputName, std::move(outputTitle))
 		{
@@ -637,8 +642,6 @@ public:
 		template<typename U> Output(BricWithOutputs *parentBric, PropKey outputName,
 			std::string outputTitle, U&& defaultValue) : Output(parentBric, outputName, outputTitle)
 			{ value() = std::forward<U>(defaultValue); }
-
-		Output(const Output &other) = delete;
 
 		~Output() override { setParent(nullptr); }
 	};
@@ -698,8 +701,6 @@ public:
 			if (name() == PropKey()) m_key = s_defaultInputName;
 			setParent(parentBric);
 		}
-
-		Input(const Input &other) = delete;
 
 		~Input() override { setParent(nullptr); }
 	};

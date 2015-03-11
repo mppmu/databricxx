@@ -31,9 +31,6 @@ public:
 
 	virtual const std::type_info& typeInfo() const { return value().typeInfo(); }
 
-	HasValue& operator=(const HasValue& v) = delete;
-	HasValue& operator=(HasValue &&v) = delete;
-
 	HasValue() {}
 	HasValue(const Value &v) {}
 	HasValue(Value &&v) {}
