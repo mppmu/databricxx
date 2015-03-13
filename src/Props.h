@@ -515,6 +515,28 @@ public:
 	}
 
 
+	const bool contains(PropKey key) const {
+		if (m_type == Type::PROPS) return (m_content.o->find(key) != m_content.o->end());
+		else if (key.isInteger()) {
+			Integer index = key.asInteger();
+			if (m_type == Type::ARRAY) return (m_content.a->size() > index);
+			else if (index == 0) return true;
+			else return false;
+		}
+		else return false;
+	}
+
+
+	const bool contains(Integer index) const {
+		if (m_type == Type::PROPS) return contains(PropKey(index));
+		else if (m_type == Type::ARRAY) return (m_content.a->size() > index);
+		else {
+			if (index == 0) return true;
+			else return false;
+		}
+	}
+
+
 	friend void swap(PropVal &a, PropVal&b) noexcept {
 		std::swap(a.m_type, b.m_type);
 		swapMem(a.m_content, b.m_content);
