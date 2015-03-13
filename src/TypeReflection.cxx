@@ -103,12 +103,12 @@ TypeReflection::TypeReflection(const std::type_info& typeInfo)
 }
 
 
-TypeReflection::TypeReflection(const char* typeName)
-	: m_tClass(TClass::GetClass(typeName, true, true)), m_typeInfo(m_tClass->GetTypeInfo())
-{
+TypeReflection::TypeReflection(const char* typeName) {
 	// Currently does not support primitive types
+	m_tClass = TClass::GetClass(typeName, true, true);
 	if (m_tClass == nullptr)
 		throw runtime_error("Could not resolve class for type_info \"%s\""_format(typeName));
+	m_typeInfo = m_tClass->GetTypeInfo();
 }
 
 TypeReflection::TypeReflection(const std::string& typeName)
