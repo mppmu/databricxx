@@ -110,6 +110,13 @@ std::unique_ptr<Bric> Bric::createBricFromTypeName(const std::string &className)
 }
 
 
+void Bric::removeDynamicComponents() {
+	m_dynBrics.clear();
+	m_dynBricClassNames.clear();
+	m_dynTerminals.clear();
+}
+
+
 bool Bric::isBricConfig(const PropVal& config) {
 	if (!config.isProps()) return false;
 	Props props = config.asProps();

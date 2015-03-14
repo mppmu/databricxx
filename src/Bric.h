@@ -229,6 +229,8 @@ protected:
 
 	std::unique_ptr<TDirectory> m_tDirectory;
 
+	virtual void removeDynamicComponents() final;
+
 	// Pre-config execution hook, override when necessary
 	virtual void preConfig() {};
 
@@ -591,7 +593,12 @@ public:
 	BricImpl(Bric *parentBric, PropKey bricName, std::string bricTitle = "")
 		: BricComponentImpl(bricName, bricTitle) { setParent(parentBric); }
 
-	~BricImpl() override { setParent(nullptr); }
+	~BricImpl() override {
+		// Have to do this here, while object is still a valid BricComponentImpl:
+		removeDynamicComponents();
+
+		setParent(nullptr);
+	}
 };
 
 
