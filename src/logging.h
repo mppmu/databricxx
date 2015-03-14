@@ -89,13 +89,13 @@ public:
 
 
 	static Name nameOf(LogLevel logLevel) {
-		if (logLevel > LogLevel::ERROR  ) return Names::all();
-		else if (logLevel > LogLevel::WARN  ) return Names::error();
-		else if (logLevel > LogLevel::INFO  ) return Names::warn();
-		else if (logLevel > LogLevel::DEBUG  ) return Names::info();
-		else if (logLevel > LogLevel::TRACE  ) return Names::debug();
-		else if (logLevel > LogLevel::OFF  ) return Names::trace();
-		else return Names::off();
+		if (logLevel == LogLevel::OFF  ) return Names::off();
+		else if (logLevel >= LogLevel::ERROR  ) return Names::error();
+		else if (logLevel >= LogLevel::WARN  ) return Names::warn();
+		else if (logLevel >= LogLevel::INFO  ) return Names::info();
+		else if (logLevel >= LogLevel::DEBUG  ) return Names::debug();
+		else if (logLevel >= LogLevel::TRACE  ) return Names::trace();
+		else return Names::all();
 	}
 
 	static LoggingFacility& global() { return g_facility; }
