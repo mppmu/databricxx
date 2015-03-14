@@ -43,6 +43,8 @@ m4/ltversion.m4
 /src/*_rdict.pcm
 /src/*.rootmap
 
+/src/dbrx
+
 #auto generated backups
 *.*~
 

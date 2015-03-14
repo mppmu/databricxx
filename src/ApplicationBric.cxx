@@ -19,6 +19,7 @@
 
 #include <iostream>
 
+#include <TROOT.h>
 #include <TSystem.h>
 
 
@@ -63,10 +64,22 @@ void ApplicationBric::applyConfig(const PropVal& config) {
 	if (foundReq != props.end()) {
 		requires.applyConfig(foundReq->second);
 
-		for (const auto &dep: requires.get()) {
-			dbrx_log_info("Loading requirement \"%s\"", dep);
-			if (gSystem->Load(dep.c_str()) < 0)
-				throw runtime_error("Couldn't load \"%s\""_format(dep));
+		for (const string &dep: requires.get()) {
+			dbrx_log_info("Processing requirement \"%s\"", dep);
+			if (dep.find('(') != dep.npos) {
+				// Looks like a command to run, not a script or a library to load
+				string cmd = dep + string(";");
+				dbrx_log_debug("Running gROOT->ProcessLine(\"%s\")", cmd);
+				gROOT->ProcessLineSync(cmd.c_str());
+			} else if ((dep.find(".c") != dep.npos) || (dep.find(".C") != dep.npos)) {
+				string cmd = string(".L ") + dep;
+				dbrx_log_debug("Running gROOT->ProcessLine(\"%s\")", cmd);
+				gROOT->ProcessLineSync(cmd.c_str());
+			} else {
+				dbrx_log_debug("Running gSystem->Load(\"%s\")", dep);
+				if (gSystem->Load(dep.c_str()) < 0)
+					throw runtime_error("Couldn't load \"%s\""_format(dep));
+			}
 		}
 	}	
 	

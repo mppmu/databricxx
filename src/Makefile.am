@@ -51,13 +51,13 @@ libdatabricxx_la_headers = \
 
 pkginclude_HEADERS = $(libdatabricxx_la_headers)
 
-bin_PROGRAMS =
+bin_PROGRAMS = dbrx
 
 noinst_PROGRAMS =
 
-# databricxx_SOURCES = databricxx.cxx
-# databricxx_LDADD = libdatabricxx.la
-# databricxx_LDFLAGS = -static
+dbrx_SOURCES = dbrx.cxx
+dbrx_LDADD = libdatabricxx.la
+dbrx_LDFLAGS = -static
 
 
 rootmapdir = $(libdir)
