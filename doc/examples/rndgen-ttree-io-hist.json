@@ -1,0 +1,64 @@
+{
+  "requires": [ ],
+  "logLevel": "debug",
+
+  "brics": {
+    "main": {
+      "type": "dbrx::MRBric",
+
+      "rndEventGen": {
+        "type": "dbrx::RootRndGen",
+        "pdf": "4 * TMath::Landau(x, 300, 100, 0) + 1 * TMath::Gaus(x, 662, 5)",
+        "xMin": 0,
+        "xMax": 1000,
+        "nPoints": 10000,
+        "nOut": 1E6
+      },
+
+      "mcTreeWriter": {
+        "type": "dbrx::RootTreeWriter",
+        "treeName": "mcEvents",
+        "treeTitle": "MC Output Tree",
+        "entry": {
+          "evtNo": "&rndEventGen.index",
+          "eDep": "&rndEventGen"
+        }
+      },
+      "mcFileWriter": {
+        "type": "dbrx::RootFileWriter",
+        "fileName": "out-mc.root",
+        "title": "MC Output File",
+        "content": "&mcTreeWriter"
+      },
+
+      "mcFileReader": {
+        "type": "dbrx::RootFileReader",
+        "input": "&mcFileWriter"
+      },
+      "mcTreeReader": {
+        "type": "dbrx::RootTreeReader",
+        "input": "&mcFileReader.content.mcEvents",
+        "nEntries": -1,
+        "firstEntry": 0
+      },
+
+      "spectrumHist": {
+        "type": "dbrx::RootHistBuilder<double>",
+        "input": "&mcTreeReader.entry.eDep",
+        "histName": "spectrum",
+        "histTitle": "Energy Spectrum",
+        "nBins": 1000,
+        "xlow": 0,
+        "xup": 1000
+      },
+      "outFileWriter": {
+        "type": "dbrx::RootFileWriter",
+        "fileName": "out-ana.root",
+        "title": "Output File",
+        "content": {
+          "spectra": "&spectrumHist"
+        }
+      }
+    }
+  }
+}

@@ -54,6 +54,10 @@ m4/ltversion.m4
 /doc/html/
 /doc/latex/
 
+# example/test output files
+out*.root
+out*.json
+
 # Eclipse CDT project files
 /.cproject
 /.project
