@@ -1,3 +1,4 @@
+AUTOMAKE_OPTIONS = foreign
 ACLOCAL_AMFLAGS = -I m4
 
 MAINTAINERCLEANFILES = Makefile.in \
@@ -10,7 +11,7 @@ EXTRA_DIST = autogen.sh
 
 SUBDIRS = src doc
 
-dist_doc_DATA = README COPYING AUTHORS ChangeLog INSTALL NEWS
+dist_doc_DATA = README.md COPYING AUTHORS ChangeLog INSTALL NEWS
 dist_bin_SCRIPTS = databricxx-config
 
 if COND_PKGCONFIG
