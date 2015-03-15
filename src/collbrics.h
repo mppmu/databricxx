@@ -44,14 +44,14 @@ public:
 
 	void processInput() override {
 		m_iter = input->begin();
-		index = 0;
+		index = -1;
 	}
 
 	bool nextOutput() override {
 		if (m_iter != input->end()) {
 			element = *m_iter;
-			++m_iter;
 			++index;
+			++m_iter;
 			return true;
 		} else return false;
 	}
