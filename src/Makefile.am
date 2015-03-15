@@ -24,6 +24,7 @@ libdatabricxx_la_SOURCES = \
 	RootCollection.cxx \
 	RootHistBuilder.cxx \
 	RootIO.cxx \
+	RootRndGen.cxx \
 	TypeReflection.cxx \
 	Value.cxx HasValue.cxx
 
@@ -46,6 +47,7 @@ libdatabricxx_la_headers = \
 	RootCollection.h \
 	RootHistBuilder.h \
 	RootIO.h \
+	RootRndGen.h \
 	TypeReflection.h \
 	Value.h HasValue.h
 

@@ -63,6 +63,9 @@
 // RootIO.h
 #pragma link C++ class dbrx::RootIO-;
 
+// RootRndGen.h
+#pragma link C++ class dbrx::RootRndGen-;
+
 // TypeReflection.h
 #pragma link C++ class dbrx::TypeReflection-;
 
