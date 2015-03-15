@@ -622,6 +622,18 @@ inline void BricComponentImpl::setParent(Bric *parentBric) {
 
 
 
+class ParamGroup: public virtual Bric, public BricImpl {
+public:
+	bool nextExecStepImpl() final override {
+		setExecFinished();
+		return true;
+	}
+
+	using BricImpl::BricImpl;
+};
+
+
+
 class BricWithOutputs: public virtual Bric  {
 public:
 	template <typename T> class Output
