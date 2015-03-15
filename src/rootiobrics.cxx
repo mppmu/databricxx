@@ -80,8 +80,9 @@ void RootTreeReader::processInput() {
 
 
 bool RootTreeReader::nextOutput() {
-	if (index.get() < firstEntry.get() + size.get()) {
-		m_chain->GetEntry(index++);
+	if (index.get() + 1 < firstEntry.get() + size.get()) {
+		++index;
+		m_chain->GetEntry(index);
 		return true;
 	} else return false;
 }
