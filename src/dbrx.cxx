@@ -25,6 +25,7 @@
 #include <TROOT.h>
 #include <TSystem.h>
 #include <TApplication.h>
+#include <THttpServer.h>
 
 #include "logging.h"
 #include "Props.h"
@@ -133,6 +134,9 @@ void task_run_printUsage(const char* progName) {
 	cerr << "-?          Show help" << endl;
 	cerr << "-c SETTINGS Load configuration/settings" << endl;
 	cerr << "-l LEVEL    Set logging level (default: \"info\")" << endl;
+	cerr << "-w          Enable HTTP server" << endl;
+	cerr << "-p PORT     HTTP server port (default: 8080)" << endl;
+	cerr << "-k          Don't exit after processing (e.g. to keep HTTP server running)" << endl;
 	cerr << "" << endl;
 	cerr << "Run the given bric configuration. If multiple configuration are given, they" << endl;
 	cerr << "are merged together (from left to right)." << endl;
@@ -140,12 +144,18 @@ void task_run_printUsage(const char* progName) {
 
 
 int task_run(int argc, char *argv[], char *envp[]) {
-	int opt = 0;
+	bool enableHTTP = false;
+	uint16_t httpPort = 8080;
+	bool keepRunning = false;
 
-	while ((opt = getopt(argc, argv, "?c:l:")) != -1) {
+	int opt = 0;
+	while ((opt = getopt(argc, argv, "?c:l:wp:k")) != -1) {
 		switch (opt) {
 			case '?': { task_run_printUsage(argv[0]); return 0; }
 			case 'l': { configureLogging(optarg); break; }
+			case 'w': { enableHTTP = true; break; }
+			case 'p': { httpPort = atoi(optarg); break; }
+			case 'k': { keepRunning = true; break; }
 			default: throw invalid_argument("Unkown command line option");
 		}
 	}
@@ -162,9 +172,22 @@ int task_run(int argc, char *argv[], char *envp[]) {
 	}
 	configureLogging();
 
-	ApplicationBric app("app");
+	unique_ptr<THttpServer> httpServer;
+	if (enableHTTP) {
+		dbrx_log_info("Starting HTTP server on port %s", httpPort);
+		httpServer = unique_ptr<THttpServer>(
+			new THttpServer("civetweb:%s"_format(httpPort).c_str()));
+	}
+
+	ApplicationBric app("dbrx");
 	app.applyConfig(g_config);
 	app.run();
+
+	if (keepRunning) {
+		dbrx_log_info("Keeping program running");
+		if (httpServer) dbrx_log_info("HTTP server active on port %s", httpPort);
+		g_rootApplication->Run(true);
+	}
 
 	return 0;
 }
