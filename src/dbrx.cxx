@@ -86,7 +86,7 @@ void printConfig(std::ostream &out, const PropVal &config, const std::string &fo
 }
 
 
-void task_config_printUsage(const char* progName) {
+void task_get_config_printUsage(const char* progName) {
 	cerr << "Syntax: " << progName << " [OPTIONS] CONFIG.." << endl;
 	cerr << "" << endl;
 	cerr << "Options:" << endl;
@@ -99,13 +99,13 @@ void task_config_printUsage(const char* progName) {
 }
 
 
-int task_config(int argc, char *argv[], char *envp[]) {
+int task_get_config(int argc, char *argv[], char *envp[]) {
 	string outputFormat("json");
 
 	int opt = 0;
 	while ((opt = getopt(argc, argv, "?c:l:f:j")) != -1) {
 		switch (opt) {
-			case '?': { task_config_printUsage(argv[0]); return 0; }
+			case '?': { task_get_config_printUsage(argv[0]); return 0; }
 			case 'l': { configureLogging(optarg); break; }
 			case 'f': {
 				dbrx_log_debug("Setting output format to %s", optarg);
@@ -196,7 +196,7 @@ int task_run(int argc, char *argv[], char *envp[]) {
 void main_printUsage(const char* progName) {
 	cerr << "Syntax: " << progName << " COMMAND ..." << endl << endl;
 	cerr << "Commands: " << endl;
-	cerr << "  config" << endl;
+	cerr << "  get-config" << endl;
 	cerr << "  run" << endl;
 	cerr << "" << endl;
 	cerr << "Use" << endl;
@@ -239,7 +239,7 @@ int main(int argc, char *argv[], char *envp[]) {
 
 
 		if (cmd == "-?") { main_printUsage(argv[0]); return 0; }
-		if (cmd == "config") return task_config(cmd_argc, cmd_argv, envp);
+		if (cmd == "get-config") return task_get_config(cmd_argc, cmd_argv, envp);
 		else if (cmd == "run") return task_run(cmd_argc, cmd_argv, envp);
 		else throw invalid_argument("Command \"%s\" not supported."_format(cmd));
 	}
