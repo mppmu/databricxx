@@ -418,7 +418,13 @@ public:
 	}
 
 
-	size_t size() const { return m_type == Type::ARRAY ? m_content.a->size() : 1; }
+	size_t size() const {
+		switch (m_type) {
+			case Type::ARRAY: return m_content.a->size();
+			case Type::NONE: return 0;
+			default: return 1;
+		}
+	}
 
 	using iterator = PropVal*;
 	using const_iterator = const PropVal*;
