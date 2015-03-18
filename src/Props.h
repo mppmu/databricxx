@@ -472,8 +472,11 @@ public:
 
 
 	PropVal& at(PropKey key) {
-		if (m_type == Type::PROPS) return m_content.o->at(key);
-		else if (key.isInteger()) {
+		if (m_type == Type::PROPS) {
+			PropVal &result = m_content.o->at(key);
+			if (result.isNone()) throw std::out_of_range("PropVal is None");
+			return result;
+		} else if (key.isInteger()) {
 			Integer index = key.asInteger();
 			if (m_type == Type::ARRAY) return m_content.a->at(index);
 			else if (index == 0) return *this;
@@ -484,8 +487,11 @@ public:
 
 
 	const PropVal& at(PropKey key) const {
-		if (m_type == Type::PROPS) return m_content.o->at(key);
-		else if (key.isInteger()) {
+		if (m_type == Type::PROPS) {
+			PropVal &result = m_content.o->at(key);
+			if (result.isNone()) throw std::out_of_range("PropVal is None");
+			return result;
+		} else if (key.isInteger()) {
 			Integer index = key.asInteger();
 			if (m_type == Type::ARRAY) return m_content.a->at(index);
 			else if (index == 0) return *this;
@@ -516,8 +522,10 @@ public:
 
 
 	const bool contains(PropKey key) const {
-		if (m_type == Type::PROPS) return (m_content.o->find(key) != m_content.o->end());
-		else if (key.isInteger()) {
+		if (m_type == Type::PROPS) {
+			auto found = m_content.o->find(key);
+			return (found != m_content.o->end()) && !found->second.isNone();
+		} else if (key.isInteger()) {
 			Integer index = key.asInteger();
 			if (m_type == Type::ARRAY) return (m_content.a->size() > index);
 			else if (index == 0) return true;
