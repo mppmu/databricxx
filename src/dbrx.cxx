@@ -30,69 +30,27 @@
 #include "logging.h"
 #include "Props.h"
 #include "ApplicationBric.h"
+#include "ApplicationConfig.h"
 
 
 using namespace std;
 using namespace dbrx;
 
 
-PropVal g_config = Props();
-Name g_logLevelOverride;
+ApplicationConfig g_config;
 unique_ptr<TApplication> g_rootApplication;
-
-void configureLogging() {
-	// g_logLevel overrides logging config in g_config
-	if (! g_logLevelOverride.empty()) {
-		g_config["logLevel"] = g_logLevelOverride;
-	}
-
-	if (g_config.contains("logLevel")) {
-		auto level = LoggingFacility::levelOf(g_config.at("logLevel").asString());
-		if (level != log_level()) {
-			dbrx_log_debug("Changing logging level to %s", LoggingFacility::nameOf(level));
-			log_level(level);
-		}
-	}
-}
-
-
-void configureLogging(const std::string &levelName) {
-	if (!levelName.empty()) {
-		Name normalizedLevelName = LoggingFacility::nameOf(LoggingFacility::levelOf(levelName));
-		g_logLevelOverride = normalizedLevelName;
-		configureLogging();
-	}
-}
-
-
-void addConfigFrom(PropVal &config, const std::string &from) {
-	dbrx_log_debug("Reading \"%s\"", from);
-	PropVal p = PropVal::fromFile(from);
-	dbrx_log_debug("Done reading");
-	if (!p.isProps()) throw invalid_argument("Invalid config in \"%s\", but contain an object, not a value or an array"_format(from));
-	config.asProps() += p.asProps();
-}
-
-
-void addGlobalConfigFrom(const std::string &from) {
-	dbrx_log_debug("Adding \"%s\" to config", from);
-	addConfigFrom(g_config, from);
-}
-
-
-void printConfig(std::ostream &out, const PropVal &config, const std::string &format) {
-	if (format == "json") { config.toJSON(out); out << endl; }
-	else throw invalid_argument("Unknown configuration output format");
-}
 
 
 void task_get_config_printUsage(const char* progName) {
 	cerr << "Syntax: " << progName << " [OPTIONS] CONFIG.." << endl;
 	cerr << "" << endl;
 	cerr << "Options:" << endl;
-	cerr << "-?          Show help" << endl;
-	cerr << "-f FORMAT   Set output format (formats: [json], ...)" << endl;
-	cerr << "-l LEVEL    Set logging level" << endl;
+	cerr << "-?              Show help" << endl;
+	cerr << "-f FORMAT       Set output format (formats: [json], ...)" << endl;
+	cerr << "-l LEVEL        Set logging level" << endl;
+	cerr << "-V NAME=VALUE   Define variable value for configuration" << endl;
+	cerr << "-s              Disable variable substitution in configuration" << endl;
+	cerr << "-e              Do not use environment variables in configuration" << endl;
 	cerr << "" << endl;
 	cerr << "Combine and output given configurations in specified format (JSON by default)." << endl;
 	cerr << "Supported output formats: \"json\" (more formats to come in future versions)." << endl;
@@ -101,29 +59,32 @@ void task_get_config_printUsage(const char* progName) {
 
 int task_get_config(int argc, char *argv[], char *envp[]) {
 	string outputFormat("json");
+	ApplicationConfig config;
 
 	int opt = 0;
-	while ((opt = getopt(argc, argv, "?c:l:f:j")) != -1) {
+	while ((opt = getopt(argc, argv, "?c:l:f:jV:se")) != -1) {
 		switch (opt) {
 			case '?': { task_get_config_printUsage(argv[0]); return 0; }
-			case 'l': { configureLogging(optarg); break; }
+			case 'l': { g_config.applyLogLevelOverride(optarg); break; }
 			case 'f': {
 				dbrx_log_debug("Setting output format to %s", optarg);
 				outputFormat = string(optarg);
 				break;
 			}
+			case 'V': { config.addVar(optarg); break; }
+			case 's': { config.substVars(false); break; }
+			case 'e': { config.useEnvVars(false); break; }
 			default: throw invalid_argument("Unkown command line option");
 		}
 	}
 
-	PropVal config = Props();
 	while (optind < argc) {
 		std::string from = argv[optind++];
-		dbrx_log_debug("Reading config from \"%s\"", from);
-		addConfigFrom(config, from);
+		config.addConfigFromFile(from);
 	}
+	config.finalize();
 
-	printConfig(cout, config, outputFormat);
+	config.print(cout, outputFormat);
 }
 
 
@@ -131,12 +92,15 @@ void task_run_printUsage(const char* progName) {
 	cerr << "Syntax: " << progName << " [OPTIONS] CONFIG.." << endl;
 	cerr << "" << endl;
 	cerr << "Options:" << endl;
-	cerr << "-?          Show help" << endl;
-	cerr << "-c SETTINGS Load configuration/settings" << endl;
-	cerr << "-l LEVEL    Set logging level (default: \"info\")" << endl;
-	cerr << "-w          Enable HTTP server" << endl;
-	cerr << "-p PORT     HTTP server port (default: 8080)" << endl;
-	cerr << "-k          Don't exit after processing (e.g. to keep HTTP server running)" << endl;
+	cerr << "-?              Show help" << endl;
+	cerr << "-c SETTINGS     Load configuration/settings" << endl;
+	cerr << "-l LEVEL        Set logging level (default: \"info\")" << endl;
+	cerr << "-w              Enable HTTP server" << endl;
+	cerr << "-p PORT         HTTP server port (default: 8080)" << endl;
+	cerr << "-k              Don't exit after processing (e.g. to keep HTTP server running)" << endl;
+	cerr << "-V NAME=VALUE   Define variable value for configuration" << endl;
+	cerr << "-s              Disable variable substitution in configuration" << endl;
+	cerr << "-e              Do not use environment variables in configuration" << endl;
 	cerr << "" << endl;
 	cerr << "Run the given bric configuration. If multiple configuration are given, they" << endl;
 	cerr << "are merged together (from left to right)." << endl;
@@ -149,13 +113,16 @@ int task_run(int argc, char *argv[], char *envp[]) {
 	bool keepRunning = false;
 
 	int opt = 0;
-	while ((opt = getopt(argc, argv, "?c:l:wp:k")) != -1) {
+	while ((opt = getopt(argc, argv, "?c:l:wp:kV:se")) != -1) {
 		switch (opt) {
 			case '?': { task_run_printUsage(argv[0]); return 0; }
-			case 'l': { configureLogging(optarg); break; }
+			case 'l': { g_config.applyLogLevelOverride(optarg); break; }
 			case 'w': { enableHTTP = true; break; }
 			case 'p': { httpPort = atoi(optarg); break; }
 			case 'k': { keepRunning = true; break; }
+			case 'V': { g_config.addVar(optarg); break; }
+			case 's': { g_config.substVars(false); break; }
+			case 'e': { g_config.useEnvVars(false); break; }
 			default: throw invalid_argument("Unkown command line option");
 		}
 	}
@@ -167,10 +134,10 @@ int task_run(int argc, char *argv[], char *envp[]) {
 
 	while (optind < argc) {
 		std::string from = argv[optind++];
-		dbrx_log_debug("Reading config from \"%s\"", from);
-		addGlobalConfigFrom(from);
+		g_config.addConfigFromFile(from);
 	}
-	configureLogging();
+	g_config.finalize();
+	g_config.applyLoggingConfig();
 
 	unique_ptr<THttpServer> httpServer;
 	if (enableHTTP) {
@@ -180,7 +147,7 @@ int task_run(int argc, char *argv[], char *envp[]) {
 	}
 
 	ApplicationBric app("dbrx");
-	app.applyConfig(g_config);
+	app.applyConfig(g_config.config());
 	app.run();
 
 	if (keepRunning) {
