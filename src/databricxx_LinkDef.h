@@ -22,6 +22,9 @@
 // ApplicationBric.h
 #pragma link C++ class dbrx::ApplicationBric-;
 
+// ApplicationConfig.h
+#pragma link C++ class dbrx::ApplicationConfig-;
+
 // Bric.h
 #pragma link C++ class dbrx::Bric-;
 #pragma link C++ class dbrx::Bric::Terminal-;

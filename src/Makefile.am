@@ -15,6 +15,7 @@ libdatabricxx_la_SOURCES = \
 	rootiobrics.cxx \
 	textbrics.cxx \
 	ApplicationBric.cxx \
+	ApplicationConfig.cxx \
 	Bric.cxx \
 	DbrxTools.cxx \
 	MRBric.cxx \
@@ -38,6 +39,7 @@ libdatabricxx_la_headers = \
 	rootiobrics.h \
 	textbrics.h \
 	ApplicationBric.h \
+	ApplicationConfig.h \
 	Bric.h \
 	DbrxTools.h \
 	MRBric.h \
