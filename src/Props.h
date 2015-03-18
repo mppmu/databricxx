@@ -334,6 +334,8 @@ protected:
 
 	bool comparisonImpl(const PropVal &other) const;
 
+	void substVarsImpl(const Props &varMap, Props* envVarMap, bool ignoreMissing);
+
 public:
 	Type type() const { return m_type; }
 
@@ -595,6 +597,9 @@ public:
 		swap(*this, other);
 		return *this;
 	}
+
+
+	void substVars(const Props &varValues = {}, bool useEnvVars = false, bool ignoreMissing = false);
 
 
 	template <typename T> static void toJSON(std::ostream &out, const T &x) { out << x; }
