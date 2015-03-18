@@ -1,0 +1,89 @@
+{
+  "requires": [ "$_/CalibBricExample.C" ],
+  "logLevel": "info",
+
+  "brics": {
+    "main": {
+      "type": "dbrx::MRBric",
+
+      "rndEventGen": {
+        "type": "dbrx::RootRndGen",
+        "pdf": "4 * TMath::Landau(x, 2100, 700, 0) + 1 * TMath::Gaus(x, 5096, 35)",
+        "xMin": 0,
+        "xMax": 10000,
+        "nPoints": 10000,
+        "nOut": 1E6
+      },
+
+      "mcaSpectrum": {
+        "type": "dbrx::RootHistBuilder<double>",
+        "input": "&rndEventGen",
+        "histName": "mcaSpectrum",
+        "histTitle": "MCA Spectrum",
+        "nBins": 10000,
+        "xlow": 0,
+        "xup": 10000
+      },
+      "mcaEventsWriter": {
+        "type": "dbrx::RootTreeWriter",
+        "treeName": "mcaEvents",
+        "treeTitle": "MCA Events",
+        "entry": {
+          "evtNo": "&rndEventGen.index",
+          "mca": "&rndEventGen"
+        }
+      },
+      "mcaFileWriter": {
+        "type": "dbrx::RootFileWriter",
+        "fileName": "out-mca.root",
+        "title": "MCA Output File",
+        "content": [ "&mcaEventsWriter", "&mcaSpectrum" ]
+      },
+
+      "mcaFileReader": {
+        "type": "dbrx::RootFileReader",
+        "input": "&mcaFileWriter"
+      },
+      "mcaEventsReader": {
+        "type": "dbrx::RootTreeReader",
+        "input": "&mcaFileReader.content.mcaEvents",
+        "nEntries": -1,
+        "firstEntry": 0
+      },
+
+      "calib": {
+        "type": "CalibBricExample",
+        "input": "&mcaEventsReader.entry.mca",
+        "offset": -24.819,
+        "slope": 0.13477
+      },
+
+      "calSpectrum": {
+        "type": "dbrx::RootHistBuilder<double>",
+        "input": "&calib",
+        "histName": "calSpectrum",
+        "histTitle": "Calibrated Spectrum",
+        "nBins": 1000,
+        "xlow": 0,
+        "xup": 1000
+      },
+      "calEventsWriter": {
+        "type": "dbrx::RootTreeWriter",
+        "treeName": "calEvents",
+        "treeTitle": "Calibrated Events",
+        "entry": {
+          "eDep": "&calib"
+        }
+      },
+      "outFileWriter": {
+        "type": "dbrx::RootFileWriter",
+        "fileName": "out-cal.root",
+        "title": "Calib Output File",
+        "content": {
+          "hists": "&calSpectrum",
+          "trees": "&calEventsWriter"
+        }
+      }
+    }
+  }
+}
