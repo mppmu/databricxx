@@ -321,6 +321,34 @@ PropVal PropVal::fromFile(const std::string &inFileName) {
 }
 
 
+PropVal PropVal::fromString(const std::string &in) {
+	// fromJSON currently can't handle non-object input (due to RapidJSON),
+	// so we have to check for numeric, bool and null values explicitly:
+	try {
+		size_t pos = 0;
+		Integer x = std::stoll(in, &pos);
+		if (pos != in.size()) throw std::invalid_argument("");
+		return PropVal(x);
+	} catch(std::invalid_argument &e) {
+		try {
+			size_t pos = 0;
+			Real x = std::stod(in, &pos);
+			if (pos != in.size()) throw std::invalid_argument("");
+			return PropVal(x);
+		} catch(std::invalid_argument &e) {
+			try {
+				return PropVal::fromJSON(in);
+			} catch(std::invalid_argument &e) {
+				if (in == "null") return PropVal();
+				else if (in == "true") return PropVal(true);
+				else if (in == "false") return PropVal(false);
+				else return PropVal(in);
+			}
+		}
+	}
+}
+
+
 std::ostream& PropVal::print(std::ostream &os) const {
 	switch (m_type) {
 		case Type::NAME: os << m_content.n; break;

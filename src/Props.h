@@ -617,6 +617,8 @@ public:
 	static PropVal fromFile(const std::string &inFileName);
 
 
+	static PropVal fromString(const std::string &in);
+
 	std::ostream& print(std::ostream &os) const override;
 
 
