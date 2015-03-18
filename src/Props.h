@@ -598,7 +598,7 @@ public:
 
 
 	template <typename T> static void toJSON(std::ostream &out, const T &x) { out << x; }
-	static void toJSON(std::ostream &out, None x) { out << "none"; }
+	static void toJSON(std::ostream &out, None x) { out << "null"; }
 	static void toJSON(std::ostream &out, Bool x) { out << (x ? "true" : "false"); }
 	static void toJSON(std::ostream &out, Real x);
 	static void toJSON(std::ostream &out, const Name x);
