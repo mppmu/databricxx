@@ -281,7 +281,7 @@ PropVal PropVal::fromJSON(std::istream &in) {
 	JSONHandler handler;
 
 	if (! reader.Parse<rapidjson::kParseDefaultFlags, rapidjson::GenericReadStream, JSONHandler> (genericIn, handler))
-		throw runtime_error("JSON parse error");
+		throw invalid_argument("JSON parse error, input is not valid JSON");
 
 	return PropVal( std::move(handler.getResult()) );
 }
