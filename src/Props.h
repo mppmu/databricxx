@@ -601,7 +601,7 @@ public:
 	}
 
 
-	void substVars(const Props &varValues = {}, bool useEnvVars = false, bool ignoreMissing = false);
+	void substVars(const Props &varValues = Props(), bool useEnvVars = false, bool ignoreMissing = false);
 
 
 	template <typename T> static void toJSON(std::ostream &out, const T &x) { out << x; }
