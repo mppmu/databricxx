@@ -1,0 +1,10 @@
+{
+  "brics": {
+    "main": {
+       "calib": {
+        "offset": "$offset",
+        "slope": "$slope"
+      }
+    }
+  }
+}

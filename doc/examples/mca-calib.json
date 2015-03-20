@@ -1,5 +1,5 @@
 {
-  "requires": [ "$_/CalibBricExample.C" ],
+  "requires": [ "$_/LinCalibBric.C" ],
   "logLevel": "info",
 
   "brics": {
@@ -52,7 +52,7 @@
       },
 
       "calib": {
-        "type": "CalibBricExample",
+        "type": "LinCalibBric",
         "input": "&mcaEventsReader.entry.mca",
         "offset": -24.819,
         "slope": 0.13477

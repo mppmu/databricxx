@@ -1,4 +1,4 @@
-class CalibBricExample: public dbrx::TransformBric {
+class LinCalibBric: public dbrx::TransformBric {
 public:
 	Input<double> input{this};
 
