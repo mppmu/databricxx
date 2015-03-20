@@ -32,6 +32,7 @@ namespace dbrx {
 bool ApplicationBric::nextExecStepImpl() {
 	while (! brics.execFinished()) { brics.nextExecStep(); }
 	setExecFinished();
+	return execFinished();
 }
 
 
@@ -53,6 +54,7 @@ bool ApplicationBric::AppBricGroup::nextExecStepImpl() {
 	while (! mainBric.execFinished()) mainBric.nextExecStep();
 	setExecFinished();
 	dbrx_log_info("Finished running bric \"%s\"", mainBric.absolutePath());
+	return execFinished();
 }
 
 

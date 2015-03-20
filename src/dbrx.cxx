@@ -85,6 +85,8 @@ int task_get_config(int argc, char *argv[], char *envp[]) {
 	config.finalize();
 
 	config.print(cout, outputFormat);
+
+	return 0;
 }
 
 
