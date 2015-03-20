@@ -112,124 +112,146 @@ bool PropVal::comparisonImpl(const PropVal &other) const {
 }
 
 
-void PropVal::substVarsImpl(const Props &varValues, Props* envVarValues, bool ignoreMissing) {
-	if (m_type == Type::STRING) {
-		const std::string &input = m_content.s;
+bool PropVal::substVarsImplContainsVar(const std::string &input) {
+	size_t nEscapes = 0;
 
-		size_t npos = input.npos;
-		stringstream result;
+	for (size_t pos = 0; pos < input.size(); ++pos) {
+		char c = input[pos];
+		if (c == '\\') {
+			++nEscapes;
+		} else {
+			if ((c == '$') && (nEscapes % 2 == 0) && (pos + 1 < input.size())) {
+				return true;
+			}
+			nEscapes = 0;
+		}
+	}
 
-		size_t nEscapes = 0;
-		size_t varBegin = npos;
-		size_t varEnd = npos;
-		bool varBraces = false;
-		size_t pos = 0;
+	return false;
+}
 
-		while (pos < input.size()) {
-			char c = input[pos];
-			if (varBegin == npos) {
-				if (c == '\\') {
-					++nEscapes;
-					result << c;
-				} else {
-					if ((c == '$') && (nEscapes % 2 == 0) && (pos + 1 < input.size())) {
-						varBegin = pos + 1;
-						// if (! (varBegin < input.size())) throw invalid_argument("Encountered \"$\" at end of string \"%s\" during variable substitution"_format(input));
-					} else {
-						result << c;
-					}
-					nEscapes = 0;
-				}
-				++pos;
+
+PropVal PropVal::substVarsImplSubstVars(const std::string &input, const Props &varValues, Props* envVarValues, bool ignoreMissing) {
+	size_t npos = input.npos;
+	stringstream result;
+
+	size_t nEscapes = 0;
+	size_t varBegin = npos;
+	size_t varEnd = npos;
+	bool varBraces = false;
+	size_t pos = 0;
+
+	while (pos < input.size()) {
+		char c = input[pos];
+		if (varBegin == npos) {
+			if (c == '\\') {
+				++nEscapes;
+				result << c;
 			} else {
-				if (c == '{') {
-					if (varBraces) {
-						throw invalid_argument("Encountered extra \"{\" during variable substitution in string \"%s\""_format(input));
-					} else if (pos == varBegin) {
-						varBegin = pos + 1;
-						varBraces = true;
-						// if (! (varBegin < input.size())) throw invalid_argument("Encountered \"${\" at end of string \"%s\" during variable substitution"_format(input));
-					} else {
-						varEnd = pos;
-					}
+				if ((c == '$') && (nEscapes % 2 == 0) && (pos + 1 < input.size())) {
+					varBegin = pos + 1;
+					// if (! (varBegin < input.size())) throw invalid_argument("Encountered \"$\" at end of string \"%s\" during variable substitution"_format(input));
 				} else {
-					if (!isalnum(c) && (c != '_')) {
-						if (varBraces) {
-							if (c == '}') {
-								varEnd = pos;
-								++pos;
-							} else if (c == '\\') {
-								throw invalid_argument("Encountered illegal \"\\\" character inside \"${...}\" during variable substitution in string \"%s\""_format(input));
-							}
-						} else {
+					result << c;
+				}
+				nEscapes = 0;
+			}
+			++pos;
+		} else {
+			if (c == '{') {
+				if (varBraces) {
+					throw invalid_argument("Encountered extra \"{\" during variable substitution in string \"%s\""_format(input));
+				} else if (pos == varBegin) {
+					varBegin = pos + 1;
+					varBraces = true;
+					// if (! (varBegin < input.size())) throw invalid_argument("Encountered \"${\" at end of string \"%s\" during variable substitution"_format(input));
+				} else {
+					varEnd = pos;
+				}
+			} else {
+				if (!isalnum(c) && (c != '_')) {
+					if (varBraces) {
+						if (c == '}') {
 							varEnd = pos;
+							++pos;
+						} else if (c == '\\') {
+							throw invalid_argument("Encountered illegal \"\\\" character inside \"${...}\" during variable substitution in string \"%s\""_format(input));
 						}
-					} else if (isdigit(c) && (pos == varBegin)) {
-						throw invalid_argument("Illegal variable name, starting with a digit, during variable substitution in string \"%s\""_format(input));
-					}
-				}
-
-				if ( (varEnd == npos) && (pos + 1 == input.size()) ) {
-					if (varBraces) {
-						throw invalid_argument("Missing \"}\" for \"${\" during variable substitution in string \"%s\""_format(input));
 					} else {
-						++pos;
 						varEnd = pos;
 					}
-				}
-
-				if (varEnd != npos) {
-					if (varEnd > varBegin) {
-						Name varName(string(&input[varBegin], varEnd - varBegin));
-
-						const PropVal* foundValue = nullptr;
-
-						auto found = varValues.find(varName);
-						if (found != varValues.end()) {
-							foundValue = &found->second;
-						} else if (envVarValues) {
-							auto foundEnv = envVarValues->find(varName);
-							if (foundEnv != envVarValues->end()) {
-								foundValue = &foundEnv->second;
-							} else {
-								const char* valPtr = gSystem->Getenv(varName.c_str());
-								PropVal value = PropVal::fromString(valPtr ? valPtr : "");
-								(*envVarValues)[varName] = value;
-								foundValue = &envVarValues->at(varName);
-							}
-						}
-
-						size_t varExprBegin = varBraces ? varBegin - 2 : varBegin - 1;
-						size_t varExprEnd = varBraces ? varEnd + 1 : varEnd;
-						if (foundValue) {
-							if ((varExprBegin == 0) && (varExprEnd == input.size())) {
-								*this = *foundValue;
-								return;
-							}
-							result << *foundValue;
-						} else {
-							if (ignoreMissing) for (size_t i = varExprBegin; i < varExprEnd; ++i) result << input[i];
-							else throw invalid_argument("Unknown variable \"%s\" during variable substitution in string \"%s\""_format(varName, input));
-						}
-					} else {
-						if (varBraces) {
-							throw invalid_argument("Encountered illegal \"${}\" during variable substitution in string \"%s\""_format(input));
-						} else {
-							result << input[pos-1] << input[pos];
-							++pos;
-						}
-					}
-					varBegin = npos;
-					varEnd = npos;
-					varBraces = false;
-				} else {
-					++pos;
+				} else if (isdigit(c) && (pos == varBegin)) {
+					throw invalid_argument("Illegal variable name, starting with a digit, during variable substitution in string \"%s\""_format(input));
 				}
 			}
+
+			if ( (varEnd == npos) && (pos + 1 == input.size()) ) {
+				if (varBraces) {
+					throw invalid_argument("Missing \"}\" for \"${\" during variable substitution in string \"%s\""_format(input));
+				} else {
+					++pos;
+					varEnd = pos;
+				}
+			}
+
+			if (varEnd != npos) {
+				if (varEnd > varBegin) {
+					Name varName(string(&input[varBegin], varEnd - varBegin));
+
+					const PropVal* foundValue = nullptr;
+
+					auto found = varValues.find(varName);
+					if (found != varValues.end()) {
+						foundValue = &found->second;
+					} else if (envVarValues) {
+						auto foundEnv = envVarValues->find(varName);
+						if (foundEnv != envVarValues->end()) {
+							foundValue = &foundEnv->second;
+						} else {
+							const char* valPtr = gSystem->Getenv(varName.c_str());
+							PropVal value = PropVal::fromString(valPtr ? valPtr : "");
+							(*envVarValues)[varName] = value;
+							foundValue = &envVarValues->at(varName);
+						}
+					}
+
+					size_t varExprBegin = varBraces ? varBegin - 2 : varBegin - 1;
+					size_t varExprEnd = varBraces ? varEnd + 1 : varEnd;
+					if (foundValue) {
+						if ((varExprBegin == 0) && (varExprEnd == input.size())) {
+							return *foundValue;
+						}
+						result << *foundValue;
+					} else {
+						if (ignoreMissing) for (size_t i = varExprBegin; i < varExprEnd; ++i) result << input[i];
+						else throw invalid_argument("Unknown variable \"%s\" during variable substitution in string \"%s\""_format(varName, input));
+					}
+				} else {
+					if (varBraces) {
+						throw invalid_argument("Encountered illegal \"${}\" during variable substitution in string \"%s\""_format(input));
+					} else {
+						result << input[pos-1] << input[pos];
+						++pos;
+					}
+				}
+				varBegin = npos;
+				varEnd = npos;
+				varBraces = false;
+			} else {
+				++pos;
+			}
 		}
+	}
 
-		*this = result.str();
+	return result.str();
+}
 
+
+void PropVal::substVarsImpl(const Props &varValues, Props* envVarValues, bool ignoreMissing) {
+	if (m_type == Type::STRING) {
+		const std::string &x = m_content.s;
+		if (substVarsImplContainsVar(x))
+			*this = substVarsImplSubstVars(x, varValues, envVarValues, ignoreMissing);
 	} else if (m_type == Type::ARRAY) {
 		Array &x = *m_content.a;
 		for (auto &v: x) {

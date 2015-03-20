@@ -334,7 +334,9 @@ protected:
 
 	bool comparisonImpl(const PropVal &other) const;
 
-	void substVarsImpl(const Props &varMap, Props* envVarMap, bool ignoreMissing);
+	static bool substVarsImplContainsVar(const std::string &input);
+	static PropVal substVarsImplSubstVars(const std::string &input, const Props &varValues, Props* envVarValues, bool ignoreMissing);
+	void substVarsImpl(const Props &varValues, Props* envVarValues, bool ignoreMissing);
 
 public:
 	Type type() const { return m_type; }
