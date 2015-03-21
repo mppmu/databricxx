@@ -527,8 +527,11 @@ public:
 			return (found != m_content.o->end()) && !found->second.isNone();
 		} else if (key.isInteger()) {
 			Integer index = key.asInteger();
-			if (m_type == Type::ARRAY) return (m_content.a->size() > index);
-			else if (index == 0) return true;
+			if (m_type == Type::ARRAY) {
+				if (index < 0) return false;
+				else return (m_content.a->size() > size_t(index));
+			}
+			else if (index == 0) return !isNone();
 			else return false;
 		}
 		else return false;
@@ -537,9 +540,11 @@ public:
 
 	const bool contains(Integer index) const {
 		if (m_type == Type::PROPS) return contains(PropKey(index));
-		else if (m_type == Type::ARRAY) return (m_content.a->size() > index);
-		else {
-			if (index == 0) return true;
+		else if (m_type == Type::ARRAY) {
+			if (index < 0) return false;
+			else return (m_content.a->size() > size_t(index));
+		} else {
+			if (index == 0) return !isNone();
 			else return false;
 		}
 	}
