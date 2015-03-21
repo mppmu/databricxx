@@ -115,7 +115,7 @@ void RootTreeWriter::Entry::connectInputs() {
 	if (m_inputsConnected) throw logic_error("Can't connect already connected inputs in bric \"%s\""_format(absolutePath()));
 
 	for (const auto &br: m_inputSources)
-		InputTerminal *input = connectInputToSiblingOrUp(*this, br.first, br.second);
+		connectInputToSiblingOrUp(*this, br.first, br.second);
 }
 
 

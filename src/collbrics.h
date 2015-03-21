@@ -70,7 +70,7 @@ protected:
 	using QT = decltype(*std::declval<Iter&>());
 
 public:
-	using T = typename std::remove_cv<typename std::remove_reference<QT>::type>::type;;
+	using T = typename std::remove_cv<typename std::remove_reference<QT>::type>::type;
 
 	Input<T> input{this};
 
