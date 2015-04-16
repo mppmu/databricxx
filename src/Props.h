@@ -233,8 +233,9 @@ public:
 		REAL = 3,
 		NAME = 4,
 		STRING = 5,
-		ARRAY = 6,
-		PROPS = 7,
+		BYTES = 6,
+		ARRAY = 7,
+		PROPS = 8,
 	};
 
 
@@ -243,6 +244,7 @@ public:
 	using Integer = PropKey::Integer;
 	using Real = double;
 	using String = PropKey::String;
+	using Bytes = std::vector<uint8_t>;
 	using Array = std::vector<PropVal>;
 	using Props = std::map<PropKey, PropVal, PropKey::CompareById>;
 
@@ -261,6 +263,7 @@ public:
 	}
 
 protected:
+	using BytesPtr = std::unique_ptr<Bytes>;
 	using ArrayPtr = std::unique_ptr<Array>;
 	using PropsPtr = std::unique_ptr<Props>;
 
@@ -271,6 +274,7 @@ protected:
 		Real r;
 		Name n;
 		String s;
+		BytesPtr y;
 		ArrayPtr a;
 		PropsPtr o;
 
@@ -282,6 +286,7 @@ protected:
 		Content(Real value) : r(std::move(value)) { }
 		Content(Name value) : n(std::move(value)) { }
 		Content(String value) : s(std::move(value)) { }
+		Content(Bytes value) : y( new Bytes(std::move(value)) ) { }
 		Content(Array value) : a( new Array(std::move(value)) ) { }
 		Content(Props value) : o( new Props(std::move(value)) ) { }
 
@@ -295,6 +300,7 @@ protected:
 				case Type::REAL: new (&r) Real(); break;
 				case Type::NAME: new (&n) Name(); break;
 				case Type::STRING: new (&s) String(); break;
+				case Type::BYTES: new (&y) BytesPtr(new Bytes()); break;
 				case Type::ARRAY: new (&a) ArrayPtr(new Array()); break;
 				case Type::PROPS: new (&o) PropsPtr(new Props()); break;
 				default: assert(false);
@@ -309,6 +315,7 @@ protected:
 				case Type::REAL: new (&r) Real(other.r); break;
 				case Type::NAME: new (&n) Name(other.n); break;
 				case Type::STRING: new (&s) String(other.s); break;
+				case Type::BYTES: new (&y) BytesPtr(new Bytes(*other.y)); break;
 				case Type::ARRAY: new (&a) ArrayPtr(new Array(*other.a)); break;
 				case Type::PROPS: new (&o) PropsPtr(new Props(*other.o)); break;
 				default: assert(false);
@@ -326,6 +333,7 @@ protected:
 	void destructorImpl() {
 		switch (m_type) {
 			case Type::STRING: m_content.s.~String(); break;
+			case Type::BYTES: m_content.y.~BytesPtr(); break;
 			case Type::ARRAY: m_content.a.~ArrayPtr(); break;
 			case Type::PROPS: m_content.o.~PropsPtr(); break;
 			default: assert(false);
@@ -347,6 +355,7 @@ public:
 	bool isReal() const { return m_type == Type::INTEGER || m_type == Type::REAL; }
 	bool isName() const { return m_type == Type::NAME; }
 	bool isString() const { return m_type == Type::NAME || m_type == Type::STRING; }
+	bool isBytes() const { return m_type == Type::BYTES; }
 	bool isArray() const { return m_type == Type::ARRAY; }
 	bool isProps() const { return m_type == Type::PROPS; }
 
@@ -397,6 +406,12 @@ public:
 				return m_content.n.str();
 			default: throw std::bad_cast();
 		}
+	}
+
+
+	const Bytes& asBytes() const {
+		if (m_type == Type::BYTES) return *m_content.y;
+		else throw std::bad_cast();
 	}
 
 
@@ -609,6 +624,7 @@ public:
 	static void toJSON(std::ostream &out, Bool x) { out << (x ? "true" : "false"); }
 	static void toJSON(std::ostream &out, Real x);
 	static void toJSON(std::ostream &out, const Name x);
+	static void toJSON(std::ostream &out, const Bytes &x);
 	static void toJSON(std::ostream &out, const String &x) { PropKey::toJSON(out, x); }
 	static void toJSON(std::ostream &out, const Array &x);
 	static void toJSON(std::ostream &out, const Props &x);
@@ -672,6 +688,9 @@ public:
 	PropVal(String &&value) : m_type(Type::STRING), m_content(std::move(value)) {}
 
 	PropVal(const char* value) : PropVal(std::string(value)) {}
+
+	PropVal(const Bytes &value) : m_type(Type::BYTES), m_content(value) {}
+	PropVal(Bytes &&value) : m_type(Type::BYTES), m_content(std::move(value)) {}
 
 	PropVal(const Array &value) : m_type(Type::ARRAY), m_content(value) {}
 	PropVal(Array &&value) : m_type(Type::ARRAY), m_content(std::move(value)) {}
@@ -770,8 +789,12 @@ inline void assign_from(float &to, const PropVal &from) { to = from.asDouble(); 
 inline void assign_from(double &to, const PropVal &from) { to = from.asDouble(); }
 inline void assign_from(Name &to, const PropVal &from) { to = from.asName(); }
 inline void assign_from(std::string &to, const PropVal &from) { to = from.asString(); }
+inline void assign_from(PropVal::Bytes &to, const PropVal &from) { to = from.asBytes(); }
 inline void assign_from(PropVal::Array &to, const PropVal &from) { to = from.asArray(); }
 inline void assign_from(PropVal::Props &to, const PropVal &from) { to = from.asProps(); }
+
+
+inline void assign_from(PropVal &to, const PropVal::Bytes &from) { to = PropVal(from); }
 
 
 template<typename T, typename Alloc> void assign_from(std::vector<T, Alloc> &to, const PropVal &from) {

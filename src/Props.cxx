@@ -26,6 +26,7 @@
 
 #include <TString.h>
 #include <TSystem.h>
+#include <TBase64.h>
 
 #include "format.h"
 
@@ -105,6 +106,7 @@ bool PropVal::comparisonImpl(const PropVal &other) const {
 				case Type::NAME: return m_content.s == other.m_content.n.str();
 				default: return false;
 			}
+		case Type::BYTES: return (other.m_type == Type::BYTES) && (*m_content.y == *other.m_content.y);
 		case Type::ARRAY: return (other.m_type == Type::ARRAY) && (*m_content.a == *other.m_content.a);
 		case Type::PROPS: return (other.m_type == Type::PROPS) && (*m_content.o == *other.m_content.o);
 		default: assert(false);
@@ -324,6 +326,13 @@ void PropVal::toJSON(std::ostream &out, Name x) {
 }
 
 
+void PropVal::toJSON(std::ostream &out, const Bytes &x) {
+	out << "\"data:,";
+	out << TBase64::Encode((const char*)(x.data()), x.size());
+	out << "\"";
+}
+
+
 void PropVal::toJSON(std::ostream &out, const Array &x) {
 	out << "[";
 	bool first = true;
@@ -366,6 +375,7 @@ void PropVal::toJSON(std::ostream &out) const {
 		case Type::REAL: toJSON(out, m_content.r); break;
 		case Type::NAME: toJSON(out, m_content.n); break;
 		case Type::STRING: toJSON(out, m_content.s); break;
+		case Type::BYTES: toJSON(out, *m_content.y); break;
 		case Type::ARRAY: toJSON(out, *m_content.a); break;
 		case Type::PROPS: toJSON(out, *m_content.o); break;
 		default: assert(false);
@@ -378,8 +388,24 @@ PropVal PropVal::fromJSON(std::istream &in) {
 	using rapidjson::SizeType;
 
 	class JSONHandler {
+	public:
+		using Ch = typename Encoding::Ch;
+
 	protected:
 		std::vector<PropVal> m_valueStack;
+
+		PropVal decodeString(const Ch* str, SizeType length) {
+			if ((length >= 6) && (str[0] == 'd') && (str[1] == 'a') && (str[2] == 't') && (str[3] == 'a') && (str[4] == ':') && (str[5] == ',')) {
+				assert(str[length] == 0);
+				TString decoded = TBase64::Decode(str + 6);
+				Bytes bytes(decoded.Length());
+				const char* decodedData = decoded.Data();
+				for (size_t i = 0; i < bytes.size(); ++i) bytes[i] = uint8_t(decodedData[i]);
+				return bytes;
+			} else {
+				return string(str, length);
+			}
+		}
 
 		void popCurrent() { m_valueStack.pop_back(); }
 
@@ -390,8 +416,6 @@ PropVal PropVal::fromJSON(std::istream &in) {
 		}
 
 	public:
-		using Ch = typename Encoding::Ch;
-
 		void Null_() { store(PropVal()); }
 
 		void Bool_(bool b) { store(b); }
@@ -403,7 +427,7 @@ PropVal PropVal::fromJSON(std::istream &in) {
 
 		void Double(double d) { store(d); }
 
-		void String(const Ch* str, SizeType length, bool copy) { store(string(str, length)); }
+		void String(const Ch* str, SizeType length, bool copy) { store(decodeString(str, length)); }
 
 		void StartObject() {}
 
