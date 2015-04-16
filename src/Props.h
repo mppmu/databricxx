@@ -669,6 +669,7 @@ public:
 	PropVal(Name value) : m_type(Type::NAME), m_content(value) {}
 
 	PropVal(const String &value) : m_type(Type::STRING), m_content(value) {}
+	PropVal(String &&value) : m_type(Type::STRING), m_content(std::move(value)) {}
 
 	PropVal(const char* value) : PropVal(std::string(value)) {}
 
