@@ -92,6 +92,10 @@ PropKey::PropKey(const std::string &value) {
 }
 
 
+
+const PropVal PropVal::s_noneValue;
+
+
 bool PropVal::comparisonImpl(const PropVal &other) const {
 	switch (m_type) {
 		case Type::NAME:
