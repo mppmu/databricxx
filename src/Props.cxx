@@ -316,8 +316,11 @@ void PropVal::substVars(const Props &varValues, bool useEnvVars, bool ignoreMiss
 
 
 void PropVal::toJSON(std::ostream &out, Real x) {
-	out.precision(16);
-	out << x;
+	if (x != x) toJSON(out, nullptr); // NaN
+	else {
+		out.precision(16);
+		out << x;
+	}
 }
 
 

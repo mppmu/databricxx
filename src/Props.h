@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <functional>
 #include <iosfwd>
+#include <limits>
 #include <cassert>
 
 #include "Name.h"
@@ -381,6 +382,8 @@ public:
 
 	double asDouble() const {
 		switch (m_type) {
+			case Type::NONE:
+				return std::numeric_limits<double>::quiet_NaN();
 			case Type::INTEGER:
 				return m_content.i;
 			case Type::REAL:
