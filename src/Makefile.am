@@ -12,6 +12,7 @@ libdatabricxx_la_SOURCES = \
 	format.cxx \
 	funcprog.cxx \
 	logging.cxx \
+	propsbrics.cxx \
 	rootiobrics.cxx \
 	textbrics.cxx \
 	ApplicationBric.cxx \
@@ -37,6 +38,7 @@ libdatabricxx_la_headers = \
 	format.h \
 	funcprog.h \
 	logging.h \
+	propsbrics.h \
 	rootiobrics.h \
 	textbrics.h \
 	ApplicationBric.h \

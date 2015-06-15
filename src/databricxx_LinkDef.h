@@ -9,6 +9,10 @@
 
 // collbrics.h
 
+// propsbrics.h
+#pragma link C++ class dbrx::PropsBuilder-;
+#pragma link C++ class dbrx::PropsSplitter-;
+
 // rootiobrics.h
 #pragma link C++ class dbrx::RootTreeReader-;
 #pragma link C++ class dbrx::RootTreeWriter-;
