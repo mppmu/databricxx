@@ -19,9 +19,9 @@
 #define DBRX_TEXTBRICS_H
 
 #include <iostream>
-#include <fstream>
 
 #include "Bric.h"
+#include "ManagedStream.h"
 
 
 namespace dbrx {
@@ -53,8 +53,7 @@ public:
 
 class TextFileReader: public MapperBric {
 protected:
-	std::istream* m_inputStream = nullptr;
-	std::unique_ptr<std::ifstream> m_inputFile;
+	ManagedInputStream m_inputStream;
 
 public:
 	Input<std::string> input{this, "", "Input filename"};
@@ -72,8 +71,7 @@ public:
 
 class TextFileWriter: public ReducerBric {
 protected:
-	std::ostream* m_outputStream = nullptr;
-	std::unique_ptr<std::ofstream> m_outputFile;
+	ManagedOutputStream m_outputStream;
 
 public:
 	Input<std::string> input{this, "", "Input line"};

@@ -26,20 +26,19 @@ namespace dbrx {
 
 void TextFileReader::processInput() {
 	dbrx_log_trace("TextFileReader \"%s\", opening next input \"%s\""_format(absolutePath(), input.get()));
-	if (input == "stdin") m_inputStream = &std::cin;
-	else {
-		m_inputFile = unique_ptr<std::ifstream>(new ifstream(input));
-		m_inputStream = m_inputFile.get();
+	try {
+		m_inputStream.open(input);
+	} catch (std::runtime_error &e) {
+		throw runtime_error("Can't open \"%s\" for input in bric \"%s\": %s"_format(input.get(), absolutePath(), e.what()));
 	}
 }
 
 
 bool TextFileReader::nextOutput() {
-	if (getline(*m_inputStream, output.get())) {
+	if (getline(m_inputStream.stream(), output.get())) {
 		return true;
 	} else {
-		m_inputStream = nullptr;
-		m_inputFile = unique_ptr<std::ifstream>();
+		m_inputStream.close();
 		return false;
 	}
 }
@@ -48,25 +47,22 @@ bool TextFileReader::nextOutput() {
 
 void TextFileWriter::newReduction() {
 	dbrx_log_trace("TextFileWriter \"%s\", opening output \"%s\""_format(absolutePath(), target.get()));
-	if (target == "stdout") m_outputStream = &std::cout;
-	else if (target == "stderr") m_outputStream = &std::cerr;
-	else {
-		m_outputFile = unique_ptr<std::ofstream>(new ofstream(target));
-		m_outputStream = m_outputFile.get();
+	try {
+		m_outputStream.open(target);	
+	} catch (std::runtime_error &e) {
+		throw runtime_error("Can't open \"%s\" for output in bric \"%s\": %s"_format(target.get(), absolutePath(), e.what()));
 	}
-	if (! *m_outputStream) throw runtime_error("Can't open \"%s\" for output in bric \"%s\""_format(target.get(), absolutePath()));
 }
 
 
 void TextFileWriter::processInput() {
-	*m_outputStream << input.get() << '\n' << flush;
-	if (! *m_outputStream) throw runtime_error("Output to \"%s\" failed in bric \"%s\""_format(target.get(), absolutePath()));
+	m_outputStream.stream() << input.get() << '\n' << flush;
+	if (! m_outputStream.stream()) throw runtime_error("Output to \"%s\" failed in bric \"%s\""_format(target.get(), absolutePath()));
 }
 
 
 void TextFileWriter::finalizeReduction() {
-	m_outputStream = nullptr;
-	m_outputFile = unique_ptr<std::ofstream>();
+	m_outputStream.close();
 }
 
 
