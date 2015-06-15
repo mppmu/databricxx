@@ -43,6 +43,11 @@
 // DbrxTools.h
 #pragma link C++ class dbrx::DbrxTools-;
 
+// ManagedStream.h
+#pragma link C++ class dbrx::ManagedStream-;
+#pragma link C++ class dbrx::ManagedInputStream-;
+#pragma link C++ class dbrx::ManagedOutputStream-;
+
 // MRBric.h
 #pragma link C++ class dbrx::MRBric-;
 

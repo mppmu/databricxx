@@ -18,6 +18,7 @@ libdatabricxx_la_SOURCES = \
 	ApplicationConfig.cxx \
 	Bric.cxx \
 	DbrxTools.cxx \
+	ManagedStream.cxx \
 	MRBric.cxx \
 	Name.cxx NameTable.cxx \
 	Printable.cxx \
@@ -42,6 +43,7 @@ libdatabricxx_la_headers = \
 	ApplicationConfig.h \
 	Bric.h \
 	DbrxTools.h \
+	ManagedStream.h \
 	MRBric.h \
 	Name.h NameTable.h \
 	Printable.h \
