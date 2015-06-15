@@ -130,7 +130,7 @@ public:
 		void releaseOutputValues();
 
 	public:
-		void addDynOutput(std::unique_ptr<Bric::OutputTerminal> terminal);
+		void addDynOutput(std::unique_ptr<Bric::OutputTerminal> terminal) final override;
 
 		virtual void readObjects() final;
 
