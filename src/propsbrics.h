@@ -26,7 +26,7 @@
 namespace dbrx {
 
 
-class FromJSON: public TransformBric {
+class JSON2PropVal: public TransformBric {
 public:
 	Input<std::string> input{this};
 	Output<PropVal> output{this};
@@ -38,7 +38,7 @@ public:
 
 
 
-class ToJSON: public TransformBric {
+class PropVal2JSON: public TransformBric {
 public:
 	Input<PropVal> input{this};
 	Output<std::string> output{this};

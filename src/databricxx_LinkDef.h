@@ -10,6 +10,8 @@
 // collbrics.h
 
 // propsbrics.h
+#pragma link C++ class dbrx::JSON2PropVal-;
+#pragma link C++ class dbrx::PropVal2JSON-;
 #pragma link C++ class dbrx::PropsBuilder-;
 #pragma link C++ class dbrx::PropsSplitter-;
 
