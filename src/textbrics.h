@@ -27,30 +27,6 @@
 namespace dbrx {
 
 
-class FromJSON: public TransformBric {
-public:
-	Input<std::string> input{this};
-	Output<PropVal> output{this};
-
-	void processInput() { output = PropVal::fromJSON(input); }
-
-	using TransformBric::TransformBric;
-};
-
-
-
-class ToJSON: public TransformBric {
-public:
-	Input<PropVal> input{this};
-	Output<std::string> output{this};
-
-	void processInput() { output = input->toJSON(); }
-
-	using TransformBric::TransformBric;
-};
-
-
-
 class TextFileReader: public MapperBric {
 protected:
 	ManagedInputStream m_inputStream;
