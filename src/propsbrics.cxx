@@ -44,12 +44,18 @@ PropsSplitter::ContentGroup& PropsSplitter::ContentGroup::subGroup(PropKey name)
 void PropsSplitter::ContentGroup::splitPropVal(const PropVal& from) {
 	for (auto &elem: m_outputs) {
 		OutputTerminal &output = *elem.second;
-		output.value().fromPropVal(from[output.name()]);
+		const PropVal &propVal = from.atOrNone(output.name());
+		try {
+			output.value().fromPropVal(from.atOrNone(output.name()));
+		} catch(std::bad_cast &e) {
+			if (propVal.isNone()) output.value().setToDefault();
+			else throw;
+		}
 	}
 
 	for (auto &entry: m_brics) {
 		ContentGroup& group = *dynamic_cast<ContentGroup*>(entry.second);
-		group.splitPropVal(from[group.name()]);
+		group.splitPropVal(from.atOrNone(group.name()));
 	}
 }
 
