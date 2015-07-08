@@ -555,6 +555,8 @@ public:
 		if (m_type == Type::PROPS) {
 			auto result = m_content.o->find(key);
 			return (result != m_content.o->end() ? result->second : s_noneValue);
+		} else if (m_type == Type::NONE) {
+			return s_noneValue;
 		} else if (key.isInteger()) {
 			Integer index = key.asInteger();
 			if (m_type == Type::ARRAY) return m_content.a->at(index);
@@ -569,8 +571,11 @@ public:
 		if (m_type == Type::PROPS) {
 			auto result = m_content.o->find(index);
 			return (result != m_content.o->end() ? result->second : s_noneValue);
-		} else if (m_type == Type::ARRAY) return m_content.a->at(index);
-		else {
+		} else if (m_type == Type::ARRAY) {
+			return m_content.a->at(index);
+		} else if (m_type == Type::NONE) {
+			return s_noneValue;
+		} else {
 			if (index == 0) return *this;
 			else throw std::out_of_range("PropVal of this type has fixed size 1");
 		}
