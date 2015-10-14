@@ -18,17 +18,6 @@
 #include "rootiobrics.h"
 
 #include <TH1.h>
-#include <TEntryList.h>
-#include <TTree.h>
-#include <TGraph2D.h>
-#include <TEfficiency.h>
-#include <TEveVSD.h>
-#include <TGenericClassInfo.h>
-#include <TEventList.h>
-#include <TDSet.h>
-#include <TClass.h>
-#include <TSystemDirectory.h>
-#include <TChain.h>
 
 #include "logging.h"
 #include "RootIO.h"
@@ -405,19 +394,7 @@ void RootFileWriter::writeObject(TNamed *obj) {
 		TH1::AddDirectoryStatus() &&
 			(dynamic_cast<TH1*>(obj) != 0)
 	) || (
-		TDirectory::AddDirectoryStatus() && (
-			dynamic_cast<TEntryList*>(obj) != 0 ||
-			dynamic_cast<TTree*>(obj) != 0 ||
-			dynamic_cast<TGraph2D*>(obj) != 0 ||
-			dynamic_cast<TEfficiency*>(obj) != 0 ||
-			dynamic_cast<TEveVSD*>(obj) != 0 ||
-			dynamic_cast<ROOT::TGenericClassInfo*>(obj) != 0 ||
-			dynamic_cast<TEventList*>(obj) != 0 ||
-			dynamic_cast<TDSet*>(obj) != 0 ||
-			dynamic_cast<TClass*>(obj) != 0 ||
-			dynamic_cast<TSystemDirectory*>(obj) != 0 ||
-			dynamic_cast<TChain*>(obj) != 0
-		)
+		TDirectory::AddDirectoryStatus() && (obj->IsA()->GetDirectoryAutoAdd() != nullptr)
 	);
 
 	if (!autoAdded) obj->Write();
