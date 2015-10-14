@@ -22,6 +22,7 @@
 #include "logging.h"
 #include "RootIO.h"
 #include "TypeReflection.h"
+#include "WrappedTObj.h"
 
 using namespace std;
 
@@ -175,9 +176,14 @@ RootFileReader::ContentGroup& RootFileReader::ContentGroup::subGroup(PropKey nam
 
 
 void RootFileReader::ContentGroup::releaseOutputValues() {
-	for (auto &elem: m_outputs) {
-		OutputTerminal &output = *elem.second;
-		output.value().untypedRelease();
+	for (auto &elem: m_outputs) if (! elem.second->value().empty()) {
+		if (elem.second->value().isPtrAssignableTo(typeid(AbstractWrappedTObj))) {
+			AbstractWrappedTObj *outputWrappedTObj = elem.second->value().typedPtr<AbstractWrappedTObj>();
+			outputWrappedTObj->releaseTObj().release();
+		} else {
+			OutputTerminal &output = *elem.second;
+			output.value().untypedRelease();
+		}
 	}
 }
 
@@ -212,12 +218,27 @@ void RootFileReader::ContentGroup::readObjects() {
 
 		TypeReflection outputType(output.value().typeInfo());
 		TypeReflection objectType(obj->IsA());
-		if (! outputType.isPtrAssignableFrom(objectType) )
-			throw logic_error("Type %s of output terminal \"%s\" is incompatible with type %s of object \"%s\" read from \"%s\""_format(outputType.name(), output.absolutePath(), objectType.name(), output.name(), m_inputDir->GetPath()));
 
-		// Point output value to obj - obj is really owned by input TFile, not
-		// by us, so we'll have to release it again later:
-		output.value().untypedOwn(obj);
+		if (output.value().isPtrAssignableTo(typeid(AbstractWrappedTObj))) {
+			if (output.value().empty()) output.value().setToDefault();
+			AbstractWrappedTObj *outputWrappedTObj = output.value().typedPtr<AbstractWrappedTObj>();
+			if (outputWrappedTObj->canWrapTObj(obj) ) {
+				// Wrap output value around obj - obj is really owned by input
+				// TFile, not by us, so we'll have to release it again later:
+				outputWrappedTObj->wrapTObj(unique_ptr<TObject>(obj));
+			} else {
+				TypeReflection outputWrappedType(outputWrappedTObj->typeInfo());
+				throw logic_error("Wrapped type %s of WrappedTObj output terminal \"%s\" is incompatible with type %s of object \"%s\" read from \"%s\""_format(outputWrappedType.name(), output.absolutePath(), objectType.name(), output.name(), m_inputDir->GetPath()));				
+			}
+		} else {
+			if (outputType.isPtrAssignableFrom(objectType) ) {
+				// Point output value to obj - obj is really owned by input
+				// TFile, not by us, so we'll have to release it again later:
+				output.value().untypedOwn(obj);
+			} else {
+				throw logic_error("Type %s of output terminal \"%s\" is incompatible with type %s of object \"%s\" read from \"%s\""_format(outputType.name(), output.absolutePath(), objectType.name(), output.name(), m_inputDir->GetPath()));
+			}
+		}
 	}
 
 	for (auto &entry: m_brics) dynamic_cast<ContentGroup*>(entry.second)->readObjects();
@@ -270,8 +291,14 @@ void RootFileWriter::ContentGroup::connectInputs() {
 			} );
 		}
 
-		if (! TypeReflection(typeid(TNamed)).isPtrAssignableFrom(input->value().typeInfo()) )
-			throw logic_error("Source terminal \"%s\" used for input in \"%s\" is not of type TNamed"_format(input->srcTerminal()->absolutePath(), absolutePath()));
+		if (input->value().isPtrAssignableTo(typeid(AbstractWrappedTObj))) {
+			const AbstractWrappedTObj *inputWrappedTObj = input->value().typedPtr<AbstractWrappedTObj>();
+			if (! TypeReflection(typeid(TNamed)).isPtrAssignableFrom(inputWrappedTObj->typeInfo()) )
+				throw logic_error("Source terminal \"%s\" used for input in \"%s\" is of type WrappedTObj, but does not wrap a TNamed"_format(input->srcTerminal()->absolutePath(), absolutePath()));
+		} else {
+			if (! TypeReflection(typeid(TNamed)).isPtrAssignableFrom(input->value().typeInfo()) )
+				throw logic_error("Source terminal \"%s\" used for input in \"%s\" is not of type TNamed"_format(input->srcTerminal()->absolutePath(), absolutePath()));
+		}
 
 		m_sourceInfos[input->effSrcBric()].inputs.push_back(input);
 	}
@@ -305,7 +332,14 @@ void RootFileWriter::ContentGroup::processInput() {
 		if (info.inputCounter < outputCounterOn(*source)) {
 			info.inputCounter = outputCounterOn(*source);
 			for (const Terminal* input: info.inputs) {
-				const TNamed *inputObject = (const TNamed*)input->value().untypedPtr();
+
+				const TNamed *inputObject = nullptr;
+				if (input->value().isPtrAssignableTo(typeid(AbstractWrappedTObj))) {
+					const AbstractWrappedTObj *inputWrappedTObj = input->value().typedPtr<AbstractWrappedTObj>();
+					inputObject = (const TNamed*)inputWrappedTObj->getPtr();
+				} else {
+					inputObject = (const TNamed*)input->value().untypedPtr();
+				}
 
 				if (typeid(*inputObject) == typeid(TTree)) {
 					// TTree is special - it or a clone of it should already be inside m_outputDir:
