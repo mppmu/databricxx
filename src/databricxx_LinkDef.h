@@ -96,6 +96,9 @@
 #pragma link C++ class dbrx::HasValueRef-;
 #pragma link C++ class dbrx::HasConstValueRef-;
 
+// WrappedTObj.h
+#pragma link C++ class dbrx::AbstractWrappedTObj-;
+
 #endif // __CINT__
 
 #endif // databricxx_LinkDef_h

@@ -29,7 +29,8 @@ libdatabricxx_la_SOURCES = \
 	RootIO.cxx \
 	RootRndGen.cxx \
 	TypeReflection.cxx \
-	Value.cxx HasValue.cxx
+	Value.cxx HasValue.cxx \
+	WrappedTObj.cxx
 
 libdatabricxx_la_headers = \
 	basicbrics.h \
@@ -55,7 +56,8 @@ libdatabricxx_la_headers = \
 	RootIO.h \
 	RootRndGen.h \
 	TypeReflection.h \
-	Value.h HasValue.h
+	Value.h HasValue.h \
+	WrappedTObj.h
 
 pkginclude_HEADERS = $(libdatabricxx_la_headers)
 
