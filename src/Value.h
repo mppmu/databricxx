@@ -69,7 +69,8 @@ public:
 	virtual void* untypedPtr() final { return *untypedPPtr(); }
 
 	template<typename T> T* * typedPPtr() {
-		if (typeid(T) == typeInfo()) return (T* *) untypedPPtr();
+		if ( typeid(T) == typeInfo() || isPtrAssignableTo(typeid(T)) )
+			return (T* *) untypedPPtr();
 		else throw std::bad_cast();		
 	}
 
