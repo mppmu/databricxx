@@ -99,6 +99,9 @@
 // WrappedTObj.h
 #pragma link C++ class dbrx::AbstractWrappedTObj-;
 
+// WrappedTObjConv.h
+#pragma link C++ class dbrx::WrappedTObjConv+;
+
 #endif // __CINT__
 
 #endif // databricxx_LinkDef_h
