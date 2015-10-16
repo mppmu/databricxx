@@ -22,7 +22,7 @@ AX_CXX_COMPILE_STDCXX_11([noext],[mandatory])
 
 # Checks for dependencies
 
-ROOTSYS_DEPS([glibs], [-lSpectrum -lProof -lEve -lRHTTP])
+ROOTSYS_DEPS([glibs], [-lRHTTP])
 
 CXX_PROJECT_DEPS([])
 
