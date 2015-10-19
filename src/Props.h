@@ -833,14 +833,16 @@ inline void assign_from(PropVal::Props &to, const PropVal &from) { to = from.asP
 inline void assign_from(PropVal &to, const PropVal::Bytes &from) { to = PropVal(from); }
 
 
-template<typename T, typename Alloc> void assign_from(std::vector<T, Alloc> &to, const PropVal &from) {
+template<typename T, typename Alloc>
+auto assign_from(std::vector<T, Alloc> &to, const PropVal &from) -> decltype(assign_from(to.front(), from)) {
 	const PropVal::Array &a = from.asArray();
 	to.clear();
 	to.reserve(a.size());
 	for (const auto& x: a) { T tmp; assign_from(tmp, x); to.push_back(std::move(tmp)); }
 }
 
-template<typename T, typename Alloc> void assign_from(PropVal &to, const std::vector<T, Alloc> &from) {
+template<typename T, typename Alloc>
+auto assign_from(PropVal &to, const std::vector<T, Alloc> &from) -> decltype(assign_from(to, from.front())) {
 	if (to.isArray()) to.asArray().clear();
 	else to = PropVal::array();
 	PropVal::Array &a = to.asArray();
@@ -849,13 +851,15 @@ template<typename T, typename Alloc> void assign_from(PropVal &to, const std::ve
 }
 
 
-template<typename T, typename Alloc> void assign_from(std::list<T, Alloc> &to, const PropVal &from) {
+template<typename T, typename Alloc>
+auto assign_from(std::list<T, Alloc> &to, const PropVal &from) -> decltype(assign_from(to.front(), from)) {
 	const PropVal::Array &a = from.asArray();
 	to.clear();
 	for (const auto& x: a) { T tmp; assign_from(tmp, x); to.push_back(std::move(tmp)); }
 }
 
-template<typename T, typename Alloc> void assign_from(PropVal &to, const std::list<T, Alloc> &from) {
+template<typename T, typename Alloc>
+auto assign_from(PropVal &to, const std::list<T, Alloc> &from) -> decltype(assign_from(to, from.front())) {
 	if (to.isArray()) to.asArray().clear();
 	else to = PropVal::array();
 	PropVal::Array &a = to.asArray();
