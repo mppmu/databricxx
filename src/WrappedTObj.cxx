@@ -27,9 +27,11 @@ namespace dbrx {
 void AbstractWrappedTObj::releaseFromTDirIfAutoAdded(TObject *obj) {
 	auto autoAddFunc = obj->IsA()->GetDirectoryAutoAdd();
 	if (autoAddFunc && (
-		(dynamic_cast<TH1*>(obj) != nullptr) && TH1::AddDirectoryStatus())
+		((dynamic_cast<TH1*>(obj) != nullptr) && TH1::AddDirectoryStatus())
 		|| TDirectory::AddDirectoryStatus()
-	) autoAddFunc(obj, nullptr);
+	)) {
+		autoAddFunc(obj, nullptr);
+	}
 }
 
 
