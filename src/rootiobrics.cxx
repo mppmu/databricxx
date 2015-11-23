@@ -348,7 +348,7 @@ void RootFileWriter::ContentGroup::processInput() {
 					// Need to clone inputObject to own it:
 					dbrx_log_trace("Cloning object \"%s\" to content group \"%s\"", inputObject->GetName(), absolutePath());
 					TNamed *outputObject = (TNamed*) inputObject->Clone();
-					writeObject(outputObject);
+					writeObject(outputObject, m_writer->overwrite.get());
 				}
 			}
 		}
@@ -420,7 +420,7 @@ RootFileWriter::ContentGroup::ContentGroup(RootFileWriter *writer, Bric *parentB
 
 
 
-void RootFileWriter::writeObject(TNamed *obj) {
+void RootFileWriter::writeObject(TNamed *obj, bool overwrite) {
 	if (string(obj->GetName()).empty())
 		throw invalid_argument("Refusing to add object with empty name to TDirectory");
 
@@ -431,9 +431,11 @@ void RootFileWriter::writeObject(TNamed *obj) {
 		TDirectory::AddDirectoryStatus() && (obj->IsA()->GetDirectoryAutoAdd() != nullptr)
 	);
 
-	if (!autoAdded) obj->Write();
+	if (!autoAdded)
+	{
+		if (overwrite) obj->Write(obj->GetName(), TObject::kOverwrite);
+	}
 }
-
 
 void RootFileWriter::connectInputs() {
 	dbrx_log_trace("Setting up content groups for bric \"%s\"", absolutePath());
@@ -466,7 +468,13 @@ void RootFileWriter::openOutputForWrite() {
 	const char *outFileName = fileName->c_str();
 	const char *outFileTitle = title->c_str();
 	dbrx_log_debug("Creating TFile \"%s\" with title \"%s\" in bric \"%s\""_format(outFileName, outFileTitle, absolutePath()));
-	TFile *tfile = TFile::Open(outFileName, "RECREATE", outFileTitle);
+
+	// Open tfile in update mode if chosen that way
+	TFile *tfile = nullptr;
+	if (recreateFile.get()) tfile = TFile::Open(outFileName, "RECREATE", outFileTitle);
+	else tfile = TFile::Open(outFileName, "UPDATE", outFileTitle);
+
+
 	if (tfile == nullptr) throw runtime_error("Could not create TFile \"%s\""_format(outFileName));
 	outputFile.value() = unique_ptr<TFile>(tfile);
 

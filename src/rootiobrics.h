@@ -157,7 +157,8 @@ class RootFileWriter: public AsyncReducerBric {
 protected:
 	static const PropKey s_thisDirName;
 
-	static void writeObject(TNamed *obj);
+	// Additional argument to choose if the object is overwritten
+	static void writeObject(TNamed *obj, bool overwrite = false);
 
 	bool m_outputReadyForWrite = false;
 
@@ -203,6 +204,11 @@ public:
 	Param<std::string> fileName{this, "fileName", "File Name"};
 	Param<std::string> title{this, "title", "Title"};
 	Param<PropVal> content{this, "content", "Content"};
+
+	// Is used to choose the mode for opening the root file
+	Param<bool> recreateFile{this, "recreate", "Recreate file", true};
+	// Is used to choose if the contents of the root file are overwritten
+	Param<bool> overwrite{this, "overwrite", "Overwrite objects in file", false};
 
 	Output<std::string> output{this, "output", "Output File Name"};
 	Output<TFile> outputFile{this, "outputFile", "Output TFile"};
