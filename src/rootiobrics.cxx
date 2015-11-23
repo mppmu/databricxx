@@ -66,6 +66,16 @@ void RootTreeReader::processInput() {
 	index = firstEntry - 1;
 	size = m_chain->GetEntries() - firstEntry.get();
 	if (ssize_t(nEntries) > 0) size = std::min(ssize_t(nEntries), size.get());
+
+	if (printETA.get())
+	{
+		gettimeofday(&m_StartTime, NULL);
+
+		m_LastTime.tv_sec = m_StartTime.tv_sec;
+		m_LastTime.tv_usec = m_StartTime.tv_usec;
+	}
+
+	m_previousProgress = 0.;
 }
 
 
@@ -73,6 +83,48 @@ bool RootTreeReader::nextOutput() {
 	if (index.get() + 1 < firstEntry.get() + size.get()) {
 		++index;
 		m_chain->GetEntry(index);
+
+		if (!printProgress.get()) return true;
+
+		double progress = 100.*index/size.get();
+
+		if (progress >= m_previousProgress + progressPrecent.get())
+		{
+			dbrx_log_info("%6.2d % processed (%i entries)!", progress, index.get());
+			m_previousProgress = progress;
+
+			if (printETA.get())
+			{
+				gettimeofday(&m_CurrentTime, NULL);
+
+				double timeDiff = m_CurrentTime.tv_sec - m_LastTime.tv_sec + 1.0e-6*(m_CurrentTime.tv_usec - m_LastTime.tv_usec);
+				double averageTimeDiff = m_CurrentTime.tv_sec - m_StartTime.tv_sec + 1.0e-6*(m_CurrentTime.tv_usec - m_StartTime.tv_usec);
+
+				double rate = progressPrecent.get()*size.get()/timeDiff;
+				double averageRate = index/averageTimeDiff;
+
+				dbrx_log_info("Rate: %5.1f Entries/s (average: %5.1f Entries/s)", rate, averageRate);
+
+				double eta = (size.get() - index.get())/averageRate;
+
+				int seconds = eta;
+				int usecs = (eta-seconds)*1.0e6;
+
+				time_t finishTime;
+				finishTime = m_CurrentTime.tv_sec+seconds;
+				struct tm* finishtm;
+				finishtm = localtime(&finishTime);
+
+				char tmbuf[64];
+				strftime(tmbuf, sizeof tmbuf, "%a %b %d - %H:%M:%S", finishtm);
+
+				dbrx_log_info("ETA: %s", tmbuf);
+
+				m_LastTime.tv_sec = m_CurrentTime.tv_sec;
+				m_LastTime.tv_usec = m_CurrentTime.tv_usec;
+			}
+		}
+
 		return true;
 	} else return false;
 }

@@ -27,12 +27,25 @@
 #include <TTree.h>
 #include <TChain.h>
 
+#include <sys/time.h>
+#include <memory>
+
 namespace dbrx {
 
 
 class RootTreeReader: public MapperBric {
 protected:
 	std::unique_ptr<TChain> m_chain;
+
+	// Additional members for progress informations
+	//! Previously printed progress
+	double m_previousProgress;
+	//! CPU time at begin of reading
+	struct timeval m_StartTime;
+	//! CPU time from last event
+	struct timeval m_LastTime;
+	//! Current CPU time
+	struct timeval m_CurrentTime;
 
 public:
 	class Entry final: public DynOutputGroup {
@@ -46,6 +59,12 @@ public:
 	Param<int64_t> cacheSize{this, "cacheSize", "Input read-ahead cache size (-1 for default)", -1};
 	Param<int64_t> nEntries{this, "nEntries", "Number of entries to read (-1 for all)", -1};
 	Param<int64_t> firstEntry{this, "firstEntry", "First entry to read", 0};
+
+	// Parmeters for printing the progress informations while looping over a tree/chain
+	Param<bool> printProgress{this, "printProgress", "Print progress", false};
+	Param<bool> printETA{this, "printETA", "Print ETA", false};
+	Param<double> progressPrecent{this, "progressPrecent", "Precentage when progress info is printed", 1000 };
+
 
 	Entry entry{this, "entry"};
 
