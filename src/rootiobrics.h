@@ -61,8 +61,8 @@ public:
 	Param<int64_t> firstEntry{this, "firstEntry", "First entry to read", 0};
 
 	// Parmeters for printing the progress informations while looping over a tree/chain
-	Param<bool> printProgress{this, "printProgress", "Print progress", false};
-	Param<bool> printETA{this, "printETA", "Print ETA", false};
+	Param<int> printProgress{this, "printProgress", "Print progress", false};
+	Param<int> printETA{this, "printETA", "Print ETA", false};
 	Param<double> progressPrecent{this, "progressPrecent", "Precentage when progress info is printed", 1000 };
 
 
@@ -225,9 +225,9 @@ public:
 	Param<PropVal> content{this, "content", "Content"};
 
 	// Is used to choose the mode for opening the root file
-	Param<bool> recreateFile{this, "recreate", "Recreate file", true};
+	Param<int> recreateFile{this, "recreate", "Recreate file", true};
 	// Is used to choose if the contents of the root file are overwritten
-	Param<bool> overwrite{this, "overwrite", "Overwrite objects in file", false};
+	Param<int> overwrite{this, "overwrite", "Overwrite objects in file", false};
 
 	Output<std::string> output{this, "output", "Output File Name"};
 	Output<TFile> outputFile{this, "outputFile", "Output TFile"};

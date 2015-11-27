@@ -86,11 +86,11 @@ bool RootTreeReader::nextOutput() {
 
 		if (!printProgress.get()) return true;
 
-		double progress = 100.*index/size.get();
+		double progress = 100.*index.get()/size.get();
 
 		if (progress >= m_previousProgress + progressPrecent.get())
 		{
-			dbrx_log_info("%6.2d % processed (%i entries)!", progress, index.get());
+			dbrx_log_info("%6.2f%s processed (%li entries)!", progress, "%", index.get());
 			m_previousProgress = progress;
 
 			if (printETA.get())
@@ -485,7 +485,14 @@ void RootFileWriter::writeObject(TNamed *obj, bool overwrite) {
 
 	if (!autoAdded)
 	{
-		if (overwrite) obj->Write(obj->GetName(), TObject::kOverwrite);
+		if (overwrite)
+		{
+			obj->Write(obj->GetName(), TObject::kOverwrite);
+		}
+		else
+		{
+			obj->Write();
+		}
 	}
 }
 
@@ -523,8 +530,16 @@ void RootFileWriter::openOutputForWrite() {
 
 	// Open tfile in update mode if chosen that way
 	TFile *tfile = nullptr;
-	if (recreateFile.get()) tfile = TFile::Open(outFileName, "RECREATE", outFileTitle);
-	else tfile = TFile::Open(outFileName, "UPDATE", outFileTitle);
+	if (recreateFile.get())
+	{
+		dbrx_log_debug("Recreate file %s", outFileName);
+		tfile = TFile::Open(outFileName, "RECREATE", outFileTitle);
+	}
+	else
+	{
+		dbrx_log_debug("Update file %s", outFileName);
+		tfile = TFile::Open(outFileName, "UPDATE", outFileTitle);
+	}
 
 
 	if (tfile == nullptr) throw runtime_error("Could not create TFile \"%s\""_format(outFileName));
@@ -541,7 +556,8 @@ void RootFileWriter::finalizeOutput() {
 	if (! m_outputReadyForWrite) return;
 
 	dbrx_log_debug("Writing TFile \"%s\" in bric \"%s\""_format(outputFile->GetName(), absolutePath()));
-	outputFile->Write();
+	if (overwrite.get()) outputFile->Write(0, TObject::kOverwrite);
+	else outputFile->Write();
 
 	outputFile->ReOpen("READ");
 
