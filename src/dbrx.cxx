@@ -178,6 +178,10 @@ void main_printUsage(const char* progName) {
 
 int main(int argc, char *argv[], char *envp[]) {
 	try {
+		// Disable ROOT on-screen graphics output (must be run before
+		// TApplication constructor):
+		gROOT->SetBatch(true);
+
 		// Have to create an application to activate ROOT's on-demand class loader
 		// (still true for ROOT-6?):
 		g_rootApplication = unique_ptr<TApplication>(new TApplication("dbrx", 0, 0));

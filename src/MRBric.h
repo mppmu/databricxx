@@ -78,12 +78,12 @@ protected:
 
 	virtual void moveUpOneLayer() final {
 		--m_currentLayer;
-		dbrx_log_trace("Moving up to exec layer %s in bric \"%s\"",currentLayerNo(), absolutePath());
+		dbrx_log_trace("Moved up to exec layer %s in bric \"%s\"",currentLayerNo(), absolutePath());
 	}
 
 	virtual void moveDownOneLayer() final {
 		++m_currentLayer;
-		dbrx_log_trace("Moving down to exec layer %s in bric \"%s\"", currentLayerNo(), absolutePath());
+		dbrx_log_trace("Moved down to exec layer %s in bric \"%s\"", currentLayerNo(), absolutePath());
 	}
 
 

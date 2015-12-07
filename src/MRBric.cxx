@@ -175,11 +175,12 @@ bool MRBric::processingStep() {
 
 		if (m_currentLayer == m_bottomLayer) {
 			m_runningDown = false;
-			if (m_bottomLayer->execFinished()) {
+			if (m_currentLayer->execFinished()) {
 				dbrx_log_trace("Processing finished for bric \"%s\" (all inner brics in bottom exec layer finished)", absolutePath());
 				m_innerExecFinished = true;
+			} else {
+				if (m_currentLayer != m_topLayer) moveUpOneLayer();
 			}
-			else moveUpOneLayer();
 		} else {
 			if (m_runningDown) {
 				moveDownOneLayer();
