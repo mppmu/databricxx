@@ -179,20 +179,6 @@ void main_printUsage(const char* progName) {
 
 int main(int argc, char *argv[], char *envp[]) {
 	try {
-//		// Set the command line options to -b (batch mode) for TApplication
-//		// Fixes the segmentation fault at the end of the execution
-//		// Does this allow the use of the HTTP server?
-//		// -> At least for databricxx example. Do we need more tests?
-//		int nArgs = 2;
-//		char** args = new char*[nArgs];
-//		for (int i=0; i<nArgs; i++)
-//		{
-//			args[i] = new char[64];
-//		}
-//
-//		sprintf(args[0], "dbrx");
-//		sprintf(args[1], "-b");
-
 		// Disable ROOT on-screen graphics output (must be run before
 		// TApplication constructor):
 		gROOT->SetBatch(true);
