@@ -32,13 +32,22 @@ bool ManagedStream::isStdStreamName(const std::string& fileName) const {
 
 
 void ManagedStream::ownStdStream() const {
-	const ManagedStream* noOwner = nullptr;
-	if (! stdStreamOwner().compare_exchange_strong(noOwner, this))
+	const ManagedStream* no_one = nullptr;
+	const ManagedStream* myself = this;
+	if (! stdStreamOwner().compare_exchange_strong(no_one, myself))
 		throw runtime_error("Can't take ownership of standard input/output stream, already belongs to someone else");
 }
 
 
+void ManagedStream::releaseStdStream() const {
+	const ManagedStream* no_one = nullptr;
+	const ManagedStream* myself = this;
+	stdStreamOwner().compare_exchange_strong(myself, no_one);
+}
+
+
 void ManagedStream::close() {
+	releaseStdStream();
 	m_owned_stream.reset();
 }
 

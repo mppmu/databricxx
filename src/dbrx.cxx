@@ -179,7 +179,6 @@ void main_printUsage(const char* progName) {
 
 int main(int argc, char *argv[], char *envp[]) {
 	try {
-
 		// Set the command line options to -b (batch mode) for TApplication
 		// Fixes the segmentation fault at the end of the execution
 		// Does this allow the use of the HTTP server?
@@ -193,6 +192,10 @@ int main(int argc, char *argv[], char *envp[]) {
 
 		sprintf(args[0], "dbrx");
 		sprintf(args[1], "-b");
+
+		// Disable ROOT on-screen graphics output (must be run before
+		// TApplication constructor):
+		gROOT->SetBatch(true);
 
 		// Have to create an application to activate ROOT's on-demand class loader
 		// (still true for ROOT-6?):

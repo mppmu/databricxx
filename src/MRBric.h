@@ -46,6 +46,7 @@ protected:
 				bool allBricExecsTrue = true;
 				bool allBricsFinished = true;
 				for (Bric* bric: brics) {
+					dbrx_log_trace("Executing bric \"%s\"", bric->absolutePath());
 					allBricExecsTrue &= bric->nextExecStep();
 					allBricsFinished &= bric->execFinished();
 				}
@@ -78,12 +79,12 @@ protected:
 
 	virtual void moveUpOneLayer() final {
 		--m_currentLayer;
-		dbrx_log_trace("Moving up to exec layer %s in bric \"%s\"",currentLayerNo(), absolutePath());
+		dbrx_log_trace("Moved up to exec layer %s in bric \"%s\"",currentLayerNo(), absolutePath());
 	}
 
 	virtual void moveDownOneLayer() final {
 		++m_currentLayer;
-		dbrx_log_trace("Moving down to exec layer %s in bric \"%s\"", currentLayerNo(), absolutePath());
+		dbrx_log_trace("Moved down to exec layer %s in bric \"%s\"", currentLayerNo(), absolutePath());
 	}
 
 
@@ -92,6 +93,8 @@ protected:
 	void init() override;
 
 	virtual bool processingStep() final;
+
+	virtual void resetExecInner();
 
 public:
 	void resetExec() override;
