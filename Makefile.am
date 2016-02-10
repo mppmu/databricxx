@@ -3,7 +3,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 MAINTAINERCLEANFILES = Makefile.in \
 	aclocal.m4 ar-lib config.guess config.h.in config.h.in~ config.sub \
-	configure depcomp install-sh ltmain.sh missing \
+	configure depcomp install-sh ltmain.sh missing compile \
 	m4/libtool.m4 m4/lt~obsolete.m4 m4/ltoptions.m4 m4/ltsugar.m4 \
 	m4/ltversion.m4
 
