@@ -48,7 +48,8 @@
         "type": "dbrx::RootTreeReader",
         "input": "&mcaFileReader.content.mcaEvents",
         "nEntries": -1,
-        "firstEntry": 0
+        "firstEntry": 0,
+        "progressUpdateTime": 0.5
       },
 
       "calib": {

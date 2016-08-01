@@ -19,6 +19,7 @@
 #define DBRX_ROOTIOBRICS_H
 
 #include <functional>
+#include <limits>
 
 #include "Bric.h"
 
@@ -39,7 +40,7 @@ protected:
 
 	// Additional members for progress informations
 	//! Previously printed progress
-	double m_previousProgress;
+	int64_t m_PreviousNEntries;
 	//! CPU time at begin of reading
 	struct timeval m_StartTime;
 	//! CPU time from last event
@@ -60,11 +61,8 @@ public:
 	Param<int64_t> nEntries{this, "nEntries", "Number of entries to read (-1 for all)", -1};
 	Param<int64_t> firstEntry{this, "firstEntry", "First entry to read", 0};
 
-	// Parmeters for printing the progress informations while looping over a tree/chain
-	Param<int> printProgress{this, "printProgress", "Print progress", false};
-	Param<int> printETA{this, "printETA", "Print ETA", false};
-	Param<double> progressPrecent{this, "progressPrecent", "Precentage when progress info is printed", 1000 };
-
+	//! Parameter: Time to update the progress information
+	Param<double> pProgressUpdateTime {this, "progressUpdateTime", "Time to update the progress information [s]", std::numeric_limits<double>::quiet_NaN()};
 
 	Entry entry{this, "entry"};
 

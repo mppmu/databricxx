@@ -67,15 +67,12 @@ void RootTreeReader::processInput() {
 	size = m_chain->GetEntries() - firstEntry.get();
 	if (ssize_t(nEntries) > 0) size = std::min(ssize_t(nEntries), size.get());
 
-	if (printETA.get())
-	{
-		gettimeofday(&m_StartTime, NULL);
+	gettimeofday(&m_StartTime, NULL);
 
-		m_LastTime.tv_sec = m_StartTime.tv_sec;
-		m_LastTime.tv_usec = m_StartTime.tv_usec;
-	}
+	m_LastTime.tv_sec = m_StartTime.tv_sec;
+	m_LastTime.tv_usec = m_StartTime.tv_usec;
 
-	m_previousProgress = 0.;
+	m_PreviousNEntries = index.get();
 }
 
 
@@ -84,46 +81,55 @@ bool RootTreeReader::nextOutput() {
 		++index;
 		m_chain->GetEntry(index);
 
-		if (!printProgress.get()) return true;
+		// Update progress infos:
 
-		double progress = 100.*index.get()/size.get();
+		if (pProgressUpdateTime.get() != pProgressUpdateTime.get()) return true; // No progress update
 
-		if (progress >= m_previousProgress + progressPrecent.get())
-		{
-			dbrx_log_info("%6.2f%s processed (%li entries)!", progress, "%", index.get());
-			m_previousProgress = progress;
+		gettimeofday(&m_CurrentTime, NULL);
 
-			if (printETA.get())
-			{
-				gettimeofday(&m_CurrentTime, NULL);
+		double timeDiff = m_CurrentTime.tv_sec - m_LastTime.tv_sec + 1.0e-6*(m_CurrentTime.tv_usec - m_LastTime.tv_usec);
 
-				double timeDiff = m_CurrentTime.tv_sec - m_LastTime.tv_sec + 1.0e-6*(m_CurrentTime.tv_usec - m_LastTime.tv_usec);
-				double averageTimeDiff = m_CurrentTime.tv_sec - m_StartTime.tv_sec + 1.0e-6*(m_CurrentTime.tv_usec - m_StartTime.tv_usec);
+		if (timeDiff < pProgressUpdateTime.get()) return true;
 
-				double rate = progressPrecent.get()*size.get()/timeDiff;
-				double averageRate = index/averageTimeDiff;
+		double averageTimeDiff = m_CurrentTime.tv_sec - m_StartTime.tv_sec + 1.0e-6*(m_CurrentTime.tv_usec - m_StartTime.tv_usec);
 
-				dbrx_log_info("Rate: %5.1f Entries/s (average: %5.1f Entries/s)", rate, averageRate);
+		double percentage = 100. * (index.get()-firstEntry.get())/size.get();
 
-				double eta = (size.get() - index.get())/averageRate;
+		int64_t nEntries = index.get() - m_PreviousNEntries;
+		m_PreviousNEntries = index.get()-firstEntry.get();
 
-				int seconds = eta;
-				int usecs = (eta-seconds)*1.0e6;
+		dbrx_log_info("Reading from chain %s ...", m_chain->GetName());
+		dbrx_log_info("   %5.1f %% done (%u/%u pulses read)",
+					  percentage,
+					  (unsigned int) index.get()-firstEntry.get(),
+					  (unsigned int) size.get());
 
-				time_t finishTime;
-				finishTime = m_CurrentTime.tv_sec+seconds;
-				struct tm* finishtm;
-				finishtm = localtime(&finishTime);
+		double rate = (nEntries)/timeDiff;
+		double averageRate = (index.get()-firstEntry.get())/averageTimeDiff;
 
-				char tmbuf[64];
-				strftime(tmbuf, sizeof tmbuf, "%a %b %d - %H:%M:%S", finishtm);
+		dbrx_log_info("   Rate: %5.1f Entries/s (average rate: %5.1f Entries/s)", rate, averageRate);
 
-				dbrx_log_info("ETA: %s", tmbuf);
+		double eta = (size.get() - (index.get()-firstEntry.get()))/averageRate;
 
-				m_LastTime.tv_sec = m_CurrentTime.tv_sec;
-				m_LastTime.tv_usec = m_CurrentTime.tv_usec;
-			}
-		}
+		int fullSeconds = eta;
+		int usecs = (eta-fullSeconds)*1.0e6;
+
+		int hours = eta/(3600.);
+		int minutes = (eta - hours*3600.)/60.;
+		double seconds = eta - hours*3600. - minutes*60.;
+
+		time_t finishTime;
+		finishTime = m_CurrentTime.tv_sec+fullSeconds;
+		struct tm* finishtm;
+		finishtm = localtime(&finishTime);
+
+		char tmbuf[64];
+		strftime(tmbuf, sizeof tmbuf, "%a %b %d - %H:%M:%S", finishtm);
+
+		dbrx_log_info("ETA: %i:%i:%5.2f (%s)", hours, minutes, seconds, tmbuf);
+
+		m_LastTime.tv_sec = m_CurrentTime.tv_sec;
+		m_LastTime.tv_usec = m_CurrentTime.tv_usec;
 
 		return true;
 	} else return false;
