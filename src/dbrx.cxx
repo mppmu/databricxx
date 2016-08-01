@@ -188,6 +188,9 @@ int main(int argc, char *argv[], char *envp[]) {
 //		g_rootApplication = unique_ptr<TApplication>(new TApplication("dbrx", &nArgs, args));
 		g_rootApplication = unique_ptr<TApplication>(new TApplication("dbrx", 0, 0));
 
+		// Disable ROOT on-screen graphics output:
+		gROOT->SetBatch(true);
+
 		// Set ROOT program name (necessary / useful ?):
 		gSystem->SetProgname("dbrx");
 

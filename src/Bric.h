@@ -345,10 +345,10 @@ public:
 
 		Param() = default;
 
-		Param(Bric *parentBric, PropKey paramName, std::string paramTitle = "", T defaultValue = T())
+		Param(Bric *parentBric, PropKey paramName, std::string paramTitle = "", T&& defaultValue = T())
 			: BricComponentImpl(paramName, std::move(paramTitle))
 		{
-			value() = std::move(defaultValue);
+			value() = std::forward<T>(defaultValue);
 			setParent(parentBric);
 		}
 
