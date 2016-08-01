@@ -206,8 +206,13 @@ bool MRBric::processingStep() {
 
 
 void MRBric::resetExec() {
-	dbrx_log_debug("Resetting processing for MR bric \"%s\"", absolutePath());
 	SyncedInputBric::resetExec();
+	resetExecInner();
+}
+
+
+void MRBric::resetExecInner() {
+	dbrx_log_debug("Resetting execution for inner brics of MR bric \"%s\"", absolutePath());
 
 	if (!m_execLayers.empty()) {
 		m_topLayer = m_execLayers.begin();
@@ -224,6 +229,7 @@ void MRBric::resetExec() {
 
 void MRBric::processInput() {
 	while(!m_innerExecFinished) processingStep();
+	resetExecInner();
 }
 
 

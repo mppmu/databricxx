@@ -35,6 +35,7 @@ protected:
 
 	virtual bool isStdStreamName(const std::string& fileName) const;
 	virtual void ownStdStream() const;
+	virtual void releaseStdStream() const;
 
 public:
 	virtual std::ios& stream() = 0;

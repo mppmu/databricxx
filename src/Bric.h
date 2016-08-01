@@ -345,10 +345,10 @@ public:
 
 		Param() = default;
 
-		Param(Bric *parentBric, PropKey paramName, std::string paramTitle = "", T defaultValue = T())
+		Param(Bric *parentBric, PropKey paramName, std::string paramTitle = "", T&& defaultValue = T())
 			: BricComponentImpl(paramName, std::move(paramTitle))
 		{
-			value() = std::move(defaultValue);
+			value() = std::forward<T>(defaultValue);
 			setParent(parentBric);
 		}
 
@@ -776,24 +776,25 @@ template <typename T> Bric::InputTerminal* Bric::TypedTerminal<T>::createMatchin
 
 class SyncedInputBric: public virtual BricWithInputs {
 protected:
-	bool m_announcedReadyForInput = false;
+	bool m_consumedInput = false;
 
 	virtual void announceReadyForInput() final {
-		if (!m_announcedReadyForInput && !allSourcesFinished()) {
+		if (m_consumedInput && !allSourcesFinished()) {
 			for (auto &source: m_sources) source->incNDestsReadyForInput();
-			m_announcedReadyForInput = true;
+			m_consumedInput = false;
 		}
 	}
 
 	virtual void consumeInput() final {
+		assert(m_consumedInput == false); // Sanity check
 		clearNSourcesAvailable();
-		m_announcedReadyForInput = false;
+		m_consumedInput = true;
 	}
 
 public:
 	void resetExec() override {
 		Bric::resetExec();
-		m_announcedReadyForInput = true;
+		m_consumedInput = false;
 	}
 };
 
@@ -850,14 +851,14 @@ protected:
 		bool producedOutput = false;
 
 		if (allDestsReadyForInput()) {
-			announceReadyForInput();
-
-			if (anySourceAvailable()) {
+			if (allSourcesAvailable()) {
 				consumeInput();
 				tryProcessInput();
 				if (hasDests()) announceNewOutput();
 				else announceReadyForInput();
 				producedOutput = true;
+			} else {
+				announceReadyForInput();
 			}
 		}
 
@@ -881,12 +882,12 @@ protected:
 
 		if (allDestsReadyForInput()) {
 			if (! m_readyForNextOutput) {
-				announceReadyForInput();
-
-				if (anySourceAvailable()) {
+				if (allSourcesAvailable()) {
 					consumeInput();
 					tryProcessInput();
 					m_readyForNextOutput = true;
+				} else {
+					announceReadyForInput();
 				}
 			}
 
@@ -979,9 +980,7 @@ protected:
 				if (execFinished()) return true;
 			}
 
-			announceReadyForInput();
-
-			if (anySourceAvailable()) {
+			if (allSourcesAvailable()) {
 				consumeInput();
 				tryProcessInput();
 				announceReadyForInput();

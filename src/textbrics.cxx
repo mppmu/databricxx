@@ -44,26 +44,4 @@ bool TextFileReader::nextOutput() {
 }
 
 
-
-void TextFileWriter::newReduction() {
-	dbrx_log_trace("TextFileWriter \"%s\", opening output \"%s\""_format(absolutePath(), target.get()));
-	try {
-		m_outputStream.open(target);	
-	} catch (std::runtime_error &e) {
-		throw runtime_error("Can't open \"%s\" for output in bric \"%s\": %s"_format(target.get(), absolutePath(), e.what()));
-	}
-}
-
-
-void TextFileWriter::processInput() {
-	m_outputStream.stream() << input.get() << '\n' << flush;
-	if (! m_outputStream.stream()) throw runtime_error("Output to \"%s\" failed in bric \"%s\""_format(target.get(), absolutePath()));
-}
-
-
-void TextFileWriter::finalizeReduction() {
-	m_outputStream.close();
-}
-
-
 } // namespace dbrx
