@@ -21,8 +21,9 @@
 #include <fstream>
 #include <sstream>
 
+#include "external/rapidjson/ostreamwrapper.h"
+#include "external/rapidjson/istreamwrapper.h"
 #include "external/rapidjson/reader.h"
-#include "external/rapidjson/genericstream.h"
 
 #include <TString.h>
 #include <TSystem.h>
@@ -416,29 +417,37 @@ PropVal PropVal::fromJSON(std::istream &in) {
 
 		void popCurrent() { m_valueStack.pop_back(); }
 
-		void store(PropVal &&pIn) {
+		bool store(PropVal &&pIn) {
 			if (m_valueStack.capacity() == m_valueStack.size())
 				m_valueStack.reserve(m_valueStack.size() * 2);
 			m_valueStack.push_back(std::move(pIn));
+			return true;
 		}
 
 	public:
-		void Null_() { store(PropVal()); }
+		bool Null() { return store(PropVal()); }
 
-		void Bool_(bool b) { store(b); }
+		bool Bool(bool b) { return store(b); }
 
-		void Int(int i) { store(int64_t(i)); }
-		void Uint(unsigned i) { store(int64_t(i)); }
-		void Int64(int64_t i) { store(i); }
-		void Uint64(uint64_t i) { store(int64_t(i)); }
+		bool Int(int i) { return store(int64_t(i)); }
+		bool Uint(int i) { return store(int64_t(i)); }
+		bool Int64(int64_t i) { return store(i); }
+		bool Uint64(uint64_t i) { return store(int64_t(i)); }
 
-		void Double(double d) { store(d); }
+		bool Double(double d) { return store(d); }
 
-		void String(const Ch* str, SizeType length, bool copy) { store(decodeString(str, length)); }
+		bool RawNumber(const Ch* str, SizeType length, bool copy) {
+			throw logic_error("JSON handler shouldn't see raw numbers.");
+			return false;
+		}
 
-		void StartObject() {}
+		bool String(const Ch* str, SizeType length, bool copy) { return store(decodeString(str, length)); }
 
-		void EndObject(SizeType memberCount) {
+		bool StartObject() { return true; }
+
+		bool Key(const Ch* str, SizeType length, bool copy) { return store(decodeString(str, length)); }
+
+		bool EndObject(SizeType memberCount) {
 			if (m_valueStack.size() < memberCount * 2) throw logic_error("Parsing stack size mismatch on object");
 			PropVal objProp = PropVal::props();
 			Props obj = objProp.asProps();
@@ -447,12 +456,12 @@ PropVal PropVal::fromJSON(std::istream &in) {
 				obj[std::move(k)] = std::move(*p++);
 			}
 			m_valueStack.resize(m_valueStack.size() - 2 * memberCount);
-			store(std::move(obj));
+			return store(std::move(obj));
 		}
 
-		void StartArray() {}
+		bool StartArray() { return true; }
 
-		void EndArray(SizeType elementCount) {
+		bool EndArray(SizeType elementCount) {
 			if (m_valueStack.size() < elementCount) throw logic_error("Parsing stack size mismatch on array");
 			PropVal arrayProp = PropVal::array();
 			Array arr = arrayProp.asArray();
@@ -460,7 +469,7 @@ PropVal PropVal::fromJSON(std::istream &in) {
 			for (auto p = m_valueStack.end() - elementCount; p < m_valueStack.end(); ++p)
 				arr.push_back(std::move(*p));
 			m_valueStack.resize(m_valueStack.size() - elementCount);
-			store(std::move(arr));
+			return store(std::move(arr));
 		}
 
 		PropVal& getResult() {
@@ -473,12 +482,12 @@ PropVal PropVal::fromJSON(std::istream &in) {
 		}
 	};
 
-	rapidjson::GenericReadStream genericIn(in);
+	rapidjson::IStreamWrapper genericIn(in);
 
-	rapidjson::GenericReader<Encoding> reader;
+	rapidjson::GenericReader<Encoding, Encoding> reader;
 	JSONHandler handler;
 
-	if (! reader.Parse<rapidjson::kParseDefaultFlags, rapidjson::GenericReadStream, JSONHandler> (genericIn, handler))
+	if (! reader.Parse<rapidjson::kParseDefaultFlags, rapidjson::IStreamWrapper, JSONHandler> (genericIn, handler))
 		throw invalid_argument("JSON parse error, input is not valid JSON");
 
 	return PropVal( std::move(handler.getResult()) );
