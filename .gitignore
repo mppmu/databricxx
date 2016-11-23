@@ -1,6 +1,8 @@
 /Makefile
 /Makefile.in
 
+/compile
+
 /aclocal.m4
 /ar-lib
 /autom4te.cache
@@ -62,3 +64,4 @@ out*.json
 # Eclipse CDT project files
 /.cproject
 /.project
+/.settings

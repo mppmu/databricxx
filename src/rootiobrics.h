@@ -19,6 +19,7 @@
 #define DBRX_ROOTIOBRICS_H
 
 #include <functional>
+#include <limits>
 
 #include "Bric.h"
 
@@ -27,12 +28,25 @@
 #include <TTree.h>
 #include <TChain.h>
 
+#include <sys/time.h>
+#include <memory>
+
 namespace dbrx {
 
 
 class RootTreeReader: public MapperBric {
 protected:
 	std::unique_ptr<TChain> m_chain;
+
+	// Additional members for progress informations
+	//! Previously printed progress
+	int64_t m_PreviousNEntries;
+	//! CPU time at begin of reading
+	struct timeval m_StartTime;
+	//! CPU time from last event
+	struct timeval m_LastTime;
+	//! Current CPU time
+	struct timeval m_CurrentTime;
 
 public:
 	class Entry final: public DynOutputGroup {
@@ -46,6 +60,9 @@ public:
 	Param<int64_t> cacheSize{this, "cacheSize", "Input read-ahead cache size (-1 for default)", -1};
 	Param<int64_t> nEntries{this, "nEntries", "Number of entries to read (-1 for all)", -1};
 	Param<int64_t> firstEntry{this, "firstEntry", "First entry to read", 0};
+
+	//! Parameter: Time to update the progress information
+	Param<double> pProgressUpdateTime {this, "progressUpdateTime", "Time to update the progress information [s]", std::numeric_limits<double>::quiet_NaN()};
 
 	Entry entry{this, "entry"};
 
@@ -157,7 +174,8 @@ class RootFileWriter: public AsyncReducerBric {
 protected:
 	static const PropKey s_thisDirName;
 
-	static void writeObject(TNamed *obj);
+	// Additional argument to choose if the object is overwritten
+	static void writeObject(TNamed *obj, bool overwrite = false);
 
 	bool m_outputReadyForWrite = false;
 
@@ -203,6 +221,11 @@ public:
 	Param<std::string> fileName{this, "fileName", "File Name"};
 	Param<std::string> title{this, "title", "Title"};
 	Param<PropVal> content{this, "content", "Content"};
+
+	// Is used to choose the mode for opening the root file
+	Param<int> recreateFile{this, "recreate", "Recreate file", true};
+	// Is used to choose if the contents of the root file are overwritten
+	Param<int> overwrite{this, "overwrite", "Overwrite objects in file", false};
 
 	Output<std::string> output{this, "output", "Output File Name"};
 	Output<TFile> outputFile{this, "outputFile", "Output TFile"};

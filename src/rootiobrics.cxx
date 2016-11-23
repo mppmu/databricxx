@@ -66,6 +66,13 @@ void RootTreeReader::processInput() {
 	index = firstEntry - 1;
 	size = m_chain->GetEntries() - firstEntry.get();
 	if (ssize_t(nEntries) > 0) size = std::min(ssize_t(nEntries), size.get());
+
+	gettimeofday(&m_StartTime, NULL);
+
+	m_LastTime.tv_sec = m_StartTime.tv_sec;
+	m_LastTime.tv_usec = m_StartTime.tv_usec;
+
+	m_PreviousNEntries = index.get();
 }
 
 
@@ -73,6 +80,57 @@ bool RootTreeReader::nextOutput() {
 	if (index.get() + 1 < firstEntry.get() + size.get()) {
 		++index;
 		m_chain->GetEntry(index);
+
+		// Update progress infos:
+
+		if (pProgressUpdateTime.get() != pProgressUpdateTime.get()) return true; // No progress update
+
+		gettimeofday(&m_CurrentTime, NULL);
+
+		double timeDiff = m_CurrentTime.tv_sec - m_LastTime.tv_sec + 1.0e-6*(m_CurrentTime.tv_usec - m_LastTime.tv_usec);
+
+		if (timeDiff < pProgressUpdateTime.get()) return true;
+
+		double averageTimeDiff = m_CurrentTime.tv_sec - m_StartTime.tv_sec + 1.0e-6*(m_CurrentTime.tv_usec - m_StartTime.tv_usec);
+
+		double percentage = 100. * (index.get()-firstEntry.get())/size.get();
+
+		int64_t nEntries = index.get() - m_PreviousNEntries;
+		m_PreviousNEntries = index.get()-firstEntry.get();
+
+		dbrx_log_info("Reading from chain %s ...", m_chain->GetName());
+		dbrx_log_info("   %5.1f %% done (%u/%u pulses read)",
+					  percentage,
+					  (unsigned int) index.get()-firstEntry.get(),
+					  (unsigned int) size.get());
+
+		double rate = (nEntries)/timeDiff;
+		double averageRate = (index.get()-firstEntry.get())/averageTimeDiff;
+
+		dbrx_log_info("   Rate: %5.1f Entries/s (average rate: %5.1f Entries/s)", rate, averageRate);
+
+		double eta = (size.get() - (index.get()-firstEntry.get()))/averageRate;
+
+		int fullSeconds = eta;
+		int usecs = (eta-fullSeconds)*1.0e6;
+
+		int hours = eta/(3600.);
+		int minutes = (eta - hours*3600.)/60.;
+		double seconds = eta - hours*3600. - minutes*60.;
+
+		time_t finishTime;
+		finishTime = m_CurrentTime.tv_sec+fullSeconds;
+		struct tm* finishtm;
+		finishtm = localtime(&finishTime);
+
+		char tmbuf[64];
+		strftime(tmbuf, sizeof tmbuf, "%a %b %d - %H:%M:%S", finishtm);
+
+		dbrx_log_info("ETA: %i:%i:%5.2f (%s)", hours, minutes, seconds, tmbuf);
+
+		m_LastTime.tv_sec = m_CurrentTime.tv_sec;
+		m_LastTime.tv_usec = m_CurrentTime.tv_usec;
+
 		return true;
 	} else return false;
 }
@@ -348,7 +406,7 @@ void RootFileWriter::ContentGroup::processInput() {
 					// Need to clone inputObject to own it:
 					dbrx_log_trace("Cloning object \"%s\" to content group \"%s\"", inputObject->GetName(), absolutePath());
 					TNamed *outputObject = (TNamed*) inputObject->Clone();
-					writeObject(outputObject);
+					writeObject(outputObject, m_writer->overwrite.get());
 				}
 			}
 		}
@@ -420,7 +478,7 @@ RootFileWriter::ContentGroup::ContentGroup(RootFileWriter *writer, Bric *parentB
 
 
 
-void RootFileWriter::writeObject(TNamed *obj) {
+void RootFileWriter::writeObject(TNamed *obj, bool overwrite) {
 	if (string(obj->GetName()).empty())
 		throw invalid_argument("Refusing to add object with empty name to TDirectory");
 
@@ -431,9 +489,18 @@ void RootFileWriter::writeObject(TNamed *obj) {
 		TDirectory::AddDirectoryStatus() && (obj->IsA()->GetDirectoryAutoAdd() != nullptr)
 	);
 
-	if (!autoAdded) obj->Write();
+	if (!autoAdded)
+	{
+		if (overwrite)
+		{
+			obj->Write(obj->GetName(), TObject::kOverwrite);
+		}
+		else
+		{
+			obj->Write();
+		}
+	}
 }
-
 
 void RootFileWriter::connectInputs() {
 	dbrx_log_trace("Setting up content groups for bric \"%s\"", absolutePath());
@@ -466,7 +533,21 @@ void RootFileWriter::openOutputForWrite() {
 	const char *outFileName = fileName->c_str();
 	const char *outFileTitle = title->c_str();
 	dbrx_log_debug("Creating TFile \"%s\" with title \"%s\" in bric \"%s\""_format(outFileName, outFileTitle, absolutePath()));
-	TFile *tfile = TFile::Open(outFileName, "RECREATE", outFileTitle);
+
+	// Open tfile in update mode if chosen that way
+	TFile *tfile = nullptr;
+	if (recreateFile.get())
+	{
+		dbrx_log_debug("Recreate file %s", outFileName);
+		tfile = TFile::Open(outFileName, "RECREATE", outFileTitle);
+	}
+	else
+	{
+		dbrx_log_debug("Update file %s", outFileName);
+		tfile = TFile::Open(outFileName, "UPDATE", outFileTitle);
+	}
+
+
 	if (tfile == nullptr) throw runtime_error("Could not create TFile \"%s\""_format(outFileName));
 	outputFile.value() = unique_ptr<TFile>(tfile);
 
@@ -481,7 +562,8 @@ void RootFileWriter::finalizeOutput() {
 	if (! m_outputReadyForWrite) return;
 
 	dbrx_log_debug("Writing TFile \"%s\" in bric \"%s\""_format(outputFile->GetName(), absolutePath()));
-	outputFile->Write();
+	if (overwrite.get()) outputFile->Write(0, TObject::kOverwrite);
+	else outputFile->Write();
 
 	outputFile->ReOpen("READ");
 

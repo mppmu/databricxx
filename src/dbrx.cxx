@@ -19,6 +19,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 
 #include <unistd.h>
 
@@ -184,7 +185,11 @@ int main(int argc, char *argv[], char *envp[]) {
 
 		// Have to create an application to activate ROOT's on-demand class loader
 		// (still true for ROOT-6?):
+//		g_rootApplication = unique_ptr<TApplication>(new TApplication("dbrx", &nArgs, args));
 		g_rootApplication = unique_ptr<TApplication>(new TApplication("dbrx", 0, 0));
+
+		// Disable ROOT on-screen graphics output:
+		gROOT->SetBatch(true);
 
 		// Set ROOT program name (necessary / useful ?):
 		gSystem->SetProgname("dbrx");
@@ -222,4 +227,5 @@ int main(int argc, char *argv[], char *envp[]) {
 	}
 
 	dbrx_log_info("Done.");
+	return 0;
 }
