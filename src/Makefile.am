@@ -6,59 +6,63 @@ MAINTAINERCLEANFILES = Makefile.in
 lib_LTLIBRARIES = libdatabricxx.la
 
 libdatabricxx_la_SOURCES = \
-	basicbrics.cxx \
-	funcbrics.cxx \
-	collbrics.cxx \
-	format.cxx \
-	funcprog.cxx \
-	logging.cxx \
-	propsbrics.cxx \
-	rootiobrics.cxx \
-	textbrics.cxx \
-	ApplicationBric.cxx \
-	ApplicationConfig.cxx \
-	Bric.cxx \
 	DbrxTools.cxx \
 	ManagedStream.cxx \
-	MRBric.cxx \
-	Name.cxx NameTable.cxx \
+	RootCollection.cxx \
+	TypeReflection.cxx \
+	WrappedTObj.cxx \
+	funcprog.cxx \
+	format.cxx \
+	Name.cxx \
+	NameTable.cxx \
 	Printable.cxx \
 	Props.cxx \
-	RootCollection.cxx \
+	logging.cxx \
+	ApplicationConfig.cxx \
+	Value.cxx \
+	HasValue.cxx \
+	Bric.cxx \
+	ApplicationBric.cxx \
+	basicbrics.cxx \
+	collbrics.cxx \
+	funcbrics.cxx \
+	MRBric.cxx \
+	propsbrics.cxx \
 	RootHistBuilder.cxx \
+	rootiobrics.cxx \
 	RootIO.cxx \
 	RootRndGen.cxx \
-	TypeReflection.cxx \
-	Value.cxx HasValue.cxx \
-	WrappedTObj.cxx \
+	textbrics.cxx \
 	WrappedTObjConv.cxx
 
 libdatabricxx_la_headers = \
-	basicbrics.h \
-	funcbrics.h \
-	collbrics.h \
-	format.h \
-	funcprog.h \
-	logging.h \
-	propsbrics.h \
-	rootiobrics.h \
-	textbrics.h \
-	ApplicationBric.h \
-	ApplicationConfig.h \
-	Bric.h \
 	DbrxTools.h \
 	ManagedStream.h \
-	MRBric.h \
-	Name.h NameTable.h \
+	RootCollection.h \
+	TypeReflection.h \
+	WrappedTObj.h \
+	funcprog.h \
+	format.h \
+	Name.h \
+	NameTable.h \
 	Printable.h \
 	Props.h \
-	RootCollection.h \
+	logging.h \
+	ApplicationConfig.h \
+	Value.h \
+	HasValue.h \
+	Bric.h \
+	ApplicationBric.h \
+	basicbrics.h \
+	collbrics.h \
+	funcbrics.h \
+	MRBric.h \
+	propsbrics.h \
 	RootHistBuilder.h \
+	rootiobrics.h \
 	RootIO.h \
 	RootRndGen.h \
-	TypeReflection.h \
-	Value.h HasValue.h \
-	WrappedTObj.h \
+	textbrics.h \
 	WrappedTObjConv.h
 
 pkginclude_HEADERS = $(libdatabricxx_la_headers)
