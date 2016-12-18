@@ -23,7 +23,6 @@
 
 // textbrics.h
 #pragma link C++ class dbrx::TextFileReader-;
-#pragma link C++ class dbrx::TextFileWriter-;
 
 // ApplicationBric.h
 #pragma link C++ class dbrx::ApplicationBric-;
